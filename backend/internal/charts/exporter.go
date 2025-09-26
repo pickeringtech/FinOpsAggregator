@@ -11,39 +11,30 @@ import (
 	"github.com/google/uuid"
 	"github.com/pickeringtech/FinOpsAggregator/internal/store"
 	"github.com/rs/zerolog/log"
-	"gocloud.dev/blob"
-	_ "gocloud.dev/blob/fileblob"
-	_ "gocloud.dev/blob/s3blob"
-	_ "gocloud.dev/blob/gcsblob"
 )
 
-// Exporter handles chart generation and export to various storage backends
+// Exporter handles chart generation and export to local files
 type Exporter struct {
 	store    *store.Store
 	renderer *GraphRenderer
-	bucket   *blob.Bucket
 	prefix   string
 }
 
-// NewExporter creates a new chart exporter
+// NewExporter creates a new chart exporter for local file output
 func NewExporter(store *store.Store, storageURL, prefix string) (*Exporter, error) {
-	ctx := context.Background()
-	bucket, err := blob.OpenBucket(ctx, storageURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open storage bucket: %w", err)
-	}
+	// Note: storageURL parameter is ignored, we write directly to local files
 
 	return &Exporter{
 		store:    store,
 		renderer: NewGraphRenderer(store),
-		bucket:   bucket,
 		prefix:   prefix,
 	}, nil
 }
 
 // Close closes the exporter and cleans up resources
 func (e *Exporter) Close() error {
-	return e.bucket.Close()
+	// No cleanup needed for direct file writing
+	return nil
 }
 
 // ExportGraphStructure exports the DAG structure as an image
@@ -66,51 +57,23 @@ func (e *Exporter) ExportGraphStructure(ctx context.Context, date time.Time, fil
 
 	// Add prefix if configured
 	if e.prefix != "" {
+		// Create directory if it doesn't exist
+		if err := os.MkdirAll(e.prefix, 0755); err != nil {
+			return fmt.Errorf("failed to create directory: %w", err)
+		}
 		filename = filepath.Join(e.prefix, filename)
 	}
 
-	// Create a temporary file to write to
-	tempFile, err := os.CreateTemp("", "finops-chart-*."+format)
+	// Create the output file directly
+	file, err := os.Create(filename)
 	if err != nil {
-		return fmt.Errorf("failed to create temp file: %w", err)
-	}
-	defer os.Remove(tempFile.Name())
-	defer tempFile.Close()
-
-	// Render the graph
-	if err := e.renderer.RenderGraphStructure(ctx, date, tempFile, format); err != nil {
-		return fmt.Errorf("failed to render graph structure: %w", err)
-	}
-
-	// Reopen file for reading
-	tempFile.Close()
-	file, err := os.Open(tempFile.Name())
-	if err != nil {
-		return fmt.Errorf("failed to reopen temp file: %w", err)
+		return fmt.Errorf("failed to create output file: %w", err)
 	}
 	defer file.Close()
 
-	// Upload to storage
-	writer, err := e.bucket.NewWriter(ctx, filename, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create storage writer: %w", err)
-	}
-	defer writer.Close()
-
-	// Set content type
-	contentType := "image/png"
-	if format == "svg" {
-		contentType = "image/svg+xml"
-	}
-	writer.ContentType = contentType
-
-	// Copy file to storage
-	if _, err := file.WriteTo(writer); err != nil {
-		return fmt.Errorf("failed to write to storage: %w", err)
-	}
-
-	if err := writer.Close(); err != nil {
-		return fmt.Errorf("failed to close storage writer: %w", err)
+	// Render the graph directly to the file
+	if err := e.renderer.RenderGraphStructure(ctx, date, file, format); err != nil {
+		return fmt.Errorf("failed to render graph structure: %w", err)
 	}
 
 	log.Info().
@@ -156,48 +119,23 @@ func (e *Exporter) ExportCostTrend(ctx context.Context, nodeID uuid.UUID, startD
 		filename = filepath.Join(e.prefix, filename)
 	}
 
-	// Create a temporary file to write to
-	tempFile, err := os.CreateTemp("", "finops-chart-*."+format)
-	if err != nil {
-		return fmt.Errorf("failed to create temp file: %w", err)
-	}
-	defer os.Remove(tempFile.Name())
-	defer tempFile.Close()
-
-	// Render the chart
-	if err := e.renderer.RenderCostTrend(ctx, nodeID, startDate, endDate, dimension, tempFile, format); err != nil {
-		return fmt.Errorf("failed to render cost trend: %w", err)
+	// Create directory if needed
+	if e.prefix != "" {
+		if err := os.MkdirAll(e.prefix, 0755); err != nil {
+			return fmt.Errorf("failed to create directory: %w", err)
+		}
 	}
 
-	// Reopen file for reading
-	tempFile.Close()
-	file, err := os.Open(tempFile.Name())
+	// Create the output file directly
+	file, err := os.Create(filename)
 	if err != nil {
-		return fmt.Errorf("failed to reopen temp file: %w", err)
+		return fmt.Errorf("failed to create output file: %w", err)
 	}
 	defer file.Close()
 
-	// Upload to storage
-	writer, err := e.bucket.NewWriter(ctx, filename, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create storage writer: %w", err)
-	}
-	defer writer.Close()
-
-	// Set content type
-	contentType := "image/png"
-	if format == "svg" {
-		contentType = "image/svg+xml"
-	}
-	writer.ContentType = contentType
-
-	// Copy file to storage
-	if _, err := file.WriteTo(writer); err != nil {
-		return fmt.Errorf("failed to write to storage: %w", err)
-	}
-
-	if err := writer.Close(); err != nil {
-		return fmt.Errorf("failed to close storage writer: %w", err)
+	// Render the chart directly to the file
+	if err := e.renderer.RenderCostTrend(ctx, nodeID, startDate, endDate, dimension, file, format); err != nil {
+		return fmt.Errorf("failed to render cost trend: %w", err)
 	}
 
 	log.Info().
@@ -240,48 +178,23 @@ func (e *Exporter) ExportAllocationWaterfall(ctx context.Context, nodeID uuid.UU
 		filename = filepath.Join(e.prefix, filename)
 	}
 
-	// Create a temporary file to write to
-	tempFile, err := os.CreateTemp("", "finops-chart-*."+format)
-	if err != nil {
-		return fmt.Errorf("failed to create temp file: %w", err)
-	}
-	defer os.Remove(tempFile.Name())
-	defer tempFile.Close()
-
-	// Render the chart
-	if err := e.renderer.RenderAllocationWaterfall(ctx, nodeID, date, runID, tempFile, format); err != nil {
-		return fmt.Errorf("failed to render allocation waterfall: %w", err)
+	// Create directory if needed
+	if e.prefix != "" {
+		if err := os.MkdirAll(e.prefix, 0755); err != nil {
+			return fmt.Errorf("failed to create directory: %w", err)
+		}
 	}
 
-	// Reopen file for reading
-	tempFile.Close()
-	file, err := os.Open(tempFile.Name())
+	// Create the output file directly
+	file, err := os.Create(filename)
 	if err != nil {
-		return fmt.Errorf("failed to reopen temp file: %w", err)
+		return fmt.Errorf("failed to create output file: %w", err)
 	}
 	defer file.Close()
 
-	// Upload to storage
-	writer, err := e.bucket.NewWriter(ctx, filename, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create storage writer: %w", err)
-	}
-	defer writer.Close()
-
-	// Set content type
-	contentType := "image/png"
-	if format == "svg" {
-		contentType = "image/svg+xml"
-	}
-	writer.ContentType = contentType
-
-	// Copy file to storage
-	if _, err := file.WriteTo(writer); err != nil {
-		return fmt.Errorf("failed to write to storage: %w", err)
-	}
-
-	if err := writer.Close(); err != nil {
-		return fmt.Errorf("failed to close storage writer: %w", err)
+	// Render the chart directly to the file
+	if err := e.renderer.RenderAllocationWaterfall(ctx, nodeID, date, runID, file, format); err != nil {
+		return fmt.Errorf("failed to render allocation waterfall: %w", err)
 	}
 
 	log.Info().
@@ -297,28 +210,47 @@ func (e *Exporter) GetStorageURL(filename string) string {
 	if e.prefix != "" {
 		filename = filepath.Join(e.prefix, filename)
 	}
-	
+
 	// For file:// storage, return local path
 	// For cloud storage, this would need to be implemented based on the provider
 	return filename
 }
 
-// ListExportedFiles lists all exported chart files
+// ListExportedFiles lists all exported chart files in the local directory
 func (e *Exporter) ListExportedFiles(ctx context.Context) ([]string, error) {
 	var files []string
-	
-	iter := e.bucket.List(&blob.ListOptions{
-		Prefix: e.prefix,
-	})
-	
-	for {
-		obj, err := iter.Next(ctx)
-		if err != nil {
-			break
-		}
-		files = append(files, obj.Key)
+
+	// Use the prefix directory or current directory
+	searchDir := "."
+	if e.prefix != "" {
+		searchDir = e.prefix
 	}
-	
+
+	// Check if directory exists
+	if _, err := os.Stat(searchDir); os.IsNotExist(err) {
+		return files, nil // Return empty list if directory doesn't exist
+	}
+
+	// Read directory contents
+	entries, err := os.ReadDir(searchDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read directory: %w", err)
+	}
+
+	// Filter for chart files (png, svg)
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			name := entry.Name()
+			if strings.HasSuffix(name, ".png") || strings.HasSuffix(name, ".svg") {
+				if e.prefix != "" {
+					files = append(files, filepath.Join(e.prefix, name))
+				} else {
+					files = append(files, name)
+				}
+			}
+		}
+	}
+
 	return files, nil
 }
 

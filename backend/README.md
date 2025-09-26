@@ -166,12 +166,12 @@ Generate graph structure chart:
 
 Generate trend charts:
 ```bash
-./bin/finops export chart trend --node product_p --dimension instance_hours --from 2024-01-01 --to 2024-01-31 --format png
+./bin/finops export chart trend --node product_p --dimension instance_hours --from 2024-01-01 --to 2024-01-31 --format png --out trend.png
 ```
 
 Generate allocation waterfall:
 ```bash
-./bin/finops export chart waterfall --node product_p --date 2024-01-15 --run <run-id> --format png
+./bin/finops export chart waterfall --node product_p --date 2024-01-15 --run <run-id> --format png --out waterfall.png
 ```
 
 Or use the batch script:

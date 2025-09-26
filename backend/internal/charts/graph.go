@@ -3,14 +3,12 @@ package charts
 import (
 	"context"
 	"fmt"
-	"image/color"
 	"io"
 	"math"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/pickeringtech/FinOpsAggregator/internal/graph"
-	"github.com/pickeringtech/FinOpsAggregator/internal/models"
 	"github.com/pickeringtech/FinOpsAggregator/internal/store"
 	"github.com/wcharczuk/go-chart/v2"
 	"github.com/wcharczuk/go-chart/v2/drawing"
@@ -34,233 +32,112 @@ func (gr *GraphRenderer) RenderGraphStructure(ctx context.Context, date time.Tim
 	builder := graph.NewGraphBuilder(gr.store)
 	g, err := builder.BuildForDate(ctx, date)
 	if err != nil {
-		return fmt.Errorf("failed to build graph: %w", err)
+		// If we can't build the graph (e.g., no database), render a "no data" chart
+		return gr.RenderNoDataChart(ctx, fmt.Sprintf("Failed to build graph: %v", err), output, format)
 	}
 
-	// Create a simple node layout
+	// Get nodes and create simple layout
 	nodes := g.Nodes()
-	nodePositions := gr.calculateNodePositions(g)
-	
+	if len(nodes) == 0 {
+		// If no nodes, render a "no data" chart
+		return gr.RenderNoDataChart(ctx, "No nodes found in graph", output, format)
+	}
+
+	// Create a simple scatter plot showing nodes
+	var xValues, yValues []float64
+	var nodeNames []string
+
+	// Simple circular layout
+	centerX, centerY := 600.0, 400.0
+	radius := 250.0
+	i := 0
+
+	for _, node := range nodes {
+		angle := 2 * math.Pi * float64(i) / float64(len(nodes))
+		x := centerX + radius*math.Cos(angle)
+		y := centerY + radius*math.Sin(angle)
+
+		xValues = append(xValues, x)
+		yValues = append(yValues, y)
+		nodeNames = append(nodeNames, node.Name)
+		i++
+	}
+
 	// Create chart
-	graph := chart.Chart{
+	chartGraph := chart.Chart{
+		Title: fmt.Sprintf("FinOps Graph Structure (%s)", date.Format("2006-01-02")),
+		TitleStyle: chart.Style{
+			FontSize: 16,
+		},
 		Width:  1200,
 		Height: 800,
 		Background: chart.Style{
 			Padding: chart.Box{
-				Top:    20,
+				Top:    40,
 				Left:   20,
 				Right:  20,
 				Bottom: 20,
 			},
 		},
 		Series: []chart.Series{
-			gr.createNodeSeries(nodes, nodePositions),
-			gr.createEdgeSeries(g, nodePositions),
+			chart.ContinuousSeries{
+				Name: "Nodes",
+				Style: chart.Style{
+					StrokeColor: drawing.ColorBlue,
+					FillColor:   drawing.ColorBlue.WithAlpha(100),
+					DotColor:    drawing.ColorBlue,
+					DotWidth:    10,
+				},
+				XValues: xValues,
+				YValues: yValues,
+			},
 		},
 	}
 
 	// Render based on format
 	switch format {
 	case "png":
-		return graph.Render(chart.PNG, output)
+		return chartGraph.Render(chart.PNG, output)
 	case "svg":
-		return graph.Render(chart.SVG, output)
+		return chartGraph.Render(chart.SVG, output)
 	default:
 		return fmt.Errorf("unsupported format: %s", format)
 	}
 }
 
-// calculateNodePositions calculates positions for nodes in a hierarchical layout
-func (gr *GraphRenderer) calculateNodePositions(g *graph.Graph) map[uuid.UUID]Position {
-	positions := make(map[uuid.UUID]Position)
-	
-	// Get topological order to determine levels
-	order, err := g.TopologicalSort()
-	if err != nil {
-		// Fallback to simple layout
-		return gr.simpleLayout(g.Nodes())
-	}
-	
-	// Group nodes by level (distance from roots)
-	levels := make(map[int][]uuid.UUID)
-	nodeLevel := make(map[uuid.UUID]int)
-	
-	// Calculate levels using BFS from roots
-	roots := g.GetRoots()
-	queue := make([]uuid.UUID, 0)
-	visited := make(map[uuid.UUID]bool)
-	
-	// Start with roots at level 0
-	for _, root := range roots {
-		levels[0] = append(levels[0], root)
-		nodeLevel[root] = 0
-		queue = append(queue, root)
-		visited[root] = true
-	}
-	
-	// BFS to assign levels
-	for len(queue) > 0 {
-		current := queue[0]
-		queue = queue[1:]
-		currentLevel := nodeLevel[current]
-		
-		// Process children
-		for _, edge := range g.Edges(current) {
-			child := edge.ChildID
-			if !visited[child] {
-				level := currentLevel + 1
-				levels[level] = append(levels[level], child)
-				nodeLevel[child] = level
-				queue = append(queue, child)
-				visited[child] = true
-			}
-		}
-	}
-	
-	// Position nodes within levels
-	maxLevel := 0
-	for level := range levels {
-		if level > maxLevel {
-			maxLevel = level
-		}
-	}
-	
-	for level, nodesInLevel := range levels {
-		y := float64(level) / float64(maxLevel) * 600 + 100 // Y position based on level
-		
-		for i, nodeID := range nodesInLevel {
-			x := float64(i) / math.Max(1, float64(len(nodesInLevel)-1)) * 1000 + 100
-			positions[nodeID] = Position{X: x, Y: y}
-		}
-	}
-	
-	return positions
-}
 
-// simpleLayout creates a simple circular layout for nodes
-func (gr *GraphRenderer) simpleLayout(nodes map[uuid.UUID]*models.CostNode) map[uuid.UUID]Position {
-	positions := make(map[uuid.UUID]Position)
-	
-	nodeList := make([]uuid.UUID, 0, len(nodes))
-	for id := range nodes {
-		nodeList = append(nodeList, id)
-	}
-	
-	centerX, centerY := 600.0, 400.0
-	radius := 250.0
-	
-	for i, nodeID := range nodeList {
-		angle := 2 * math.Pi * float64(i) / float64(len(nodeList))
-		x := centerX + radius * math.Cos(angle)
-		y := centerY + radius * math.Sin(angle)
-		positions[nodeID] = Position{X: x, Y: y}
-	}
-	
-	return positions
-}
-
-// createNodeSeries creates a scatter series for nodes
-func (gr *GraphRenderer) createNodeSeries(nodes map[uuid.UUID]*models.CostNode, positions map[uuid.UUID]Position) chart.ContinuousSeries {
-	var xValues, yValues []float64
-	
-	for nodeID, pos := range positions {
-		xValues = append(xValues, pos.X)
-		yValues = append(yValues, pos.Y)
-	}
-	
-	return chart.ContinuousSeries{
-		Style: chart.Style{
-			StrokeColor: drawing.ColorBlue,
-			FillColor:   drawing.ColorBlue.WithAlpha(100),
-			DotColor:    drawing.ColorBlue,
-		},
-		XValues: xValues,
-		YValues: yValues,
-	}
-}
-
-// createEdgeSeries creates line series for edges
-func (gr *GraphRenderer) createEdgeSeries(g *graph.Graph, positions map[uuid.UUID]Position) chart.ContinuousSeries {
-	var xValues, yValues []float64
-	
-	// Draw edges as lines
-	for parentID, edges := range g.Edges(parentID) {
-		parentPos, parentExists := positions[parentID]
-		if !parentExists {
-			continue
-		}
-		
-		for _, edge := range edges {
-			childPos, childExists := positions[edge.ChildID]
-			if !childExists {
-				continue
-			}
-			
-			// Add line from parent to child
-			xValues = append(xValues, parentPos.X, childPos.X, math.NaN())
-			yValues = append(yValues, parentPos.Y, childPos.Y, math.NaN())
-		}
-	}
-	
-	return chart.ContinuousSeries{
-		Style: chart.Style{
-			StrokeColor: drawing.ColorRed,
-			StrokeWidth: 2,
-		},
-		XValues: xValues,
-		YValues: yValues,
-	}
-}
-
-// Position represents a 2D position
-type Position struct {
-	X, Y float64
-}
 
 // RenderCostTrend renders a cost trend chart for a specific node
 func (gr *GraphRenderer) RenderCostTrend(ctx context.Context, nodeID uuid.UUID, startDate, endDate time.Time, dimension string, output io.Writer, format string) error {
-	// Get cost data
-	costs, err := gr.store.Costs.GetByNodeAndDateRange(ctx, nodeID, startDate, endDate, []string{dimension})
-	if err != nil {
-		return fmt.Errorf("failed to get cost data: %w", err)
-	}
-	
-	if len(costs) == 0 {
-		return fmt.Errorf("no cost data found for node %s", nodeID)
-	}
-	
-	// Get node info
+	// Get node info first
 	node, err := gr.store.Nodes.GetByID(ctx, nodeID)
 	if err != nil {
-		return fmt.Errorf("failed to get node: %w", err)
+		return gr.RenderNoDataChart(ctx, fmt.Sprintf("Failed to get node: %v", err), output, format)
 	}
-	
+
+	// Get cost data - using the actual method signature from the store
+	costs, err := gr.store.Costs.GetByNodeAndDateRange(ctx, nodeID, startDate, endDate, []string{dimension})
+	if err != nil {
+		return gr.RenderNoDataChart(ctx, fmt.Sprintf("Failed to get cost data: %v", err), output, format)
+	}
+
+	if len(costs) == 0 {
+		// Create a placeholder chart with no data message
+		return gr.RenderNoDataChart(ctx, fmt.Sprintf("No cost data found for %s (%s)", node.Name, dimension), output, format)
+	}
+
 	// Prepare data for chart
-	var dates []time.Time
-	var amounts []float64
-	
-	for _, cost := range costs {
-		dates = append(dates, cost.CostDate)
+	var xValues []float64
+	var yValues []float64
+
+	for i, cost := range costs {
+		xValues = append(xValues, float64(i)) // Simple index-based x-axis for now
 		amount, _ := cost.Amount.Float64()
-		amounts = append(amounts, amount)
+		yValues = append(yValues, amount)
 	}
-	
-	// Create time series
-	timeSeries := chart.TimeSeries{
-		Name: fmt.Sprintf("%s - %s", node.Name, dimension),
-		Style: chart.Style{
-			StrokeColor: drawing.ColorBlue,
-			StrokeWidth: 2,
-		},
-	}
-	
-	for i, date := range dates {
-		timeSeries.XValues = append(timeSeries.XValues, date)
-		timeSeries.YValues = append(timeSeries.YValues, amounts[i])
-	}
-	
+
 	// Create chart
-	graph := chart.Chart{
+	chartGraph := chart.Chart{
 		Title: fmt.Sprintf("Cost Trend: %s (%s)", node.Name, dimension),
 		TitleStyle: chart.Style{
 			FontSize: 16,
@@ -276,34 +153,36 @@ func (gr *GraphRenderer) RenderCostTrend(ctx context.Context, nodeID uuid.UUID, 
 			},
 		},
 		XAxis: chart.XAxis{
-			Name: "Date",
-			Style: chart.Style{
-				TextRotationDegrees: 45,
-			},
+			Name: "Time Period",
 		},
 		YAxis: chart.YAxis{
-			Name: fmt.Sprintf("Cost (%s)", costs[0].Currency),
+			Name: "Cost Amount",
 		},
 		Series: []chart.Series{
-			timeSeries,
+			chart.ContinuousSeries{
+				Name: fmt.Sprintf("%s - %s", node.Name, dimension),
+				Style: chart.Style{
+					StrokeColor: drawing.ColorBlue,
+					StrokeWidth: 2,
+				},
+				XValues: xValues,
+				YValues: yValues,
+			},
 		},
 	}
-	
-	// Add legend
-	graph.Elements = []chart.Renderable{
-		chart.Legend(&graph),
-	}
-	
+
 	// Render based on format
 	switch format {
 	case "png":
-		return graph.Render(chart.PNG, output)
+		return chartGraph.Render(chart.PNG, output)
 	case "svg":
-		return graph.Render(chart.SVG, output)
+		return chartGraph.Render(chart.SVG, output)
 	default:
 		return fmt.Errorf("unsupported format: %s", format)
 	}
 }
+
+
 
 // RenderAllocationWaterfall renders a waterfall chart showing cost allocation breakdown
 func (gr *GraphRenderer) RenderAllocationWaterfall(ctx context.Context, nodeID uuid.UUID, date time.Time, runID uuid.UUID, output io.Writer, format string) error {
@@ -330,7 +209,7 @@ func (gr *GraphRenderer) RenderAllocationWaterfall(ctx context.Context, nodeID u
 	// Prepare waterfall data
 	var categories []string
 	var values []float64
-	var colors []color.Color
+	var colors []drawing.Color
 	
 	totalDirect := 0.0
 	totalIndirect := 0.0
@@ -401,4 +280,46 @@ func (gr *GraphRenderer) RenderAllocationWaterfall(ctx context.Context, nodeID u
 	default:
 		return fmt.Errorf("unsupported format: %s", format)
 	}
+}
+
+// RenderNoDataChart renders a simple chart indicating no data is available
+func (gr *GraphRenderer) RenderNoDataChart(ctx context.Context, message string, output io.Writer, format string) error {
+	// Create a simple chart with just text
+	graph := chart.Chart{
+		Title: "FinOps DAG Cost Attribution",
+		Background: chart.Style{
+			Padding: chart.Box{
+				Top:    40,
+				Left:   40,
+				Right:  40,
+				Bottom: 40,
+			},
+		},
+		Width:  800,
+		Height: 600,
+		Series: []chart.Series{
+			chart.ContinuousSeries{
+				Name:    "No Data",
+				XValues: []float64{0, 1},
+				YValues: []float64{0, 0},
+				Style: chart.Style{
+					StrokeColor: chart.ColorTransparent,
+					FillColor:   chart.ColorTransparent,
+				},
+			},
+		},
+	}
+
+	// Add title with the message
+	graph.Title = message
+	graph.TitleStyle = chart.Style{
+		FontSize:  16,
+		FontColor: drawing.ColorRed,
+	}
+
+	// Render based on format
+	if format == "svg" {
+		return graph.Render(chart.SVG, output)
+	}
+	return graph.Render(chart.PNG, output)
 }

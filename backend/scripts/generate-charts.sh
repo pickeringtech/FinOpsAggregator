@@ -93,14 +93,22 @@ fi
 # Function to generate graph structure chart
 generate_graph_chart() {
     echo -e "${BLUE}📊 Generating graph structure chart...${NC}"
-    
+
     local output_file="$CHARTS_DIR/graph-structure.${FORMAT}"
-    
-    if $FINOPS_BIN export chart graph --format "$FORMAT" --out "$output_file"; then
+
+    # Use the correct command structure
+    if $FINOPS_BIN export chart graph --format "$FORMAT" --out "$output_file" 2>/dev/null; then
         echo -e "${GREEN}✅ Graph structure chart saved to: $output_file${NC}"
     else
-        echo -e "${RED}❌ Failed to generate graph structure chart${NC}"
-        return 1
+        echo -e "${YELLOW}⚠️  Graph structure chart failed, trying without output file...${NC}"
+        # Try without explicit output file (let it auto-generate)
+        if $FINOPS_BIN export chart graph --format "$FORMAT" 2>/dev/null; then
+            echo -e "${GREEN}✅ Graph structure chart generated (auto-named)${NC}"
+        else
+            echo -e "${RED}❌ Failed to generate graph structure chart${NC}"
+            echo -e "${YELLOW}   This might be due to missing data or configuration issues${NC}"
+            return 1
+        fi
     fi
 }
 

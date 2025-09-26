@@ -84,6 +84,36 @@ charts-all: build
 	chmod +x scripts/generate-charts.sh
 	./scripts/generate-charts.sh all
 
+# Testing commands
+test-charts: build
+	chmod +x scripts/test-charts.sh
+	./scripts/test-charts.sh
+
+test-unit:
+	go test -v ./internal/...
+
+test-integration: build
+	./scripts/test-charts.sh basic
+
+debug-charts: build
+	chmod +x scripts/debug-charts.sh
+	./scripts/debug-charts.sh
+
+verify-cli: build
+	chmod +x scripts/verify-cli.sh
+	./scripts/verify-cli.sh
+
+test-chart-step-by-step:
+	chmod +x scripts/test-chart-step-by-step.sh
+	./scripts/test-chart-step-by-step.sh
+
+test-chart-direct:
+	go run test-chart-direct.go
+
+check-syntax:
+	chmod +x scripts/check-syntax.sh
+	./scripts/check-syntax.sh
+
 # Docker commands
 docker-build:
 	docker build -t $(DOCKER_IMAGE) .
@@ -129,6 +159,14 @@ help:
 	@echo "  charts-graph   - Generate graph structure chart"
 	@echo "  charts-trends  - Generate cost trend charts"
 	@echo "  charts-all     - Generate all charts"
+	@echo "  test-unit      - Run unit tests"
+	@echo "  test-charts    - Test chart generation"
+	@echo "  test-integration - Run integration tests"
+	@echo "  debug-charts   - Debug chart generation issues"
+	@echo "  verify-cli     - Verify CLI structure and commands"
+	@echo "  test-chart-step-by-step - Step-by-step chart generation test"
+	@echo "  test-chart-direct - Direct chart generation test (no CLI)"
+	@echo "  check-syntax   - Check for common Go compilation issues"
 	@echo "  docker-build   - Build Docker image"
 	@echo "  docker-run     - Run Docker container"
 	@echo "  fmt            - Format Go code"

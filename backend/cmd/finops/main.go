@@ -354,38 +354,36 @@ func init() {
 		},
 	})
 
-	// Chart flags
-	chartCmd.PersistentFlags().String("format", "png", "Output format (png, svg)")
-	chartCmd.PersistentFlags().String("out", "", "Output file path (optional, auto-generated if not provided)")
+	// Add flags directly to each command
 
-	// Get specific commands and add their flags
-	commands := chartCmd.Commands()
+	// Graph command flags
+	graphCmd := chartCmd.Commands()[0]
+	graphCmd.Flags().String("format", "png", "Output format (png, svg)")
+	graphCmd.Flags().String("out", "", "Output file path (optional, auto-generated if not provided)")
+	graphCmd.Flags().String("date", "", "Date for graph structure (YYYY-MM-DD, defaults to today)")
 
-	// Graph command flags (index 0)
-	if len(commands) > 0 {
-		commands[0].Flags().String("date", "", "Date for graph structure (YYYY-MM-DD, defaults to today)")
-	}
+	// Trend command flags
+	trendCmd := chartCmd.Commands()[1]
+	trendCmd.Flags().String("format", "png", "Output format (png, svg)")
+	trendCmd.Flags().String("out", "", "Output file path (optional, auto-generated if not provided)")
+	trendCmd.Flags().String("node", "", "Node ID or name")
+	trendCmd.Flags().String("dimension", "instance_hours", "Cost dimension")
+	trendCmd.Flags().String("from", "", "Start date (YYYY-MM-DD)")
+	trendCmd.Flags().String("to", "", "End date (YYYY-MM-DD)")
+	trendCmd.MarkFlagRequired("node")
+	trendCmd.MarkFlagRequired("from")
+	trendCmd.MarkFlagRequired("to")
 
-	// Trend command flags (index 1)
-	if len(commands) > 1 {
-		commands[1].Flags().String("node", "", "Node ID or name")
-		commands[1].Flags().String("dimension", "instance_hours", "Cost dimension")
-		commands[1].Flags().String("from", "", "Start date (YYYY-MM-DD)")
-		commands[1].Flags().String("to", "", "End date (YYYY-MM-DD)")
-		commands[1].MarkFlagRequired("node")
-		commands[1].MarkFlagRequired("from")
-		commands[1].MarkFlagRequired("to")
-	}
-
-	// Waterfall command flags (index 2)
-	if len(commands) > 2 {
-		commands[2].Flags().String("node", "", "Node ID or name")
-		commands[2].Flags().String("date", "", "Date for allocation (YYYY-MM-DD)")
-		commands[2].Flags().String("run", "", "Allocation run ID")
-		commands[2].MarkFlagRequired("node")
-		commands[2].MarkFlagRequired("date")
-		commands[2].MarkFlagRequired("run")
-	}
+	// Waterfall command flags
+	waterfallCmd := chartCmd.Commands()[2]
+	waterfallCmd.Flags().String("format", "png", "Output format (png, svg)")
+	waterfallCmd.Flags().String("out", "", "Output file path (optional, auto-generated if not provided)")
+	waterfallCmd.Flags().String("node", "", "Node ID or name")
+	waterfallCmd.Flags().String("date", "", "Date for allocation (YYYY-MM-DD)")
+	waterfallCmd.Flags().String("run", "", "Allocation run ID")
+	waterfallCmd.MarkFlagRequired("node")
+	waterfallCmd.MarkFlagRequired("date")
+	waterfallCmd.MarkFlagRequired("run")
 
 	exportCmd.AddCommand(chartCmd)
 
