@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14
+    container_name: finops-postgres
+    environment:
+      POSTGRES_USER: finops
+      POSTGRES_PASSWORD: finops
+      POSTGRES_DB: finops
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finops"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  finops:
+    build: .
+    container_name: finops-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      FINOPS_POSTGRES_DSN: postgresql://finops:finops@postgres:5432/finops?sslmode=disable
+      FINOPS_LOGGING_LEVEL: info
+    volumes:
+      - ./config.yaml:/config.yaml:ro
+      - ./charts:/charts
+    command: ["--config", "/config.yaml"]
+
+  migrate:
+    image: migrate/migrate
+    container_name: finops-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    command: [
+      "-path", "/migrations",
+      "-database", "postgresql://finops:finops@postgres:5432/finops?sslmode=disable",
+      "up"
+    ]
+
+volumes:
+  postgres_data:
