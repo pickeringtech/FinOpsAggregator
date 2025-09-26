@@ -157,11 +157,28 @@ Import usage data from CSV:
 ./bin/finops import usage ./data/usage.csv
 ```
 
-#### Export Charts (not yet implemented)
+#### Export Charts
+
+Generate graph structure chart:
+```bash
+./bin/finops export chart graph --format png --out graph-structure.png
+```
 
 Generate trend charts:
 ```bash
-./bin/finops export chart trend --node my-product --out ./charts/my-product-trend.png
+./bin/finops export chart trend --node product_p --dimension instance_hours --from 2024-01-01 --to 2024-01-31 --format png
+```
+
+Generate allocation waterfall:
+```bash
+./bin/finops export chart waterfall --node product_p --date 2024-01-15 --run <run-id> --format png
+```
+
+Or use the batch script:
+```bash
+make demo-charts     # Generate demo charts
+make charts-all      # Generate all chart types
+./scripts/generate-charts.sh demo  # Alternative script approach
 ```
 
 #### Launch TUI (not yet implemented)

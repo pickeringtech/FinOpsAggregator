@@ -6,7 +6,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pickeringtech/FinOpsAggregator/internal/allocate"
+	"github.com/pickeringtech/FinOpsAggregator/internal/charts"
 	"github.com/pickeringtech/FinOpsAggregator/internal/config"
 	"github.com/pickeringtech/FinOpsAggregator/internal/demo"
 	"github.com/pickeringtech/FinOpsAggregator/internal/graph"
@@ -216,13 +218,88 @@ func init() {
 	}
 	
 	chartCmd.AddCommand(&cobra.Command{
+		Use:   "graph",
+		Short: "Generate graph structure chart",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			out, _ := cmd.Flags().GetString("out")
+			format, _ := cmd.Flags().GetString("format")
+			date, _ := cmd.Flags().GetString("date")
+
+			// Parse date
+			var chartDate time.Time
+			var err error
+			if date != "" {
+				chartDate, err = time.Parse("2006-01-02", date)
+				if err != nil {
+					return fmt.Errorf("invalid date format: %w", err)
+				}
+			} else {
+				chartDate = time.Now()
+			}
+
+			// Create exporter
+			exporter, err := charts.NewExporter(st, cfg.Storage.URL, cfg.Storage.Prefix)
+			if err != nil {
+				return fmt.Errorf("failed to create chart exporter: %w", err)
+			}
+			defer exporter.Close()
+
+			// Export graph structure
+			if err := exporter.ExportGraphStructure(context.Background(), chartDate, out, format); err != nil {
+				return fmt.Errorf("failed to export graph structure: %w", err)
+			}
+
+			fmt.Printf("Graph structure chart exported to: %s\n", out)
+			return nil
+		},
+	})
+
+	chartCmd.AddCommand(&cobra.Command{
 		Use:   "trend",
 		Short: "Generate trend chart",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			node, _ := cmd.Flags().GetString("node")
+			nodeStr, _ := cmd.Flags().GetString("node")
 			out, _ := cmd.Flags().GetString("out")
-			fmt.Printf("Generating trend chart for %s to %s\n", node, out)
-			// TODO: Implement trend chart
+			format, _ := cmd.Flags().GetString("format")
+			dimension, _ := cmd.Flags().GetString("dimension")
+			from, _ := cmd.Flags().GetString("from")
+			to, _ := cmd.Flags().GetString("to")
+
+			// Parse node ID
+			nodeID, err := uuid.Parse(nodeStr)
+			if err != nil {
+				// Try to find node by name
+				node, err := st.Nodes.GetByName(context.Background(), nodeStr)
+				if err != nil {
+					return fmt.Errorf("invalid node ID or name: %s", nodeStr)
+				}
+				nodeID = node.ID
+			}
+
+			// Parse dates
+			startDate, err := time.Parse("2006-01-02", from)
+			if err != nil {
+				return fmt.Errorf("invalid start date format: %w", err)
+			}
+
+			endDate, err := time.Parse("2006-01-02", to)
+			if err != nil {
+				return fmt.Errorf("invalid end date format: %w", err)
+			}
+
+			// Create exporter
+			exporter, err := charts.NewExporter(st, cfg.Storage.URL, cfg.Storage.Prefix)
+			if err != nil {
+				return fmt.Errorf("failed to create chart exporter: %w", err)
+			}
+			defer exporter.Close()
+
+			// Export trend chart
+			if err := exporter.ExportCostTrend(context.Background(), nodeID, startDate, endDate, dimension, out, format); err != nil {
+				return fmt.Errorf("failed to export cost trend: %w", err)
+			}
+
+			fmt.Printf("Cost trend chart exported to: %s\n", out)
 			return nil
 		},
 	})
@@ -231,20 +308,83 @@ func init() {
 		Use:   "waterfall",
 		Short: "Generate waterfall chart",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			node, _ := cmd.Flags().GetString("node")
+			nodeStr, _ := cmd.Flags().GetString("node")
 			out, _ := cmd.Flags().GetString("out")
-			fmt.Printf("Generating waterfall chart for %s to %s\n", node, out)
-			// TODO: Implement waterfall chart
+			format, _ := cmd.Flags().GetString("format")
+			date, _ := cmd.Flags().GetString("date")
+			runStr, _ := cmd.Flags().GetString("run")
+
+			// Parse node ID
+			nodeID, err := uuid.Parse(nodeStr)
+			if err != nil {
+				// Try to find node by name
+				node, err := st.Nodes.GetByName(context.Background(), nodeStr)
+				if err != nil {
+					return fmt.Errorf("invalid node ID or name: %s", nodeStr)
+				}
+				nodeID = node.ID
+			}
+
+			// Parse run ID
+			runID, err := uuid.Parse(runStr)
+			if err != nil {
+				return fmt.Errorf("invalid run ID: %s", runStr)
+			}
+
+			// Parse date
+			chartDate, err := time.Parse("2006-01-02", date)
+			if err != nil {
+				return fmt.Errorf("invalid date format: %w", err)
+			}
+
+			// Create exporter
+			exporter, err := charts.NewExporter(st, cfg.Storage.URL, cfg.Storage.Prefix)
+			if err != nil {
+				return fmt.Errorf("failed to create chart exporter: %w", err)
+			}
+			defer exporter.Close()
+
+			// Export waterfall chart
+			if err := exporter.ExportAllocationWaterfall(context.Background(), nodeID, chartDate, runID, out, format); err != nil {
+				return fmt.Errorf("failed to export allocation waterfall: %w", err)
+			}
+
+			fmt.Printf("Allocation waterfall chart exported to: %s\n", out)
 			return nil
 		},
 	})
 
 	// Chart flags
-	for _, subCmd := range chartCmd.Commands() {
-		subCmd.Flags().String("node", "", "Node ID to chart")
-		subCmd.Flags().String("out", "", "Output file path")
-		subCmd.MarkFlagRequired("node")
-		subCmd.MarkFlagRequired("out")
+	chartCmd.PersistentFlags().String("format", "png", "Output format (png, svg)")
+	chartCmd.PersistentFlags().String("out", "", "Output file path (optional, auto-generated if not provided)")
+
+	// Get specific commands and add their flags
+	commands := chartCmd.Commands()
+
+	// Graph command flags (index 0)
+	if len(commands) > 0 {
+		commands[0].Flags().String("date", "", "Date for graph structure (YYYY-MM-DD, defaults to today)")
+	}
+
+	// Trend command flags (index 1)
+	if len(commands) > 1 {
+		commands[1].Flags().String("node", "", "Node ID or name")
+		commands[1].Flags().String("dimension", "instance_hours", "Cost dimension")
+		commands[1].Flags().String("from", "", "Start date (YYYY-MM-DD)")
+		commands[1].Flags().String("to", "", "End date (YYYY-MM-DD)")
+		commands[1].MarkFlagRequired("node")
+		commands[1].MarkFlagRequired("from")
+		commands[1].MarkFlagRequired("to")
+	}
+
+	// Waterfall command flags (index 2)
+	if len(commands) > 2 {
+		commands[2].Flags().String("node", "", "Node ID or name")
+		commands[2].Flags().String("date", "", "Date for allocation (YYYY-MM-DD)")
+		commands[2].Flags().String("run", "", "Allocation run ID")
+		commands[2].MarkFlagRequired("node")
+		commands[2].MarkFlagRequired("date")
+		commands[2].MarkFlagRequired("run")
 	}
 
 	exportCmd.AddCommand(chartCmd)

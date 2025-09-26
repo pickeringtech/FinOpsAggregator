@@ -13,9 +13,16 @@ compute:
 charts:
   out_dir: ./charts
 
+# Storage configuration for chart exports
 storage:
+  # Storage backend URL (file://, s3://, gs://)
+  # Examples:
+  #   file://./charts                    # Local filesystem
+  #   s3://my-bucket?region=us-east-1    # AWS S3
+  #   gs://my-bucket                     # Google Cloud Storage
   url: file://./charts
-  prefix: ""
+  # Optional prefix for all files (like a folder path)
+  prefix: "finops-charts"
 
 jobs:
   concurrency: 4

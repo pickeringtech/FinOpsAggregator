@@ -65,7 +65,24 @@ demo-validate: build
 demo-allocate: build
 	./bin/$(BINARY_NAME) allocate --from 2024-01-01 --to 2024-01-31
 
-demo-full: demo-seed demo-validate demo-allocate
+demo-charts: build
+	chmod +x scripts/generate-charts.sh
+	./scripts/generate-charts.sh demo
+
+demo-full: demo-seed demo-validate demo-allocate demo-charts
+
+# Chart generation commands
+charts-graph: build
+	chmod +x scripts/generate-charts.sh
+	./scripts/generate-charts.sh graph
+
+charts-trends: build
+	chmod +x scripts/generate-charts.sh
+	./scripts/generate-charts.sh trends
+
+charts-all: build
+	chmod +x scripts/generate-charts.sh
+	./scripts/generate-charts.sh all
 
 # Docker commands
 docker-build:
@@ -107,7 +124,11 @@ help:
 	@echo "  demo-seed      - Load demo seed data"
 	@echo "  demo-validate  - Validate graph structure"
 	@echo "  demo-allocate  - Run demo allocation"
-	@echo "  demo-full      - Run full demo (seed + validate + allocate)"
+	@echo "  demo-charts    - Generate demo charts"
+	@echo "  demo-full      - Run full demo (seed + validate + allocate + charts)"
+	@echo "  charts-graph   - Generate graph structure chart"
+	@echo "  charts-trends  - Generate cost trend charts"
+	@echo "  charts-all     - Generate all charts"
 	@echo "  docker-build   - Build Docker image"
 	@echo "  docker-run     - Run Docker container"
 	@echo "  fmt            - Format Go code"
