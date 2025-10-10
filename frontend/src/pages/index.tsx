@@ -19,6 +19,27 @@ interface DashboardSummary {
     total_cost: string
     currency: string
   }>
+  platform_nodes: Array<{
+    id: string
+    name: string
+    type: string
+    total_cost: string
+    currency: string
+  }>
+  resource_nodes: Array<{
+    id: string
+    name: string
+    type: string
+    total_cost: string
+    currency: string
+  }>
+  shared_nodes: Array<{
+    id: string
+    name: string
+    type: string
+    total_cost: string
+    currency: string
+  }>
   cost_by_type: Array<{
     type: string
     total_cost: string
@@ -210,6 +231,87 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Platform and Shared Services Section */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Platform Services */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Platform Services</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {data?.platform_nodes && data.platform_nodes.length > 0 ? (
+                data.platform_nodes.map((node) => (
+                  <div key={node.id} className="flex items-center justify-between border-b pb-2">
+                    <div>
+                      <div className="font-medium">{node.name}</div>
+                      <div className="text-sm text-muted-foreground">Platform</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">{formatCurrency(parseFloat(node.total_cost || "0"), node.currency)}</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-sm text-muted-foreground">No platform services found</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Shared Services */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Shared Services</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {data?.shared_nodes && data.shared_nodes.length > 0 ? (
+                data.shared_nodes.map((node) => (
+                  <div key={node.id} className="flex items-center justify-between border-b pb-2">
+                    <div>
+                      <div className="font-medium">{node.name}</div>
+                      <div className="text-sm text-muted-foreground">Shared</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">{formatCurrency(parseFloat(node.total_cost || "0"), node.currency)}</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-sm text-muted-foreground">No shared services found</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Resource Costs */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Resource Costs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {data?.resource_nodes && data.resource_nodes.length > 0 ? (
+              data.resource_nodes.map((node) => (
+                <div key={node.id} className="flex items-center justify-between border-b pb-2">
+                  <div>
+                    <div className="font-medium">{node.name}</div>
+                    <div className="text-sm text-muted-foreground">Resource</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-semibold">{formatCurrency(parseFloat(node.total_cost || "0"), node.currency)}</div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-sm text-muted-foreground">No resources found</div>
+            )}
           </div>
         </CardContent>
       </Card>

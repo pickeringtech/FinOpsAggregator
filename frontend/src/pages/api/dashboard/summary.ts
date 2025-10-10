@@ -10,6 +10,27 @@ interface DashboardSummary {
     total_cost: string
     currency: string
   }>
+  platform_nodes: Array<{
+    id: string
+    name: string
+    type: string
+    total_cost: string
+    currency: string
+  }>
+  resource_nodes: Array<{
+    id: string
+    name: string
+    type: string
+    total_cost: string
+    currency: string
+  }>
+  shared_nodes: Array<{
+    id: string
+    name: string
+    type: string
+    total_cost: string
+    currency: string
+  }>
   cost_by_type: Array<{
     type: string
     total_cost: string
@@ -41,27 +62,42 @@ export default async function handler(
 
   try {
     // Compose multiple backend API calls in parallel
-    const [productsResponse, costsByTypeResponse] = await Promise.all([
+    const [productsResponse, platformResponse, resourceResponse, sharedResponse, costsByTypeResponse] = await Promise.all([
       fetch(
         `${BACKEND_URL}/api/v1/products?start_date=${start_date}&end_date=${end_date}&currency=${currency}&limit=5`
+      ),
+      fetch(
+        `${BACKEND_URL}/api/v1/nodes?start_date=${start_date}&end_date=${end_date}&currency=${currency}&type=platform`
+      ),
+      fetch(
+        `${BACKEND_URL}/api/v1/nodes?start_date=${start_date}&end_date=${end_date}&currency=${currency}&type=resource`
+      ),
+      fetch(
+        `${BACKEND_URL}/api/v1/nodes?start_date=${start_date}&end_date=${end_date}&currency=${currency}&type=shared`
       ),
       fetch(
         `${BACKEND_URL}/api/v1/costs/by-type?start_date=${start_date}&end_date=${end_date}&currency=${currency}`
       ),
     ])
 
-    if (!productsResponse.ok || !costsByTypeResponse.ok) {
+    if (!productsResponse.ok || !platformResponse.ok || !resourceResponse.ok || !sharedResponse.ok || !costsByTypeResponse.ok) {
       throw new Error('Failed to fetch data from backend')
     }
 
-    const [productsData, costsByTypeData] = await Promise.all([
+    const [productsData, platformData, resourceData, sharedData, costsByTypeData] = await Promise.all([
       productsResponse.json(),
+      platformResponse.json(),
+      resourceResponse.json(),
+      sharedResponse.json(),
       costsByTypeResponse.json(),
     ])
 
     // Transform and compose the data for dashboard needs
     const summary: DashboardSummary = {
       top_products: productsData.nodes,
+      platform_nodes: platformData.nodes || [],
+      resource_nodes: resourceData.nodes || [],
+      shared_nodes: sharedData.nodes || [],
       cost_by_type: costsByTypeData.aggregations,
       summary: {
         total_cost: costsByTypeData.total_cost,
