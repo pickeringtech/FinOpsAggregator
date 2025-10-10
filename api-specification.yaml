@@ -1,0 +1,638 @@
+openapi: 3.0.3
+info:
+  title: FinOps Cost Attribution API
+  description: |
+    A comprehensive API for financial operations cost attribution and analysis.
+    
+    This API provides endpoints for retrieving cost data at different levels:
+    - Product hierarchy with weighted cost attribution
+    - Individual cost nodes with detailed breakdowns
+    - Platform and shared services cost analysis
+    
+    The API supports both direct costs (costs directly attributed to nodes) and 
+    holistic costs (direct costs plus weighted shared service allocations).
+  version: 1.0.0
+  contact:
+    name: FinOps Team
+    email: finops@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.finops.example.com
+    description: Production server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the API service
+      operationId: healthCheck
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/v1/products/hierarchy:
+    get:
+      summary: Get product hierarchy
+      description: |
+        Retrieves the complete product hierarchy with cost attribution data.
+        Returns a tree structure showing products and their child nodes with
+        direct costs, holistic costs, and shared service costs.
+      operationId: getProductHierarchy
+      tags:
+        - Products
+      parameters:
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+        - $ref: '#/components/parameters/Dimensions'
+        - $ref: '#/components/parameters/IncludeTrend'
+        - $ref: '#/components/parameters/Currency'
+      responses:
+        '200':
+          description: Product hierarchy retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductHierarchyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/nodes/{nodeId}:
+    get:
+      summary: Get individual node details
+      description: |
+        Retrieves detailed cost information for a specific node including
+        direct costs, allocated costs, total costs, dependencies, and allocations.
+      operationId: getIndividualNode
+      tags:
+        - Nodes
+      parameters:
+        - name: nodeId
+          in: path
+          required: true
+          description: Unique identifier of the node
+          schema:
+            type: string
+            format: uuid
+            example: "35522c6e-f85a-4cf1-9efe-6543fe7d4dda"
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+        - $ref: '#/components/parameters/Dimensions'
+        - $ref: '#/components/parameters/IncludeTrend'
+        - $ref: '#/components/parameters/Currency'
+      responses:
+        '200':
+          description: Node details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndividualNodeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/platform/services:
+    get:
+      summary: Get platform and shared services
+      description: |
+        Retrieves cost data for platform services and shared services,
+        including weighted allocations and cost attribution details.
+      operationId: getPlatformServices
+      tags:
+        - Platform
+      parameters:
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+        - $ref: '#/components/parameters/Dimensions'
+        - $ref: '#/components/parameters/IncludeTrend'
+        - $ref: '#/components/parameters/Currency'
+      responses:
+        '200':
+          description: Platform services retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformServicesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  parameters:
+    StartDate:
+      name: start_date
+      in: query
+      required: true
+      description: Start date for the cost analysis period (ISO 8601 format)
+      schema:
+        type: string
+        format: date
+        example: "2025-04-10"
+    
+    EndDate:
+      name: end_date
+      in: query
+      required: true
+      description: End date for the cost analysis period (ISO 8601 format)
+      schema:
+        type: string
+        format: date
+        example: "2025-04-20"
+    
+    Dimensions:
+      name: dimensions
+      in: query
+      required: false
+      description: Specific cost dimensions to include in the response
+      schema:
+        type: array
+        items:
+          type: string
+        example: ["cpu_hours", "memory_gb_hours", "storage_gb_month"]
+    
+    IncludeTrend:
+      name: include_trend
+      in: query
+      required: false
+      description: Whether to include trend data in the response
+      schema:
+        type: boolean
+        default: false
+    
+    Currency:
+      name: currency
+      in: query
+      required: false
+      description: Currency code for cost amounts
+      schema:
+        type: string
+        default: "USD"
+        example: "USD"
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Invalid date format"
+            code: "invalid_request"
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Node not found"
+            code: "not_found"
+    
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Internal server error"
+            code: "internal_error"
+
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - version
+        - database
+      properties:
+        status:
+          type: string
+          example: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-01-10T10:30:00Z"
+        version:
+          type: string
+          example: "1.0.0"
+        database:
+          type: string
+          example: "connected"
+
+    ProductHierarchyResponse:
+      type: object
+      required:
+        - products
+        - summary
+      properties:
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductNode'
+        summary:
+          $ref: '#/components/schemas/CostSummary'
+
+    ProductNode:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - direct_costs
+        - holistic_costs
+        - shared_service_costs
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "1bf63c0a-7159-41df-b42d-ef43c69e8e86"
+        name:
+          type: string
+          example: "card_issuing"
+        type:
+          type: string
+          enum: [product, resource, shared, platform]
+          example: "product"
+        direct_costs:
+          $ref: '#/components/schemas/CostBreakdown'
+        holistic_costs:
+          $ref: '#/components/schemas/CostBreakdown'
+        shared_service_costs:
+          $ref: '#/components/schemas/CostBreakdown'
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductNode'
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            description: "Payment Processing Engine"
+
+    CostBreakdown:
+      type: object
+      required:
+        - total
+        - currency
+        - dimensions
+      properties:
+        total:
+          type: string
+          description: Total cost amount as decimal string
+          example: "95.043291573"
+        currency:
+          type: string
+          example: "USD"
+        dimensions:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            cpu_hours_s0_r0: "1.247784945"
+            memory_gb_hours_s0_r0: "0.311946234"
+            storage_gb_month: "1.596661435"
+
+    CostSummary:
+      type: object
+      required:
+        - total_cost
+        - currency
+        - period
+        - start_date
+        - end_date
+        - node_count
+        - product_count
+        - platform_node_count
+      properties:
+        total_cost:
+          type: string
+          description: Total cost amount as decimal string
+          example: "24567.206023248"
+        currency:
+          type: string
+          example: "USD"
+        period:
+          type: string
+          example: "2025-04-10 to 2025-04-20"
+        start_date:
+          type: string
+          format: date-time
+          example: "2025-04-10T00:00:00Z"
+        end_date:
+          type: string
+          format: date-time
+          example: "2025-04-20T00:00:00Z"
+        node_count:
+          type: integer
+          example: 0
+        product_count:
+          type: integer
+          example: 8
+        platform_node_count:
+          type: integer
+          example: 0
+
+    IndividualNodeResponse:
+      type: object
+      required:
+        - node
+        - direct_costs
+        - allocated_costs
+        - total_costs
+        - dependencies
+      properties:
+        node:
+          $ref: '#/components/schemas/NodeDetails'
+        direct_costs:
+          $ref: '#/components/schemas/CostBreakdown'
+        allocated_costs:
+          $ref: '#/components/schemas/CostBreakdown'
+        total_costs:
+          $ref: '#/components/schemas/CostBreakdown'
+        dependencies:
+          type: array
+          items:
+            $ref: '#/components/schemas/NodeDependency'
+        allocations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllocationDetail'
+          nullable: true
+
+    NodeDetails:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - is_platform
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "35522c6e-f85a-4cf1-9efe-6543fe7d4dda"
+        name:
+          type: string
+          example: "card_issuing_compute"
+        type:
+          type: string
+          enum: [product, resource, shared, platform]
+          example: "resource"
+        is_platform:
+          type: boolean
+          example: false
+        cost_labels:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            product: "card_issuing"
+            service: "ec2"
+            workload: "compute"
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            description: "Dedicated EC2 instances for Card Issuing workloads"
+
+    NodeDependency:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - relationship_type
+        - strategy
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "1bf63c0a-7159-41df-b42d-ef43c69e8e86"
+        name:
+          type: string
+          example: "card_issuing"
+        type:
+          type: string
+          enum: [product, resource, shared, platform]
+          example: "product"
+        relationship_type:
+          type: string
+          enum: [parent, child, peer]
+          example: "parent"
+        strategy:
+          type: string
+          enum: [equal, proportional, weighted]
+          example: "equal"
+
+    AllocationDetail:
+      type: object
+      required:
+        - source_node_id
+        - target_node_id
+        - amount
+        - strategy
+        - weight
+      properties:
+        source_node_id:
+          type: string
+          format: uuid
+          example: "e1e74af9-f066-473d-b9a5-0dbc8969ad73"
+        target_node_id:
+          type: string
+          format: uuid
+          example: "35522c6e-f85a-4cf1-9efe-6543fe7d4dda"
+        amount:
+          type: string
+          description: Allocated amount as decimal string
+          example: "12.50"
+        strategy:
+          type: string
+          enum: [equal, proportional, weighted]
+          example: "proportional"
+        weight:
+          type: number
+          format: float
+          example: 0.25
+        dimension:
+          type: string
+          example: "cpu_hours"
+
+    PlatformServicesResponse:
+      type: object
+      required:
+        - platform_services
+        - shared_services
+        - summary
+        - weighted_allocations
+      properties:
+        platform_services:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlatformService'
+        shared_services:
+          type: array
+          items:
+            $ref: '#/components/schemas/SharedService'
+        summary:
+          $ref: '#/components/schemas/CostSummary'
+        weighted_allocations:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeightedAllocation'
+
+    PlatformService:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - direct_costs
+        - allocated_costs
+        - total_costs
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a5b185a9-31df-4f2f-8866-dc944cb7944d"
+        name:
+          type: string
+          example: "api_gateway_platform"
+        type:
+          type: string
+          enum: [platform]
+          example: "platform"
+        direct_costs:
+          $ref: '#/components/schemas/CostBreakdown'
+        allocated_costs:
+          $ref: '#/components/schemas/CostBreakdown'
+        total_costs:
+          $ref: '#/components/schemas/CostBreakdown'
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            description: "API Gateway platform service"
+
+    SharedService:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - direct_costs
+        - allocated_costs
+        - total_costs
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "400bbff2-d79b-4669-94e4-d2dd394b4cb1"
+        name:
+          type: string
+          example: "compliance_logging"
+        type:
+          type: string
+          enum: [shared]
+          example: "shared"
+        direct_costs:
+          $ref: '#/components/schemas/CostBreakdown'
+        allocated_costs:
+          $ref: '#/components/schemas/CostBreakdown'
+        total_costs:
+          $ref: '#/components/schemas/CostBreakdown'
+        allocation_targets:
+          type: array
+          items:
+            type: string
+            format: uuid
+          example: ["1bf63c0a-7159-41df-b42d-ef43c69e8e86"]
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            description: "Centralized compliance and audit logging infrastructure"
+
+    WeightedAllocation:
+      type: object
+      required:
+        - source_service_id
+        - target_node_id
+        - allocation_amount
+        - weight
+        - strategy
+      properties:
+        source_service_id:
+          type: string
+          format: uuid
+          example: "400bbff2-d79b-4669-94e4-d2dd394b4cb1"
+        target_node_id:
+          type: string
+          format: uuid
+          example: "1bf63c0a-7159-41df-b42d-ef43c69e8e86"
+        allocation_amount:
+          type: string
+          description: Allocated amount as decimal string
+          example: "5.75"
+        weight:
+          type: number
+          format: float
+          example: 0.33
+        strategy:
+          type: string
+          enum: [equal, proportional, weighted, usage_based]
+          example: "proportional"
+        dimension:
+          type: string
+          example: "logs_ingestion_gb"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+          example: "Invalid date format"
+        code:
+          type: string
+          description: Machine-readable error code
+          example: "invalid_request"
+        details:
+          type: string
+          description: Additional error details
+          example: "Date must be in YYYY-MM-DD format"
+
+tags:
+  - name: Health
+    description: Health check operations
+  - name: Products
+    description: Product hierarchy and cost attribution
+  - name: Nodes
+    description: Individual node cost analysis
+  - name: Platform
+    description: Platform and shared services cost analysis
+
+externalDocs:
+  description: FinOps Cost Attribution Documentation
+  url: https://docs.finops.example.com

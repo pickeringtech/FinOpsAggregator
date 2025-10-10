@@ -1,0 +1,279 @@
+package api
+
+import (
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
+)
+
+// Handler provides HTTP handlers for the API
+type Handler struct {
+	service *Service
+}
+
+// NewHandler creates a new API handler
+func NewHandler(service *Service) *Handler {
+	return &Handler{
+		service: service,
+	}
+}
+
+// HealthCheck handles health check requests
+func (h *Handler) HealthCheck(c *gin.Context) {
+	response := HealthResponse{
+		Status:    "healthy",
+		Timestamp: time.Now(),
+		Version:   "1.0.0", // TODO: Get from build info
+		Database:  "connected", // TODO: Check actual database connection
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetProductHierarchy handles requests for product hierarchy with cost data
+func (h *Handler) GetProductHierarchy(c *gin.Context) {
+	req, err := h.parseCostAttributionRequest(c)
+	if err != nil {
+		h.handleError(c, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+
+	response, err := h.service.GetProductHierarchy(c.Request.Context(), *req)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get product hierarchy")
+		h.handleError(c, http.StatusInternalServerError, "internal_error", "Failed to retrieve product hierarchy")
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetIndividualNode handles requests for individual node cost data
+func (h *Handler) GetIndividualNode(c *gin.Context) {
+	// Parse node ID from path parameter
+	nodeIDStr := c.Param("nodeId")
+	nodeID, err := uuid.Parse(nodeIDStr)
+	if err != nil {
+		h.handleError(c, http.StatusBadRequest, "invalid_node_id", "Invalid node ID format")
+		return
+	}
+
+	req, err := h.parseCostAttributionRequest(c)
+	if err != nil {
+		h.handleError(c, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+
+	response, err := h.service.GetIndividualNode(c.Request.Context(), nodeID, *req)
+	if err != nil {
+		log.Error().Err(err).Str("node_id", nodeID.String()).Msg("Failed to get individual node")
+		h.handleError(c, http.StatusInternalServerError, "internal_error", "Failed to retrieve node data")
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetPlatformServices handles requests for platform and shared services cost data
+func (h *Handler) GetPlatformServices(c *gin.Context) {
+	req, err := h.parseCostAttributionRequest(c)
+	if err != nil {
+		h.handleError(c, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+
+	response, err := h.service.GetPlatformServices(c.Request.Context(), *req)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get platform services")
+		h.handleError(c, http.StatusInternalServerError, "internal_error", "Failed to retrieve platform services")
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// parseCostAttributionRequest parses common request parameters
+func (h *Handler) parseCostAttributionRequest(c *gin.Context) (*CostAttributionRequest, error) {
+	req := &CostAttributionRequest{}
+
+	// Parse start_date
+	startDateStr := c.Query("start_date")
+	if startDateStr == "" {
+		// Default to 30 days ago
+		req.StartDate = time.Now().AddDate(0, 0, -30)
+	} else {
+		startDate, err := time.Parse("2006-01-02", startDateStr)
+		if err != nil {
+			return nil, err
+		}
+		req.StartDate = startDate
+	}
+
+	// Parse end_date
+	endDateStr := c.Query("end_date")
+	if endDateStr == "" {
+		// Default to today
+		req.EndDate = time.Now()
+	} else {
+		endDate, err := time.Parse("2006-01-02", endDateStr)
+		if err != nil {
+			return nil, err
+		}
+		req.EndDate = endDate
+	}
+
+	// Parse dimensions (comma-separated)
+	dimensionsStr := c.Query("dimensions")
+	if dimensionsStr != "" {
+		req.Dimensions = parseCommaSeparated(dimensionsStr)
+	}
+
+	// Parse include_trend
+	includeTrendStr := c.Query("include_trend")
+	if includeTrendStr != "" {
+		includeTrend, err := strconv.ParseBool(includeTrendStr)
+		if err != nil {
+			return nil, err
+		}
+		req.IncludeTrend = includeTrend
+	}
+
+	// Parse currency
+	req.Currency = c.Query("currency")
+	if req.Currency == "" {
+		req.Currency = "USD"
+	}
+
+	return req, nil
+}
+
+// parseCommaSeparated parses a comma-separated string into a slice
+func parseCommaSeparated(s string) []string {
+	if s == "" {
+		return nil
+	}
+	
+	var result []string
+	for _, item := range splitAndTrim(s, ",") {
+		if item != "" {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+// splitAndTrim splits a string and trims whitespace from each part
+func splitAndTrim(s, sep string) []string {
+	parts := make([]string, 0)
+	for _, part := range splitString(s, sep) {
+		trimmed := trimSpace(part)
+		parts = append(parts, trimmed)
+	}
+	return parts
+}
+
+// splitString splits a string by separator
+func splitString(s, sep string) []string {
+	if s == "" {
+		return []string{}
+	}
+	
+	var parts []string
+	start := 0
+	for i := 0; i < len(s); i++ {
+		if i+len(sep) <= len(s) && s[i:i+len(sep)] == sep {
+			parts = append(parts, s[start:i])
+			start = i + len(sep)
+			i += len(sep) - 1
+		}
+	}
+	parts = append(parts, s[start:])
+	return parts
+}
+
+// trimSpace trims whitespace from a string
+func trimSpace(s string) string {
+	start := 0
+	end := len(s)
+	
+	// Trim leading whitespace
+	for start < end && isSpace(s[start]) {
+		start++
+	}
+	
+	// Trim trailing whitespace
+	for end > start && isSpace(s[end-1]) {
+		end--
+	}
+	
+	return s[start:end]
+}
+
+// isSpace checks if a character is whitespace
+func isSpace(c byte) bool {
+	return c == ' ' || c == '\t' || c == '\n' || c == '\r'
+}
+
+// handleError handles API errors consistently
+func (h *Handler) handleError(c *gin.Context, statusCode int, code, message string) {
+	response := ErrorResponse{
+		Error: message,
+		Code:  code,
+	}
+
+	c.JSON(statusCode, response)
+}
+
+// CORS middleware
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Header("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// LoggingMiddleware logs HTTP requests
+func LoggingMiddleware() gin.HandlerFunc {
+	return gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		log.Info().
+			Str("method", param.Method).
+			Str("path", param.Path).
+			Int("status", param.StatusCode).
+			Dur("latency", param.Latency).
+			Str("client_ip", param.ClientIP).
+			Str("user_agent", param.Request.UserAgent()).
+			Msg("HTTP request")
+		return ""
+	})
+}
+
+// RecoveryMiddleware handles panics
+func RecoveryMiddleware() gin.HandlerFunc {
+	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
+		log.Error().
+			Interface("panic", recovered).
+			Str("path", c.Request.URL.Path).
+			Str("method", c.Request.Method).
+			Msg("Panic recovered")
+
+		response := ErrorResponse{
+			Error: "Internal server error",
+			Code:  "internal_error",
+		}
+
+		c.JSON(http.StatusInternalServerError, response)
+	})
+}

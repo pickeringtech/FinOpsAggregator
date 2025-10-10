@@ -1,0 +1,185 @@
+package api
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
+)
+
+// ProductHierarchyResponse represents the product hierarchy tree with cost data
+type ProductHierarchyResponse struct {
+	Products []ProductNode `json:"products"`
+	Summary  CostSummary   `json:"summary"`
+}
+
+// ProductNode represents a product in the hierarchy with its cost data
+type ProductNode struct {
+	ID                uuid.UUID         `json:"id"`
+	Name              string            `json:"name"`
+	Type              string            `json:"type"`
+	DirectCosts       CostBreakdown     `json:"direct_costs"`
+	HolisticCosts     CostBreakdown     `json:"holistic_costs"`
+	SharedServiceCosts CostBreakdown    `json:"shared_service_costs"`
+	Children          []ProductNode     `json:"children,omitempty"`
+	Metadata          map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// CostBreakdown represents cost data broken down by dimensions
+type CostBreakdown struct {
+	Total      decimal.Decimal            `json:"total"`
+	Currency   string                     `json:"currency"`
+	Dimensions map[string]decimal.Decimal `json:"dimensions"`
+	Trend      []DailyCostPoint           `json:"trend,omitempty"`
+}
+
+// DailyCostPoint represents a single point in a cost trend
+type DailyCostPoint struct {
+	Date time.Time       `json:"date"`
+	Cost decimal.Decimal `json:"cost"`
+}
+
+// CostSummary provides overall cost summary information
+type CostSummary struct {
+	TotalCost         decimal.Decimal `json:"total_cost"`
+	Currency          string          `json:"currency"`
+	Period            string          `json:"period"`
+	StartDate         time.Time       `json:"start_date"`
+	EndDate           time.Time       `json:"end_date"`
+	NodeCount         int             `json:"node_count"`
+	ProductCount      int             `json:"product_count"`
+	PlatformNodeCount int             `json:"platform_node_count"`
+}
+
+// IndividualNodeResponse represents detailed cost data for a single node
+type IndividualNodeResponse struct {
+	Node         NodeDetails     `json:"node"`
+	DirectCosts  CostBreakdown   `json:"direct_costs"`
+	AllocatedCosts CostBreakdown `json:"allocated_costs"`
+	TotalCosts   CostBreakdown   `json:"total_costs"`
+	Dependencies []NodeDependency `json:"dependencies"`
+	Allocations  []AllocationDetail `json:"allocations"`
+}
+
+// NodeDetails represents basic node information
+type NodeDetails struct {
+	ID         uuid.UUID              `json:"id"`
+	Name       string                 `json:"name"`
+	Type       string                 `json:"type"`
+	IsPlatform bool                   `json:"is_platform"`
+	CostLabels map[string]interface{} `json:"cost_labels"`
+	Metadata   map[string]interface{} `json:"metadata"`
+}
+
+// NodeDependency represents a dependency relationship
+type NodeDependency struct {
+	ID               uuid.UUID `json:"id"`
+	Name             string    `json:"name"`
+	Type             string    `json:"type"`
+	RelationshipType string    `json:"relationship_type"` // "parent" or "child"
+	Strategy         string    `json:"strategy"`
+}
+
+// AllocationDetail represents how costs were allocated to/from this node
+type AllocationDetail struct {
+	FromNode      NodeReference   `json:"from_node"`
+	ToNode        NodeReference   `json:"to_node"`
+	Amount        decimal.Decimal `json:"amount"`
+	Currency      string          `json:"currency"`
+	Dimension     string          `json:"dimension"`
+	Strategy      string          `json:"strategy"`
+	AllocationDate time.Time      `json:"allocation_date"`
+}
+
+// NodeReference represents a lightweight node reference
+type NodeReference struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+	Type string    `json:"type"`
+}
+
+// PlatformServicesResponse represents platform and shared services cost data
+type PlatformServicesResponse struct {
+	PlatformServices []PlatformService `json:"platform_services"`
+	SharedServices   []SharedService   `json:"shared_services"`
+	Summary          CostSummary       `json:"summary"`
+	WeightedAllocations []WeightedAllocation `json:"weighted_allocations"`
+}
+
+// PlatformService represents a platform service with its cost data
+type PlatformService struct {
+	ID            uuid.UUID         `json:"id"`
+	Name          string            `json:"name"`
+	Type          string            `json:"type"`
+	DirectCosts   CostBreakdown     `json:"direct_costs"`
+	AllocatedTo   []AllocationTarget `json:"allocated_to"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// SharedService represents a shared service with weighted allocation
+type SharedService struct {
+	ID              uuid.UUID         `json:"id"`
+	Name            string            `json:"name"`
+	Type            string            `json:"type"`
+	DirectCosts     CostBreakdown     `json:"direct_costs"`
+	WeightedTargets []WeightedTarget  `json:"weighted_targets"`
+	Metadata        map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// AllocationTarget represents where costs are allocated to
+type AllocationTarget struct {
+	NodeID     uuid.UUID       `json:"node_id"`
+	NodeName   string          `json:"node_name"`
+	NodeType   string          `json:"node_type"`
+	Amount     decimal.Decimal `json:"amount"`
+	Currency   string          `json:"currency"`
+	Percentage float64         `json:"percentage"`
+}
+
+// WeightedTarget represents a target with weighted allocation
+type WeightedTarget struct {
+	NodeID     uuid.UUID       `json:"node_id"`
+	NodeName   string          `json:"node_name"`
+	NodeType   string          `json:"node_type"`
+	Weight     decimal.Decimal `json:"weight"`
+	Amount     decimal.Decimal `json:"amount"`
+	Currency   string          `json:"currency"`
+	Percentage float64         `json:"percentage"`
+}
+
+// WeightedAllocation represents a weighted allocation from shared services
+type WeightedAllocation struct {
+	SharedServiceID   uuid.UUID       `json:"shared_service_id"`
+	SharedServiceName string          `json:"shared_service_name"`
+	TargetNodeID      uuid.UUID       `json:"target_node_id"`
+	TargetNodeName    string          `json:"target_node_name"`
+	Weight            decimal.Decimal `json:"weight"`
+	Amount            decimal.Decimal `json:"amount"`
+	Currency          string          `json:"currency"`
+	Dimension         string          `json:"dimension"`
+	Strategy          string          `json:"strategy"`
+}
+
+// CostAttributionRequest represents request parameters for cost attribution queries
+type CostAttributionRequest struct {
+	StartDate    time.Time `json:"start_date" form:"start_date"`
+	EndDate      time.Time `json:"end_date" form:"end_date"`
+	Dimensions   []string  `json:"dimensions,omitempty" form:"dimensions"`
+	IncludeTrend bool      `json:"include_trend,omitempty" form:"include_trend"`
+	Currency     string    `json:"currency,omitempty" form:"currency"`
+}
+
+// ErrorResponse represents an API error response
+type ErrorResponse struct {
+	Error   string `json:"error"`
+	Code    string `json:"code,omitempty"`
+	Details string `json:"details,omitempty"`
+}
+
+// HealthResponse represents the health check response
+type HealthResponse struct {
+	Status    string    `json:"status"`
+	Timestamp time.Time `json:"timestamp"`
+	Version   string    `json:"version"`
+	Database  string    `json:"database"`
+}

@@ -411,3 +411,169 @@ type ContributionResultFilters struct {
 	EndDate    time.Time
 	Dimensions []string
 }
+
+// GetAllocationsByParentAndDateRange retrieves allocations where the given node is the parent (receiving allocations)
+func (r *RunRepository) GetAllocationsByParentAndDateRange(ctx context.Context, parentID uuid.UUID, startDate, endDate time.Time, dimensions []string) ([]models.AllocationResultByDimension, error) {
+	query := r.QueryBuilder().
+		Select("run_id", "node_id", "allocation_date", "dimension", "direct_amount", "indirect_amount", "total_amount", "created_at", "updated_at").
+		From("allocation_results_by_dimension").
+		Where(squirrel.Eq{"node_id": parentID}).
+		Where(squirrel.GtOrEq{"allocation_date": startDate}).
+		Where(squirrel.LtOrEq{"allocation_date": endDate})
+
+	if len(dimensions) > 0 {
+		query = query.Where(squirrel.Eq{"dimension": dimensions})
+	}
+
+	query = query.OrderBy("allocation_date, dimension")
+
+	rows, err := r.QueryRows(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get allocations by parent: %w", err)
+	}
+	defer rows.Close()
+
+	var results []models.AllocationResultByDimension
+	for rows.Next() {
+		var result models.AllocationResultByDimension
+
+		err := rows.Scan(
+			&result.RunID,
+			&result.NodeID,
+			&result.AllocationDate,
+			&result.Dimension,
+			&result.DirectAmount,
+			&result.IndirectAmount,
+			&result.TotalAmount,
+			&result.CreatedAt,
+			&result.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan allocation result: %w", err)
+		}
+
+		results = append(results, result)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating allocation results: %w", err)
+	}
+
+	return results, nil
+}
+
+// GetAllocationsByChildAndDateRange retrieves allocations where the given node is contributing to others
+// This is a bit more complex as we need to find allocations where this node's costs were allocated
+func (r *RunRepository) GetAllocationsByChildAndDateRange(ctx context.Context, childID uuid.UUID, startDate, endDate time.Time, dimensions []string) ([]models.AllocationResultByDimension, error) {
+	// This would require joining with contribution results to find where this node contributed
+	// For now, we'll return an empty slice and implement this later if needed
+	return []models.AllocationResultByDimension{}, nil
+}
+
+// GetContributionsByParentAndDateRange retrieves contributions where the given node is the parent (receiving contributions)
+func (r *RunRepository) GetContributionsByParentAndDateRange(ctx context.Context, parentID uuid.UUID, startDate, endDate time.Time, dimensions []string) ([]models.ContributionResultByDimension, error) {
+	query := r.QueryBuilder().
+		Select("run_id", "parent_id", "child_id", "contribution_date", "dimension", "contributed_amount", "path", "created_at", "updated_at").
+		From("contribution_results_by_dimension").
+		Where(squirrel.Eq{"parent_id": parentID}).
+		Where(squirrel.GtOrEq{"contribution_date": startDate}).
+		Where(squirrel.LtOrEq{"contribution_date": endDate})
+
+	if len(dimensions) > 0 {
+		query = query.Where(squirrel.Eq{"dimension": dimensions})
+	}
+
+	query = query.OrderBy("contribution_date, dimension")
+
+	rows, err := r.QueryRows(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get contributions by parent: %w", err)
+	}
+	defer rows.Close()
+
+	var results []models.ContributionResultByDimension
+	for rows.Next() {
+		var result models.ContributionResultByDimension
+		var pathJSON string
+
+		err := rows.Scan(
+			&result.RunID,
+			&result.ParentID,
+			&result.ChildID,
+			&result.ContributionDate,
+			&result.Dimension,
+			&result.ContributedAmount,
+			&pathJSON,
+			&result.CreatedAt,
+			&result.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan contribution result: %w", err)
+		}
+
+		// TODO: Parse pathJSON back to []uuid.UUID
+		result.Path = []uuid.UUID{}
+
+		results = append(results, result)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating contribution results: %w", err)
+	}
+
+	return results, nil
+}
+
+// GetContributionsByChildAndDateRange retrieves contributions where the given node is the child (contributing to others)
+func (r *RunRepository) GetContributionsByChildAndDateRange(ctx context.Context, childID uuid.UUID, startDate, endDate time.Time, dimensions []string) ([]models.ContributionResultByDimension, error) {
+	query := r.QueryBuilder().
+		Select("run_id", "parent_id", "child_id", "contribution_date", "dimension", "contributed_amount", "path", "created_at", "updated_at").
+		From("contribution_results_by_dimension").
+		Where(squirrel.Eq{"child_id": childID}).
+		Where(squirrel.GtOrEq{"contribution_date": startDate}).
+		Where(squirrel.LtOrEq{"contribution_date": endDate})
+
+	if len(dimensions) > 0 {
+		query = query.Where(squirrel.Eq{"dimension": dimensions})
+	}
+
+	query = query.OrderBy("contribution_date, dimension")
+
+	rows, err := r.QueryRows(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get contributions by child: %w", err)
+	}
+	defer rows.Close()
+
+	var results []models.ContributionResultByDimension
+	for rows.Next() {
+		var result models.ContributionResultByDimension
+		var pathJSON string
+
+		err := rows.Scan(
+			&result.RunID,
+			&result.ParentID,
+			&result.ChildID,
+			&result.ContributionDate,
+			&result.Dimension,
+			&result.ContributedAmount,
+			&pathJSON,
+			&result.CreatedAt,
+			&result.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan contribution result: %w", err)
+		}
+
+		// TODO: Parse pathJSON back to []uuid.UUID
+		result.Path = []uuid.UUID{}
+
+		results = append(results, result)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating contribution results: %w", err)
+	}
+
+	return results, nil
+}

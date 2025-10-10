@@ -78,6 +78,7 @@ func init() {
 	rootCmd.AddCommand(analyzeCmd)
 	rootCmd.AddCommand(tuiCmd)
 	rootCmd.AddCommand(demoCmd)
+	rootCmd.AddCommand(apiCmd)
 }
 
 var importCmd = &cobra.Command{

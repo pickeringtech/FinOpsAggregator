@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -15,6 +16,7 @@ type Config struct {
 	Storage  StorageConfig  `mapstructure:"storage"`
 	Jobs     JobsConfig     `mapstructure:"jobs"`
 	Logging  LoggingConfig  `mapstructure:"logging"`
+	API      APIConfig      `mapstructure:"api"`
 }
 
 // PostgresConfig holds database configuration
@@ -48,6 +50,15 @@ type JobsConfig struct {
 // LoggingConfig holds logging settings
 type LoggingConfig struct {
 	Level string `mapstructure:"level"`
+}
+
+// APIConfig holds API server settings
+type APIConfig struct {
+	Host         string        `mapstructure:"host"`
+	Port         int           `mapstructure:"port"`
+	ReadTimeout  time.Duration `mapstructure:"read_timeout"`
+	WriteTimeout time.Duration `mapstructure:"write_timeout"`
+	IdleTimeout  time.Duration `mapstructure:"idle_timeout"`
 }
 
 // Load loads configuration from file and environment variables
@@ -116,4 +127,11 @@ func setDefaults(v *viper.Viper) {
 
 	// Logging defaults
 	v.SetDefault("logging.level", "info")
+
+	// API defaults
+	v.SetDefault("api.host", "0.0.0.0")
+	v.SetDefault("api.port", 8080)
+	v.SetDefault("api.read_timeout", "30s")
+	v.SetDefault("api.write_timeout", "30s")
+	v.SetDefault("api.idle_timeout", "120s")
 }
