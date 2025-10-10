@@ -440,6 +440,231 @@ func (r *CostRepository) GetOptimizationInsights(ctx context.Context, startDate,
 	return insights, nil
 }
 
+// NodeWithCost represents a node with its aggregated cost
+type NodeWithCost struct {
+	ID       uuid.UUID       `json:"id"`
+	Name     string          `json:"name"`
+	Type     string          `json:"type"`
+	TotalCost decimal.Decimal `json:"total_cost"`
+	Currency string          `json:"currency"`
+}
+
+// CostByType represents cost aggregated by node type
+type CostByType struct {
+	Type      string          `json:"type"`
+	TotalCost decimal.Decimal `json:"total_cost"`
+	NodeCount int             `json:"node_count"`
+	Currency  string          `json:"currency"`
+}
+
+// CostByDimension represents cost aggregated by a custom dimension
+type CostByDimension struct {
+	DimensionKey   string          `json:"dimension_key"`
+	DimensionValue string          `json:"dimension_value"`
+	TotalCost      decimal.Decimal `json:"total_cost"`
+	NodeCount      int             `json:"node_count"`
+	Currency       string          `json:"currency"`
+}
+
+// ListNodesWithCosts retrieves nodes with their aggregated costs
+func (r *CostRepository) ListNodesWithCosts(ctx context.Context, startDate, endDate time.Time, currency string, nodeType string, limit int, offset int) ([]NodeWithCost, error) {
+	// Build query with optional type filter
+	queryBuilder := `
+		WITH latest_run AS (
+			SELECT id
+			FROM computation_runs
+			WHERE window_start <= $1 AND window_end >= $2
+			  AND status = 'completed'
+			ORDER BY created_at DESC
+			LIMIT 1
+		),
+		node_costs AS (
+			SELECT
+				n.id,
+				n.name,
+				n.type,
+				SUM(a.total_amount) as total_cost,
+				$3 as currency
+			FROM cost_nodes n
+			JOIN allocation_results_by_dimension a ON n.id = a.node_id
+			JOIN latest_run lr ON a.run_id = lr.id
+			WHERE a.allocation_date >= $1
+			  AND a.allocation_date <= $2`
+
+	args := []interface{}{startDate, endDate, currency}
+	argIndex := 4
+
+	if nodeType != "" {
+		queryBuilder += fmt.Sprintf(" AND n.type = $%d", argIndex)
+		args = append(args, nodeType)
+		argIndex++
+	}
+
+	queryBuilder += `
+			GROUP BY n.id, n.name, n.type
+		)
+		SELECT id, name, type, total_cost, currency
+		FROM node_costs
+		ORDER BY total_cost DESC`
+
+	if limit > 0 {
+		queryBuilder += fmt.Sprintf(" LIMIT $%d", argIndex)
+		args = append(args, limit)
+		argIndex++
+	}
+
+	if offset > 0 {
+		queryBuilder += fmt.Sprintf(" OFFSET $%d", argIndex)
+		args = append(args, offset)
+	}
+
+	rows, err := r.db.Query(ctx, queryBuilder, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list nodes with costs: %w", err)
+	}
+	defer rows.Close()
+
+	var nodes []NodeWithCost
+	for rows.Next() {
+		var node NodeWithCost
+		err := rows.Scan(
+			&node.ID,
+			&node.Name,
+			&node.Type,
+			&node.TotalCost,
+			&node.Currency,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan node: %w", err)
+		}
+		nodes = append(nodes, node)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating nodes: %w", err)
+	}
+
+	return nodes, nil
+}
+
+// GetCostsByType retrieves costs aggregated by node type
+func (r *CostRepository) GetCostsByType(ctx context.Context, startDate, endDate time.Time, currency string) ([]CostByType, error) {
+	// Query to aggregate costs by node type from the most recent computation run
+	query := `
+		WITH latest_run AS (
+			SELECT id
+			FROM computation_runs
+			WHERE window_start <= $1 AND window_end >= $2
+			  AND status = 'completed'
+			ORDER BY created_at DESC
+			LIMIT 1
+		),
+		type_costs AS (
+			SELECT
+				n.type,
+				SUM(a.total_amount) as total_cost,
+				COUNT(DISTINCT n.id) as node_count,
+				$3 as currency
+			FROM cost_nodes n
+			JOIN allocation_results_by_dimension a ON n.id = a.node_id
+			JOIN latest_run lr ON a.run_id = lr.id
+			WHERE a.allocation_date >= $1
+			  AND a.allocation_date <= $2
+			GROUP BY n.type
+		)
+		SELECT type, total_cost, node_count, currency
+		FROM type_costs
+		ORDER BY total_cost DESC
+	`
+
+	rows, err := r.db.Query(ctx, query, startDate, endDate, currency)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get costs by type: %w", err)
+	}
+	defer rows.Close()
+
+	var costsByType []CostByType
+	for rows.Next() {
+		var costByType CostByType
+		err := rows.Scan(
+			&costByType.Type,
+			&costByType.TotalCost,
+			&costByType.NodeCount,
+			&costByType.Currency,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan cost by type: %w", err)
+		}
+		costsByType = append(costsByType, costByType)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating costs by type: %w", err)
+	}
+
+	return costsByType, nil
+}
+
+// GetCostsByDimension retrieves costs aggregated by a custom dimension (e.g., tags, labels)
+func (r *CostRepository) GetCostsByDimension(ctx context.Context, startDate, endDate time.Time, currency string, dimensionKey string) ([]CostByDimension, error) {
+	// This aggregates by metadata/labels - for now, we'll aggregate by cost_labels
+	query := `
+		WITH latest_run AS (
+			SELECT id
+			FROM computation_runs
+			WHERE window_start <= $1 AND window_end >= $2
+			  AND status = 'completed'
+			ORDER BY created_at DESC
+			LIMIT 1
+		),
+		dimension_costs AS (
+			SELECT
+				$4 as dimension_key,
+				COALESCE(n.cost_labels->>$4, 'untagged') as dimension_value,
+				SUM(a.total_amount) as total_cost,
+				COUNT(DISTINCT n.id) as node_count,
+				$3 as currency
+			FROM cost_nodes n
+			JOIN allocation_results_by_dimension a ON n.id = a.node_id
+			JOIN latest_run lr ON a.run_id = lr.id
+			WHERE a.allocation_date >= $1
+			  AND a.allocation_date <= $2
+			GROUP BY dimension_value
+		)
+		SELECT dimension_key, dimension_value, total_cost, node_count, currency
+		FROM dimension_costs
+		ORDER BY total_cost DESC
+	`
+
+	rows, err := r.db.Query(ctx, query, startDate, endDate, currency, dimensionKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get costs by dimension: %w", err)
+	}
+	defer rows.Close()
+
+	var costsByDimension []CostByDimension
+	for rows.Next() {
+		var costByDim CostByDimension
+		err := rows.Scan(
+			&costByDim.DimensionKey,
+			&costByDim.DimensionValue,
+			&costByDim.TotalCost,
+			&costByDim.NodeCount,
+			&costByDim.Currency,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan cost by dimension: %w", err)
+		}
+		costsByDimension = append(costsByDimension, costByDim)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating costs by dimension: %w", err)
+	}
+
+	return costsByDimension, nil
+}
+
 // GetProductCostOverview retrieves cost overview grouped by Products and their dependencies
 func (r *CostRepository) GetProductCostOverview(ctx context.Context, startDate, endDate time.Time) (*ProductCostOverview, error) {
 	query := `

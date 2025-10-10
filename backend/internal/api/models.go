@@ -176,6 +176,52 @@ type ErrorResponse struct {
 	Details string `json:"details,omitempty"`
 }
 
+// NodeListResponse represents a list of nodes with costs
+type NodeListResponse struct {
+	Nodes      []NodeWithCostData `json:"nodes"`
+	TotalCount int                `json:"total_count"`
+	Limit      int                `json:"limit"`
+	Offset     int                `json:"offset"`
+}
+
+// NodeWithCostData represents a node with its cost information
+type NodeWithCostData struct {
+	ID        uuid.UUID      `json:"id"`
+	Name      string         `json:"name"`
+	Type      string         `json:"type"`
+	TotalCost decimal.Decimal `json:"total_cost"`
+	Currency  string         `json:"currency"`
+}
+
+// CostsByTypeResponse represents costs aggregated by node type
+type CostsByTypeResponse struct {
+	Aggregations []TypeAggregation `json:"aggregations"`
+	TotalCost    decimal.Decimal   `json:"total_cost"`
+	Currency     string            `json:"currency"`
+}
+
+// TypeAggregation represents cost aggregated by a single type
+type TypeAggregation struct {
+	Type      string          `json:"type"`
+	TotalCost decimal.Decimal `json:"total_cost"`
+	NodeCount int             `json:"node_count"`
+}
+
+// CostsByDimensionResponse represents costs aggregated by a custom dimension
+type CostsByDimensionResponse struct {
+	DimensionKey string                  `json:"dimension_key"`
+	Aggregations []DimensionAggregation  `json:"aggregations"`
+	TotalCost    decimal.Decimal         `json:"total_cost"`
+	Currency     string                  `json:"currency"`
+}
+
+// DimensionAggregation represents cost aggregated by a dimension value
+type DimensionAggregation struct {
+	Value     string          `json:"value"`
+	TotalCost decimal.Decimal `json:"total_cost"`
+	NodeCount int             `json:"node_count"`
+}
+
 // HealthResponse represents the health check response
 type HealthResponse struct {
 	Status    string    `json:"status"`

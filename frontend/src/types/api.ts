@@ -129,3 +129,44 @@ export interface HealthResponse {
   database: string
 }
 
+// Generic API Types for cost aggregation
+export interface NodeListResponse {
+  nodes: NodeWithCost[]
+  total_count: number
+  limit: number
+  offset: number
+}
+
+export interface NodeWithCost {
+  id: string
+  name: string
+  type: string
+  total_cost: string
+  currency: string
+}
+
+export interface CostsByTypeResponse {
+  aggregations: TypeAggregation[]
+  total_cost: string
+  currency: string
+}
+
+export interface TypeAggregation {
+  type: string
+  total_cost: string
+  node_count: number
+}
+
+export interface CostsByDimensionResponse {
+  dimension_key: string
+  aggregations: DimensionAggregation[]
+  total_cost: string
+  currency: string
+}
+
+export interface DimensionAggregation {
+  value: string
+  total_cost: string
+  node_count: number
+}
+

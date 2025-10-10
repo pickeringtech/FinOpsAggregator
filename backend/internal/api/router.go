@@ -26,12 +26,21 @@ func SetupRouter(handler *Handler) *gin.Engine {
 		products := v1.Group("/products")
 		{
 			products.GET("/hierarchy", handler.GetProductHierarchy)
+			products.GET("", handler.ListProducts) // New: flat list of products
 		}
 
 		// Individual node endpoints
 		nodes := v1.Group("/nodes")
 		{
 			nodes.GET("/:nodeId", handler.GetIndividualNode)
+			nodes.GET("", handler.ListNodes) // New: flat list of all nodes
+		}
+
+		// Cost aggregation endpoints
+		costs := v1.Group("/costs")
+		{
+			costs.GET("/by-type", handler.GetCostsByType)       // New: aggregate by node type
+			costs.GET("/by-dimension", handler.GetCostsByDimension) // New: aggregate by any dimension
 		}
 
 		// Platform and shared services endpoints

@@ -3,6 +3,9 @@ import type {
   IndividualNodeResponse,
   PlatformServicesResponse,
   HealthResponse,
+  NodeListResponse,
+  CostsByTypeResponse,
+  CostsByDimensionResponse,
 } from "@/types/api"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
@@ -65,6 +68,27 @@ export const api = {
   },
 
   products: {
+    list: (params: QueryParams & { limit?: number; offset?: number }) => {
+      const searchParams = new URLSearchParams({
+        start_date: params.start_date,
+        end_date: params.end_date,
+      })
+
+      if (params.currency) {
+        searchParams.append("currency", params.currency)
+      }
+      if (params.limit !== undefined) {
+        searchParams.append("limit", String(params.limit))
+      }
+      if (params.offset !== undefined) {
+        searchParams.append("offset", String(params.offset))
+      }
+
+      return fetchApi<NodeListResponse>(
+        `/api/v1/products?${searchParams.toString()}`
+      )
+    },
+
     getHierarchy: (params: QueryParams) => {
       const searchParams = new URLSearchParams({
         start_date: params.start_date,
@@ -88,12 +112,36 @@ export const api = {
   },
 
   nodes: {
+    list: (params: QueryParams & { type?: string; limit?: number; offset?: number }) => {
+      const searchParams = new URLSearchParams({
+        start_date: params.start_date,
+        end_date: params.end_date,
+      })
+
+      if (params.currency) {
+        searchParams.append("currency", params.currency)
+      }
+      if (params.type) {
+        searchParams.append("type", params.type)
+      }
+      if (params.limit !== undefined) {
+        searchParams.append("limit", String(params.limit))
+      }
+      if (params.offset !== undefined) {
+        searchParams.append("offset", String(params.offset))
+      }
+
+      return fetchApi<NodeListResponse>(
+        `/api/v1/nodes?${searchParams.toString()}`
+      )
+    },
+
     getDetails: (nodeId: string, params: QueryParams) => {
       const searchParams = new URLSearchParams({
         start_date: params.start_date,
         end_date: params.end_date,
       })
-      
+
       if (params.dimensions?.length) {
         params.dimensions.forEach(dim => searchParams.append("dimensions", dim))
       }
@@ -106,6 +154,39 @@ export const api = {
 
       return fetchApi<IndividualNodeResponse>(
         `/api/v1/nodes/${nodeId}?${searchParams.toString()}`
+      )
+    },
+  },
+
+  costs: {
+    byType: (params: QueryParams) => {
+      const searchParams = new URLSearchParams({
+        start_date: params.start_date,
+        end_date: params.end_date,
+      })
+
+      if (params.currency) {
+        searchParams.append("currency", params.currency)
+      }
+
+      return fetchApi<CostsByTypeResponse>(
+        `/api/v1/costs/by-type?${searchParams.toString()}`
+      )
+    },
+
+    byDimension: (params: QueryParams & { key: string }) => {
+      const searchParams = new URLSearchParams({
+        start_date: params.start_date,
+        end_date: params.end_date,
+        key: params.key,
+      })
+
+      if (params.currency) {
+        searchParams.append("currency", params.currency)
+      }
+
+      return fetchApi<CostsByDimensionResponse>(
+        `/api/v1/costs/by-dimension?${searchParams.toString()}`
       )
     },
   },

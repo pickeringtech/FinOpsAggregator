@@ -167,6 +167,113 @@ func (s *Service) GetPlatformServices(ctx context.Context, req CostAttributionRe
 	}, nil
 }
 
+// ListProducts retrieves a flat list of products with their costs
+func (s *Service) ListProducts(ctx context.Context, req CostAttributionRequest, limit, offset int) (*NodeListResponse, error) {
+	nodes, err := s.store.Costs.ListNodesWithCosts(ctx, req.StartDate, req.EndDate, req.Currency, "product", limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list products: %w", err)
+	}
+
+	// Convert to response format
+	nodeData := make([]NodeWithCostData, len(nodes))
+	for i, node := range nodes {
+		nodeData[i] = NodeWithCostData{
+			ID:        node.ID,
+			Name:      node.Name,
+			Type:      node.Type,
+			TotalCost: node.TotalCost,
+			Currency:  node.Currency,
+		}
+	}
+
+	return &NodeListResponse{
+		Nodes:      nodeData,
+		TotalCount: len(nodeData), // TODO: Get actual total count from DB
+		Limit:      limit,
+		Offset:     offset,
+	}, nil
+}
+
+// ListNodes retrieves a flat list of all nodes with their costs
+func (s *Service) ListNodes(ctx context.Context, req CostAttributionRequest, nodeType string, limit, offset int) (*NodeListResponse, error) {
+	nodes, err := s.store.Costs.ListNodesWithCosts(ctx, req.StartDate, req.EndDate, req.Currency, nodeType, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list nodes: %w", err)
+	}
+
+	// Convert to response format
+	nodeData := make([]NodeWithCostData, len(nodes))
+	for i, node := range nodes {
+		nodeData[i] = NodeWithCostData{
+			ID:        node.ID,
+			Name:      node.Name,
+			Type:      node.Type,
+			TotalCost: node.TotalCost,
+			Currency:  node.Currency,
+		}
+	}
+
+	return &NodeListResponse{
+		Nodes:      nodeData,
+		TotalCount: len(nodeData), // TODO: Get actual total count from DB
+		Limit:      limit,
+		Offset:     offset,
+	}, nil
+}
+
+// GetCostsByType retrieves costs aggregated by node type
+func (s *Service) GetCostsByType(ctx context.Context, req CostAttributionRequest) (*CostsByTypeResponse, error) {
+	costsByType, err := s.store.Costs.GetCostsByType(ctx, req.StartDate, req.EndDate, req.Currency)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get costs by type: %w", err)
+	}
+
+	// Calculate total and convert to response format
+	totalCost := decimal.Zero
+	aggregations := make([]TypeAggregation, len(costsByType))
+	for i, ct := range costsByType {
+		totalCost = totalCost.Add(ct.TotalCost)
+		aggregations[i] = TypeAggregation{
+			Type:      ct.Type,
+			TotalCost: ct.TotalCost,
+			NodeCount: ct.NodeCount,
+		}
+	}
+
+	return &CostsByTypeResponse{
+		Aggregations: aggregations,
+		TotalCost:    totalCost,
+		Currency:     req.Currency,
+	}, nil
+}
+
+// GetCostsByDimension retrieves costs aggregated by a custom dimension
+func (s *Service) GetCostsByDimension(ctx context.Context, req CostAttributionRequest, dimensionKey string) (*CostsByDimensionResponse, error) {
+	costsByDim, err := s.store.Costs.GetCostsByDimension(ctx, req.StartDate, req.EndDate, req.Currency, dimensionKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get costs by dimension: %w", err)
+	}
+
+	// Calculate total and convert to response format
+	totalCost := decimal.Zero
+	aggregations := make([]DimensionAggregation, len(costsByDim))
+	for i, cd := range costsByDim {
+		totalCost = totalCost.Add(cd.TotalCost)
+		aggregations[i] = DimensionAggregation{
+			Value:     cd.DimensionValue,
+			TotalCost: cd.TotalCost,
+			NodeCount: cd.NodeCount,
+		}
+	}
+
+	return &CostsByDimensionResponse{
+		DimensionKey: dimensionKey,
+		Aggregations: aggregations,
+		TotalCost:    totalCost,
+		Currency:     req.Currency,
+	}, nil
+}
+
 // buildProductTree builds the product hierarchy tree
 func (s *Service) buildProductTree(ctx context.Context, req CostAttributionRequest) ([]ProductNode, error) {
 	// Get all product nodes

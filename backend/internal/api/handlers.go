@@ -96,6 +96,94 @@ func (h *Handler) GetPlatformServices(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// ListProducts handles requests for a flat list of products with costs
+func (h *Handler) ListProducts(c *gin.Context) {
+	req, err := h.parseCostAttributionRequest(c)
+	if err != nil {
+		h.handleError(c, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+
+	// Parse pagination parameters
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+
+	response, err := h.service.ListProducts(c.Request.Context(), *req, limit, offset)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to list products")
+		h.handleError(c, http.StatusInternalServerError, "internal_error", "Failed to retrieve products")
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// ListNodes handles requests for a flat list of nodes with costs
+func (h *Handler) ListNodes(c *gin.Context) {
+	req, err := h.parseCostAttributionRequest(c)
+	if err != nil {
+		h.handleError(c, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+
+	// Parse filters and pagination
+	nodeType := c.Query("type")
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+
+	response, err := h.service.ListNodes(c.Request.Context(), *req, nodeType, limit, offset)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to list nodes")
+		h.handleError(c, http.StatusInternalServerError, "internal_error", "Failed to retrieve nodes")
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetCostsByType handles requests for costs aggregated by node type
+func (h *Handler) GetCostsByType(c *gin.Context) {
+	req, err := h.parseCostAttributionRequest(c)
+	if err != nil {
+		h.handleError(c, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+
+	response, err := h.service.GetCostsByType(c.Request.Context(), *req)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get costs by type")
+		h.handleError(c, http.StatusInternalServerError, "internal_error", "Failed to retrieve costs by type")
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetCostsByDimension handles requests for costs aggregated by a custom dimension
+func (h *Handler) GetCostsByDimension(c *gin.Context) {
+	req, err := h.parseCostAttributionRequest(c)
+	if err != nil {
+		h.handleError(c, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+
+	// Get dimension key from query parameter
+	dimensionKey := c.Query("key")
+	if dimensionKey == "" {
+		h.handleError(c, http.StatusBadRequest, "invalid_request", "dimension key is required")
+		return
+	}
+
+	response, err := h.service.GetCostsByDimension(c.Request.Context(), *req, dimensionKey)
+	if err != nil {
+		log.Error().Err(err).Str("dimension_key", dimensionKey).Msg("Failed to get costs by dimension")
+		h.handleError(c, http.StatusInternalServerError, "internal_error", "Failed to retrieve costs by dimension")
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 // parseCostAttributionRequest parses common request parameters
 func (h *Handler) parseCostAttributionRequest(c *gin.Context) (*CostAttributionRequest, error) {
 	req := &CostAttributionRequest{}
