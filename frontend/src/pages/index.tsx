@@ -1,115 +1,232 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+import { useState, useEffect } from "react"
+import { format, subDays } from "date-fns"
+import { DollarSign, TrendingUp, Package, Server } from "lucide-react"
+import { CostCard } from "@/components/cost-card"
+import { DateRangePicker } from "@/components/date-range-picker"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { api } from "@/lib/api"
+import { formatCurrency } from "@/lib/utils"
+import type { ProductHierarchyResponse, PlatformServicesResponse } from "@/types/api"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+export default function Dashboard() {
+  const [dateRange, setDateRange] = useState({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  })
+  const [hierarchyData, setHierarchyData] = useState<ProductHierarchyResponse | null>(null)
+  const [platformData, setPlatformData] = useState<PlatformServicesResponse | null>(null)
+  const [loading, setLoading] = useState(true)
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+  useEffect(() => {
+    loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange])
 
-export default function Home() {
-  return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20`}
-    >
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/pages/index.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const loadData = async () => {
+    setLoading(true)
+    try {
+      const params = {
+        start_date: format(dateRange.from, "yyyy-MM-dd"),
+        end_date: format(dateRange.to, "yyyy-MM-dd"),
+        currency: "USD",
+      }
+
+      const [hierarchy, platform] = await Promise.all([
+        api.products.getHierarchy(params),
+        api.platform.getServices(params),
+      ])
+
+      setHierarchyData(hierarchy)
+      setPlatformData(platform)
+    } catch (error) {
+      console.error("Failed to load data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const topProducts = hierarchyData?.products
+    .map((p) => ({
+      name: p.name,
+      cost: parseFloat(p.holistic_costs.total),
+      currency: p.holistic_costs.currency,
+    }))
+    .sort((a, b) => b.cost - a.cost)
+    .slice(0, 5) || []
+
+  const costByType = hierarchyData?.products.reduce((acc, product) => {
+    const type = product.type
+    const cost = parseFloat(product.holistic_costs.total)
+    acc[type] = (acc[type] || 0) + cost
+    return acc
+  }, {} as Record<string, number>) || {}
+
+  const pieData = Object.entries(costByType).map(([name, value]) => ({
+    name: name.charAt(0).toUpperCase() + name.slice(1),
+    value,
+  }))
+
+  const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))"]
+
+  if (loading) {
+    return (
+      <div className="container py-8">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-lg text-muted-foreground">Loading dashboard...</div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container py-8 space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">FinOps Dashboard</h1>
+          <p className="text-muted-foreground mt-2">
+            Overview of your cloud costs and resource allocation
+          </p>
+        </div>
+        <DateRangePicker value={dateRange} onChange={setDateRange} />
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <CostCard
+          title="Total Costs"
+          amount={hierarchyData?.summary.total_cost || "0"}
+          currency={hierarchyData?.summary.currency}
+          subtitle={hierarchyData?.summary.period}
+          icon={<DollarSign className="h-4 w-4" />}
+        />
+        <CostCard
+          title="Product Count"
+          amount={hierarchyData?.summary.product_count.toString() || "0"}
+          subtitle="Active products"
+          icon={<Package className="h-4 w-4" />}
+          showCurrency={false}
+        />
+        <CostCard
+          title="Platform Services"
+          amount={platformData?.platform_services.length.toString() || "0"}
+          subtitle="Shared infrastructure"
+          icon={<Server className="h-4 w-4" />}
+          showCurrency={false}
+        />
+        <CostCard
+          title="Platform Costs"
+          amount={platformData?.summary.total_cost || "0"}
+          currency={platformData?.summary.currency}
+          subtitle="Shared service costs"
+          icon={<TrendingUp className="h-4 w-4" />}
+        />
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Top Products */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Top 5 Products by Cost</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={topProducts}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="name" className="text-xs" />
+                <YAxis className="text-xs" />
+                <Tooltip
+                  formatter={(value: number) => formatCurrency(value, "USD")}
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                  }}
+                />
+                <Bar dataKey="cost" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Cost Distribution */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Cost Distribution by Type</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  label={(entry: any) =>
+                    `${entry.name} ${(entry.percent * 100).toFixed(0)}%`
+                  }
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: number) => formatCurrency(value, "USD")}
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Products */}
+      <Card>
+        <CardHeader>
+          <CardTitle>All Products</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {hierarchyData?.products.map((product) => (
+              <div
+                key={product.id}
+                className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-4">
+                  <div>
+                    <p className="font-semibold">{product.name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="outline">{product.type}</Badge>
+                      {product.children && product.children.length > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          {product.children.length} child nodes
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">Holistic Cost</p>
+                  <p className="text-lg font-bold">
+                    {formatCurrency(product.holistic_costs.total, product.holistic_costs.currency)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }
