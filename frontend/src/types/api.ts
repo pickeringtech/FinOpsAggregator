@@ -83,9 +83,9 @@ export interface PlatformService {
   id: string
   name: string
   type: "platform"
-  direct_costs: CostBreakdown
-  allocated_costs: CostBreakdown
-  total_costs: CostBreakdown
+  direct_costs?: CostBreakdown
+  allocated_costs?: CostBreakdown
+  total_costs?: CostBreakdown
   metadata?: {
     description?: string
     [key: string]: unknown
@@ -96,9 +96,9 @@ export interface SharedService {
   id: string
   name: string
   type: "shared"
-  direct_costs: CostBreakdown
-  allocated_costs: CostBreakdown
-  total_costs: CostBreakdown
+  direct_costs?: CostBreakdown
+  allocated_costs?: CostBreakdown
+  total_costs?: CostBreakdown
   allocation_targets?: string[]
   metadata?: {
     description?: string
@@ -119,7 +119,7 @@ export interface PlatformServicesResponse {
   platform_services: PlatformService[]
   shared_services: SharedService[]
   summary: CostSummary
-  weighted_allocations: WeightedAllocation[]
+  weighted_allocations?: WeightedAllocation[]
 }
 
 export interface HealthResponse {

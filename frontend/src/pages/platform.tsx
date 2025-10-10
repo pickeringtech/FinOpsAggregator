@@ -43,16 +43,16 @@ export default function PlatformPage() {
 
   const platformChartData = platformData?.platform_services.map((service) => ({
     name: service.name,
-    direct: parseFloat(service.direct_costs.total),
-    allocated: parseFloat(service.allocated_costs.total),
-    total: parseFloat(service.total_costs.total),
+    direct: parseFloat(service.direct_costs?.total || "0"),
+    allocated: parseFloat(service.allocated_costs?.total || "0"),
+    total: parseFloat(service.total_costs?.total || "0"),
   })) || []
 
   const sharedChartData = platformData?.shared_services.map((service) => ({
     name: service.name,
-    direct: parseFloat(service.direct_costs.total),
-    allocated: parseFloat(service.allocated_costs.total),
-    total: parseFloat(service.total_costs.total),
+    direct: parseFloat(service.direct_costs?.total || "0"),
+    allocated: parseFloat(service.allocated_costs?.total || "0"),
+    total: parseFloat(service.total_costs?.total || "0"),
   })) || []
 
   if (loading) {
@@ -158,28 +158,37 @@ export default function PlatformPage() {
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Total Cost</p>
                     <p className="text-xl font-bold">
-                      {formatCurrency(service.total_costs.total, service.total_costs.currency)}
+                      {formatCurrency(
+                        service.total_costs?.total || "0",
+                        service.total_costs?.currency
+                      )}
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-3 gap-4 mt-3 pt-3 border-t">
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Direct</p>
                     <p className="text-sm font-semibold">
-                      {formatCurrency(service.direct_costs.total, service.direct_costs.currency)}
+                      {formatCurrency(
+                        service.direct_costs?.total || "0",
+                        service.direct_costs?.currency
+                      )}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Allocated</p>
                     <p className="text-sm font-semibold">
-                      {formatCurrency(service.allocated_costs.total, service.allocated_costs.currency)}
+                      {formatCurrency(
+                        service.allocated_costs?.total || "0",
+                        service.allocated_costs?.currency
+                      )}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Dimensions</p>
                     <p className="text-sm font-semibold">
-                      {Object.keys(service.direct_costs.dimensions).length}
+                      {Object.keys(service.direct_costs?.dimensions || {}).length}
                     </p>
                   </div>
                 </div>
@@ -246,28 +255,37 @@ export default function PlatformPage() {
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Total Cost</p>
                     <p className="text-xl font-bold">
-                      {formatCurrency(service.total_costs.total, service.total_costs.currency)}
+                      {formatCurrency(
+                        service.total_costs?.total || "0",
+                        service.total_costs?.currency
+                      )}
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-3 gap-4 mt-3 pt-3 border-t">
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Direct</p>
                     <p className="text-sm font-semibold">
-                      {formatCurrency(service.direct_costs.total, service.direct_costs.currency)}
+                      {formatCurrency(
+                        service.direct_costs?.total || "0",
+                        service.direct_costs?.currency
+                      )}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Allocated</p>
                     <p className="text-sm font-semibold">
-                      {formatCurrency(service.allocated_costs.total, service.allocated_costs.currency)}
+                      {formatCurrency(
+                        service.allocated_costs?.total || "0",
+                        service.allocated_costs?.currency
+                      )}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Dimensions</p>
                     <p className="text-sm font-semibold">
-                      {Object.keys(service.direct_costs.dimensions).length}
+                      {Object.keys(service.direct_costs?.dimensions || {}).length}
                     </p>
                   </div>
                 </div>
@@ -278,7 +296,7 @@ export default function PlatformPage() {
       </Card>
 
       {/* Weighted Allocations */}
-      {platformData && platformData.weighted_allocations.length > 0 && (
+      {platformData && platformData.weighted_allocations && platformData.weighted_allocations.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Cost Allocations</CardTitle>
