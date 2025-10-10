@@ -114,6 +114,14 @@ check-syntax:
 	chmod +x scripts/check-syntax.sh
 	./scripts/check-syntax.sh
 
+diagnose-data: build
+	chmod +x scripts/diagnose-data.sh
+	./scripts/diagnose-data.sh
+
+finops-demo: build
+	chmod +x scripts/finops-demo.sh
+	./scripts/finops-demo.sh
+
 # Docker commands
 docker-build:
 	docker build -t $(DOCKER_IMAGE) .
@@ -167,6 +175,8 @@ help:
 	@echo "  test-chart-step-by-step - Step-by-step chart generation test"
 	@echo "  test-chart-direct - Direct chart generation test (no CLI)"
 	@echo "  check-syntax   - Check for common Go compilation issues"
+	@echo "  diagnose-data  - Diagnose database data and chart generation issues"
+	@echo "  finops-demo    - Run complete FinOps demonstration"
 	@echo "  docker-build   - Build Docker image"
 	@echo "  docker-run     - Run Docker container"
 	@echo "  fmt            - Format Go code"

@@ -16,8 +16,9 @@ NC='\033[0m' # No Color
 FINOPS_BIN="./bin/finops"
 CHARTS_DIR="./charts"
 FORMAT="png"
-DATE_RANGE_START="2024-01-01"
-DATE_RANGE_END="2024-01-31"
+# Use dynamic dates that match the demo seeder (last 30 days)
+DATE_RANGE_END=$(date '+%Y-%m-%d')
+DATE_RANGE_START=$(date -d '30 days ago' '+%Y-%m-%d')
 
 # Function to show usage
 show_usage() {
@@ -33,8 +34,8 @@ show_usage() {
     echo "Options:"
     echo "  -f, --format FORMAT     Output format (png, svg) [default: png]"
     echo "  -d, --dir DIR          Output directory [default: ./charts]"
-    echo "  -s, --start DATE       Start date for trends (YYYY-MM-DD) [default: 2024-01-01]"
-    echo "  -e, --end DATE         End date for trends (YYYY-MM-DD) [default: 2024-01-31]"
+    echo "  -s, --start DATE       Start date for trends (YYYY-MM-DD) [default: 30 days ago]"
+    echo "  -e, --end DATE         End date for trends (YYYY-MM-DD) [default: today]"
     echo "  -h, --help             Show this help message"
     echo ""
     echo "Examples:"
@@ -239,6 +240,7 @@ esac
 echo ""
 echo -e "${BLUE}📁 Charts saved to: $CHARTS_DIR${NC}"
 echo -e "${BLUE}📊 Format: $FORMAT${NC}"
+echo -e "${BLUE}📅 Date Range: $DATE_RANGE_START to $DATE_RANGE_END${NC}"
 
 # List generated files
 if [[ -d "$CHARTS_DIR" ]]; then

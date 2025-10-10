@@ -14,6 +14,7 @@ import (
 	"github.com/pickeringtech/FinOpsAggregator/internal/graph"
 	"github.com/pickeringtech/FinOpsAggregator/internal/logging"
 	"github.com/pickeringtech/FinOpsAggregator/internal/store"
+	"github.com/pickeringtech/FinOpsAggregator/internal/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -73,6 +74,8 @@ func init() {
 	rootCmd.AddCommand(graphCmd)
 	rootCmd.AddCommand(allocateCmd)
 	rootCmd.AddCommand(exportCmd)
+	rootCmd.AddCommand(reportCmd)
+	rootCmd.AddCommand(analyzeCmd)
 	rootCmd.AddCommand(tuiCmd)
 	rootCmd.AddCommand(demoCmd)
 }
@@ -128,14 +131,27 @@ var exportCmd = &cobra.Command{
 	Short: "Export data and generate reports",
 }
 
+var reportCmd = &cobra.Command{
+	Use:   "report",
+	Short: "Generate comprehensive FinOps reports",
+	Long:  "Generate detailed FinOps reports with cost analysis, optimization insights, and recommendations",
+}
+
 var tuiCmd = &cobra.Command{
 	Use:   "tui",
 	Short: "Launch terminal user interface",
+	Long:  "Launch an interactive terminal user interface for FinOps cost analysis and optimization",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("Launching TUI...")
-		// TODO: Implement TUI launch
-		return nil
+		// Launch TUI application
+		tuiApp := tui.NewApp(st)
+		return tuiApp.Run()
 	},
+}
+
+var analyzeCmd = &cobra.Command{
+	Use:   "analyze",
+	Short: "Analyze costs and generate insights",
+	Long:  "Perform cost analysis and generate optimization insights for FinOps decision making",
 }
 
 var demoCmd = &cobra.Command{
