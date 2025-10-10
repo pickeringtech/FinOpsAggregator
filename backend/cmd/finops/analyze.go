@@ -19,6 +19,7 @@ func init() {
 	// Add analyze subcommands
 	analyzeCmd.AddCommand(analyzeCostsCmd)
 	analyzeCmd.AddCommand(analyzeOptimizationCmd)
+	analyzeCmd.AddCommand(analyzeProductsCmd)
 	analyzeCmd.AddCommand(analyzeEfficiencyCmd)
 	
 	// Add report subcommands
@@ -35,6 +36,10 @@ func init() {
 	analyzeOptimizationCmd.Flags().StringP("to", "t", "", "End date (YYYY-MM-DD)")
 	analyzeOptimizationCmd.Flags().StringP("format", "o", "table", "Output format (table, json)")
 	analyzeOptimizationCmd.Flags().StringP("severity", "s", "", "Filter by severity (high, medium, low)")
+
+	analyzeProductsCmd.Flags().StringP("from", "f", "", "Start date (YYYY-MM-DD)")
+	analyzeProductsCmd.Flags().StringP("to", "t", "", "End date (YYYY-MM-DD)")
+	analyzeProductsCmd.Flags().StringP("format", "o", "table", "Output format (table, json)")
 	
 	reportGenerateCmd.Flags().StringP("from", "f", "", "Start date (YYYY-MM-DD)")
 	reportGenerateCmd.Flags().StringP("to", "t", "", "End date (YYYY-MM-DD)")
@@ -145,6 +150,53 @@ var analyzeOptimizationCmd = &cobra.Command{
 			return outputJSON(insights)
 		default:
 			return outputOptimizationTable(insights)
+		}
+	},
+}
+
+var analyzeProductsCmd = &cobra.Command{
+	Use:   "products",
+	Short: "Analyze costs by Product",
+	Long:  "Analyze cost breakdown by Products and their dependencies",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Parse flags
+		fromStr, _ := cmd.Flags().GetString("from")
+		toStr, _ := cmd.Flags().GetString("to")
+		format, _ := cmd.Flags().GetString("format")
+
+		// Set default date range (last 30 days)
+		endDate := time.Now()
+		startDate := endDate.AddDate(0, 0, -30)
+
+		if fromStr != "" {
+			var err error
+			startDate, err = time.Parse("2006-01-02", fromStr)
+			if err != nil {
+				return fmt.Errorf("invalid start date: %w", err)
+			}
+		}
+
+		if toStr != "" {
+			var err error
+			endDate, err = time.Parse("2006-01-02", toStr)
+			if err != nil {
+				return fmt.Errorf("invalid end date: %w", err)
+			}
+		}
+
+		// Analyze product costs
+		analyzer := analysis.NewFinOpsAnalyzer(st)
+		summary, err := analyzer.AnalyzeProductCosts(context.Background(), startDate, endDate)
+		if err != nil {
+			return fmt.Errorf("failed to analyze product costs: %w", err)
+		}
+
+		// Output results
+		switch format {
+		case "json":
+			return outputJSON(summary)
+		default:
+			return outputProductTable(summary)
 		}
 	},
 }
@@ -349,6 +401,65 @@ func outputOptimizationTable(insights []analysis.CostOptimizationInsight) error 
 		}
 	}
 	
+	return nil
+}
+
+func outputProductTable(summary *analysis.ProductCostSummary) error {
+	fmt.Printf("🏢 Product Cost Analysis - %s\n", summary.Period)
+	fmt.Println("═══════════════════════════════════════════════════════════════")
+	fmt.Println()
+	fmt.Printf("💰 Total Cost: %s\n", summary.TotalCost.StringFixed(2))
+	fmt.Printf("📅 Period: %s\n", summary.Period)
+	fmt.Printf("🏢 Products: %d\n", summary.ProductCount)
+	fmt.Println()
+
+	if len(summary.Products) == 0 {
+		fmt.Println("No product costs found for the specified period.")
+		return nil
+	}
+
+	fmt.Printf("🏢 Products by Cost:\n")
+	fmt.Println("───────────────────────────────────────────────────────────────")
+
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintf(w, "Rank\tProduct\tTotal Cost\tPercentage\tDependencies\n")
+	fmt.Fprintf(w, "────\t───────\t──────────\t──────────\t────────────\n")
+
+	for i, product := range summary.Products {
+		fmt.Fprintf(w, "%d\t%s\t$%s\t%.1f%%\t%d nodes\n",
+			i+1,
+			product.ProductName,
+			product.TotalCost.StringFixed(2),
+			product.Percentage,
+			product.DependentNodeCount,
+		)
+	}
+	w.Flush()
+	fmt.Println()
+
+	// Show detailed breakdown for each product
+	for _, product := range summary.Products {
+		fmt.Printf("📊 %s - Cost Breakdown:\n", product.ProductName)
+		fmt.Println("───────────────────────────────────────────────────────────────")
+
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+		fmt.Fprintf(w, "Node Name\tType\tCost\tPercentage\n")
+		fmt.Fprintf(w, "─────────\t────\t────\t──────────\n")
+
+		for _, node := range product.CostBreakdown {
+			if node.Cost.IsPositive() {
+				fmt.Fprintf(w, "%s\t%s\t$%s\t%.1f%%\n",
+					node.NodeName,
+					node.NodeType,
+					node.Cost.StringFixed(2),
+					node.Percentage,
+				)
+			}
+		}
+		w.Flush()
+		fmt.Println()
+	}
+
 	return nil
 }
 
