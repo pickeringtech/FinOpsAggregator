@@ -629,24 +629,30 @@ func (s *Service) getNodeAllocations(ctx context.Context, nodeID uuid.UUID, req 
 	return allocations, nil
 }
 
-// getProductChildren retrieves child nodes for a product
+// getProductChildren retrieves child nodes for a product with their contribution amounts
 func (s *Service) getProductChildren(ctx context.Context, productID uuid.UUID, req CostAttributionRequest) ([]ProductNode, error) {
-	// Get child edges for this product
-	edges, err := s.store.Edges.GetByParentID(ctx, productID, nil)
+	// Get contributions where this product is the parent (receiving contributions from children)
+	contributions, err := s.store.Runs.GetContributionsByParentAndDateRange(ctx, productID, req.StartDate, req.EndDate, req.Dimensions)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get child edges: %w", err)
+		return nil, fmt.Errorf("failed to get contributions: %w", err)
+	}
+
+	// Group contributions by child node
+	childContributions := make(map[uuid.UUID][]models.ContributionResultByDimension)
+	for _, contribution := range contributions {
+		childContributions[contribution.ChildID] = append(childContributions[contribution.ChildID], contribution)
 	}
 
 	var children []ProductNode
-	for _, edge := range edges {
+	for childID, contribs := range childContributions {
 		// Get child node
-		childNode, err := s.store.Nodes.GetByID(ctx, edge.ChildID)
+		childNode, err := s.store.Nodes.GetByID(ctx, childID)
 		if err != nil {
 			continue // Skip if we can't get the child node
 		}
 
-		// Build child product node
-		child, err := s.buildProductNode(ctx, *childNode, req)
+		// Build child node with contribution amounts (not full direct costs)
+		child, err := s.buildChildNodeWithContributions(ctx, *childNode, contribs, req)
 		if err != nil {
 			continue // Skip if we can't build the child node
 		}
@@ -655,6 +661,36 @@ func (s *Service) getProductChildren(ctx context.Context, productID uuid.UUID, r
 	}
 
 	return children, nil
+}
+
+// buildChildNodeWithContributions builds a child node showing only the costs contributed to the parent
+func (s *Service) buildChildNodeWithContributions(ctx context.Context, node models.CostNode, contributions []models.ContributionResultByDimension, req CostAttributionRequest) (*ProductNode, error) {
+	// Convert contributions to cost breakdown format
+	var costs []models.NodeCostByDimension
+	for _, contribution := range contributions {
+		costs = append(costs, models.NodeCostByDimension{
+			NodeID:    contribution.ChildID,
+			CostDate:  contribution.ContributionDate,
+			Dimension: contribution.Dimension,
+			Amount:    contribution.ContributedAmount,
+			Currency:  "USD", // TODO: Get from config
+		})
+	}
+
+	contributedCosts := s.buildCostBreakdown(costs, req)
+
+	// For children, we show the contributed amount as both direct and holistic
+	// since we're showing what this child contributed to the parent
+	return &ProductNode{
+		ID:                 node.ID,
+		Name:               node.Name,
+		Type:               node.Type,
+		DirectCosts:        *contributedCosts,
+		HolisticCosts:      *contributedCosts,
+		SharedServiceCosts: CostBreakdown{Total: decimal.Zero, Currency: req.Currency, Dimensions: make(map[string]decimal.Decimal)},
+		Children:           []ProductNode{}, // Don't recurse further for children
+		Metadata:           node.Metadata,
+	}, nil
 }
 
 // buildPlatformService builds a platform service with its cost data
