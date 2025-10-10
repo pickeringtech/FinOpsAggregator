@@ -1,0 +1,5590 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FinOps Cost Attribution Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .header { background: #f5f5f5; padding: 20px; border-radius: 5px; }
+        .section { margin: 20px 0; }
+        .metric { display: inline-block; margin: 10px; padding: 15px; background: #e8f4f8; border-radius: 5px; }
+        .insight { margin: 10px 0; padding: 15px; border-left: 4px solid #007acc; background: #f9f9f9; }
+        .high-severity { border-left-color: #d32f2f; }
+        .medium-severity { border-left-color: #f57c00; }
+        .low-severity { border-left-color: #388e3c; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f5f5f5; }
+        .cost { font-weight: bold; color: #d32f2f; }
+        .savings { font-weight: bold; color: #388e3c; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>FinOps Cost Attribution Report</h1>
+        <p><strong>Period:</strong> 2025-09-10 to 2025-10-10</p>
+        <p><strong>Generated:</strong> 2025-10-10 10:19:50</p>
+    </div>
+
+    <div class="section">
+        <h2>Executive Summary</h2>
+        <p>During the period 2025-09-10 to 2025-10-10, total cloud costs were $128051.73598615 across 6 nodes and 1025 cost dimensions. Analysis identified 8 optimization opportunities with potential savings of $20861.680224706. The top cost driver is rds_shared, representing 58.3% of total spend. Key focus areas include cost optimization, resource rightsizing, and improved allocation accuracy.</p>
+    </div>
+
+    <div class="section">
+        <h2>Cost Overview</h2>
+        <div class="metric">
+            <h3>Total Cost</h3>
+            <div class="cost">$128051.73598615</div>
+        </div>
+        <div class="metric">
+            <h3>Number of Nodes</h3>
+            <div>6</div>
+        </div>
+        <div class="metric">
+            <h3>Cost Dimensions</h3>
+            <div>1025</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Top Cost Nodes</h2>
+        <table>
+            <tr>
+                <th>Node Name</th>
+                <th>Type</th>
+                <th>Cost</th>
+                <th>Percentage</th>
+            </tr>
+            
+            <tr>
+                <td>rds_shared</td>
+                <td>shared</td>
+                <td class="cost">$74671.902338975</td>
+                <td>58.3%</td>
+            </tr>
+            
+            <tr>
+                <td>platform_pool</td>
+                <td>platform</td>
+                <td class="cost">$35149.617834675</td>
+                <td>27.4%</td>
+            </tr>
+            
+            <tr>
+                <td>ec2_p</td>
+                <td>resource</td>
+                <td class="cost">$13956.92319093</td>
+                <td>10.9%</td>
+            </tr>
+            
+            <tr>
+                <td>s3_p</td>
+                <td>resource</td>
+                <td class="cost">$4268.41596498</td>
+                <td>3.3%</td>
+            </tr>
+            
+            <tr>
+                <td>product_p</td>
+                <td>product</td>
+                <td class="cost">$3.03608047</td>
+                <td>0.0%</td>
+            </tr>
+            
+            <tr>
+                <td>product_q</td>
+                <td>product</td>
+                <td class="cost">$1.84057612</td>
+                <td>0.0%</td>
+            </tr>
+            
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Cost by Dimension</h2>
+        <table>
+            <tr>
+                <th>Dimension</th>
+                <th>Cost</th>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r0</td>
+                <td class="cost">$0.00071733</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r1</td>
+                <td class="cost">$0.00071916</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r10</td>
+                <td class="cost">$0.00073069</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r11</td>
+                <td class="cost">$0.00072703</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r12</td>
+                <td class="cost">$0.00072632</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r13</td>
+                <td class="cost">$0.00072556</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r14</td>
+                <td class="cost">$0.00072134</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r15</td>
+                <td class="cost">$0.00072064</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r16</td>
+                <td class="cost">$0.00071991</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r17</td>
+                <td class="cost">$0.0007163</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r18</td>
+                <td class="cost">$0.00071265</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r19</td>
+                <td class="cost">$0.00071194</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r2</td>
+                <td class="cost">$0.000721</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r20</td>
+                <td class="cost">$0.00071672</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r21</td>
+                <td class="cost">$0.00071855</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r22</td>
+                <td class="cost">$0.00072038</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r23</td>
+                <td class="cost">$0.00072222</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r3</td>
+                <td class="cost">$0.00072284</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r4</td>
+                <td class="cost">$0.00072469</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r5</td>
+                <td class="cost">$0.00072653</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r6</td>
+                <td class="cost">$0.00073132</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r7</td>
+                <td class="cost">$0.00073611</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r8</td>
+                <td class="cost">$0.00073794</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s0_r9</td>
+                <td class="cost">$0.00073981</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r0</td>
+                <td class="cost">$0.00087327</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r1</td>
+                <td class="cost">$0.00089008</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r10</td>
+                <td class="cost">$0.00102998</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r11</td>
+                <td class="cost">$0.00104365</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r12</td>
+                <td class="cost">$0.00105728</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r13</td>
+                <td class="cost">$0.00106657</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r14</td>
+                <td class="cost">$0.00107925</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r15</td>
+                <td class="cost">$0.00109277</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r16</td>
+                <td class="cost">$0.00110173</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r17</td>
+                <td class="cost">$0.00111055</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r18</td>
+                <td class="cost">$0.00112383</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r19</td>
+                <td class="cost">$0.00114589</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r2</td>
+                <td class="cost">$0.00090699</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r20</td>
+                <td class="cost">$0.00116335</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r21</td>
+                <td class="cost">$0.0011809</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r22</td>
+                <td class="cost">$0.00119852</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r23</td>
+                <td class="cost">$0.00121625</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r3</td>
+                <td class="cost">$0.00092399</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r4</td>
+                <td class="cost">$0.00094105</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r5</td>
+                <td class="cost">$0.000962</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r6</td>
+                <td class="cost">$0.0009832</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r7</td>
+                <td class="cost">$0.00100061</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r8</td>
+                <td class="cost">$0.00101812</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s1_r9</td>
+                <td class="cost">$0.00102037</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r0</td>
+                <td class="cost">$0.000515</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r1</td>
+                <td class="cost">$0.000533535</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r10</td>
+                <td class="cost">$0.00069172</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r11</td>
+                <td class="cost">$0.00070832</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r12</td>
+                <td class="cost">$0.00072194</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r13</td>
+                <td class="cost">$0.00073842</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r14</td>
+                <td class="cost">$0.000754225</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r15</td>
+                <td class="cost">$0.000767435</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r16</td>
+                <td class="cost">$0.00078052</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r17</td>
+                <td class="cost">$0.00079671</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r18</td>
+                <td class="cost">$0.000819085</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r19</td>
+                <td class="cost">$0.0008383</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r2</td>
+                <td class="cost">$0.00055215</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r20</td>
+                <td class="cost">$0.00085761</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r21</td>
+                <td class="cost">$0.000876985</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r22</td>
+                <td class="cost">$0.00089647</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r23</td>
+                <td class="cost">$0.000916025</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r3</td>
+                <td class="cost">$0.000570865</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r4</td>
+                <td class="cost">$0.00059201</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r5</td>
+                <td class="cost">$0.000613415</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r6</td>
+                <td class="cost">$0.000632505</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r7</td>
+                <td class="cost">$0.00065173</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r8</td>
+                <td class="cost">$0.000661115</td>
+            </tr>
+            
+            <tr>
+                <td>api_calls_s2_r9</td>
+                <td class="cost">$0.000675095</td>
+            </tr>
+            
+            <tr>
+                <td>backups_gb_month</td>
+                <td class="cost">$771.9</td>
+            </tr>
+            
+            <tr>
+                <td>backups_gb_month_s0_r0</td>
+                <td class="cost">$18.929232495</td>
+            </tr>
+            
+            <tr>
+                <td>backups_gb_month_s1_r0</td>
+                <td class="cost">$23.04443757</td>
+            </tr>
+            
+            <tr>
+                <td>cdn_requests_s0_r0</td>
+                <td class="cost">$0.039851</td>
+            </tr>
+            
+            <tr>
+                <td>cdn_requests_s1_r0</td>
+                <td class="cost">$0.04851459</td>
+            </tr>
+            
+            <tr>
+                <td>cdn_requests_s2_r0</td>
+                <td class="cost">$0.028611075</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s0_r0</td>
+                <td class="cost">$59.7765237</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s0_r1</td>
+                <td class="cost">$59.92980668</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s0_r2</td>
+                <td class="cost">$60.083271665</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s0_r3</td>
+                <td class="cost">$60.185272625</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s1_r0</td>
+                <td class="cost">$72.771908095</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s1_r1</td>
+                <td class="cost">$72.958258435</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s1_r2</td>
+                <td class="cost">$73.14482977</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s1_r3</td>
+                <td class="cost">$73.26856652</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s2_r0</td>
+                <td class="cost">$85.83324523</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s2_r1</td>
+                <td class="cost">$86.05274091</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s2_r2</td>
+                <td class="cost">$86.272496605</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s2_r3</td>
+                <td class="cost">$86.417926265</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s3_r0</td>
+                <td class="cost">$98.96065205</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s3_r1</td>
+                <td class="cost">$99.21337109</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s3_r2</td>
+                <td class="cost">$99.46638913</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s3_r3</td>
+                <td class="cost">$100.03393813</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s4_r0</td>
+                <td class="cost">$112.070387465</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s4_r1</td>
+                <td class="cost">$112.44026597</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s4_r2</td>
+                <td class="cost">$113.14051819</td>
+            </tr>
+            
+            <tr>
+                <td>cloudwatch_metrics_s4_r3</td>
+                <td class="cost">$113.68013708</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r0</td>
+                <td class="cost">$59.378013535</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r1</td>
+                <td class="cost">$59.530274615</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r10</td>
+                <td class="cost">$60.48597432</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r11</td>
+                <td class="cost">$60.18222145</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r12</td>
+                <td class="cost">$60.12233185</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r13</td>
+                <td class="cost">$60.062706455</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r14</td>
+                <td class="cost">$59.711258565</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r15</td>
+                <td class="cost">$59.652854885</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r16</td>
+                <td class="cost">$59.594715425</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r17</td>
+                <td class="cost">$59.292851755</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r18</td>
+                <td class="cost">$58.99134969</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r19</td>
+                <td class="cost">$58.933029445</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r2</td>
+                <td class="cost">$59.682716505</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r20</td>
+                <td class="cost">$59.327552475</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r21</td>
+                <td class="cost">$59.479533335</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r22</td>
+                <td class="cost">$59.631695005</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r23</td>
+                <td class="cost">$59.78403745</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r3</td>
+                <td class="cost">$59.83533917</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r4</td>
+                <td class="cost">$59.988142635</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r5</td>
+                <td class="cost">$60.14112688</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r6</td>
+                <td class="cost">$60.53643076</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r7</td>
+                <td class="cost">$60.931818085</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r8</td>
+                <td class="cost">$61.08534468</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s0_r9</td>
+                <td class="cost">$61.239052075</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r0</td>
+                <td class="cost">$72.28676205</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r1</td>
+                <td class="cost">$72.47187006</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r10</td>
+                <td class="cost">$73.07841176</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r11</td>
+                <td class="cost">$73.00568866</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r12</td>
+                <td class="cost">$72.933286435</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r13</td>
+                <td class="cost">$72.5657608</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r14</td>
+                <td class="cost">$72.435609525</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r15</td>
+                <td class="cost">$72.365011605</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r16</td>
+                <td class="cost">$71.998462875</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r17</td>
+                <td class="cost">$71.6323532</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r18</td>
+                <td class="cost">$71.561535765</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r19</td>
+                <td class="cost">$72.040599445</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r2</td>
+                <td class="cost">$72.657197585</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r20</td>
+                <td class="cost">$72.22514764</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r21</td>
+                <td class="cost">$72.409915385</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r22</td>
+                <td class="cost">$72.594902645</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r23</td>
+                <td class="cost">$72.780109435</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r3</td>
+                <td class="cost">$72.84274464</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r4</td>
+                <td class="cost">$73.02851122</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r5</td>
+                <td class="cost">$73.508523075</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r6</td>
+                <td class="cost">$73.98863625</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r7</td>
+                <td class="cost">$74.175061415</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r8</td>
+                <td class="cost">$74.361706085</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s1_r9</td>
+                <td class="cost">$73.447254545</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r0</td>
+                <td class="cost">$13.733319235</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r1</td>
+                <td class="cost">$13.768438545</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r10</td>
+                <td class="cost">$13.834477115</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r11</td>
+                <td class="cost">$13.820756995</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r12</td>
+                <td class="cost">$13.7511114</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r13</td>
+                <td class="cost">$13.73773686</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r14</td>
+                <td class="cost">$13.71306969</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r15</td>
+                <td class="cost">$13.64360922</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r16</td>
+                <td class="cost">$13.57423194</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r17</td>
+                <td class="cost">$13.560812145</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r18</td>
+                <td class="cost">$13.65159405</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r19</td>
+                <td class="cost">$13.686565675</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r2</td>
+                <td class="cost">$13.80359945</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r20</td>
+                <td class="cost">$13.72157891</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r21</td>
+                <td class="cost">$13.75663374</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r22</td>
+                <td class="cost">$13.791730165</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r23</td>
+                <td class="cost">$13.8268682</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r3</td>
+                <td class="cost">$13.838801965</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r4</td>
+                <td class="cost">$13.92976355</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r5</td>
+                <td class="cost">$14.02074433</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r6</td>
+                <td class="cost">$14.056071635</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r7</td>
+                <td class="cost">$14.09144054</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r8</td>
+                <td class="cost">$13.918153245</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s2_r9</td>
+                <td class="cost">$13.84825805</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r0</td>
+                <td class="cost">$15.833704325</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r1</td>
+                <td class="cost">$15.874139375</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r10</td>
+                <td class="cost">$15.89387056</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r11</td>
+                <td class="cost">$15.813778105</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r12</td>
+                <td class="cost">$15.7983974</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r13</td>
+                <td class="cost">$15.783086615</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r14</td>
+                <td class="cost">$15.69015061</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r15</td>
+                <td class="cost">$15.61036673</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r16</td>
+                <td class="cost">$15.594933975</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r17</td>
+                <td class="cost">$15.699333145</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r18</td>
+                <td class="cost">$15.73955051</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r19</td>
+                <td class="cost">$15.779815745</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r2</td>
+                <td class="cost">$15.91462225</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r20</td>
+                <td class="cost">$15.8201288</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r21</td>
+                <td class="cost">$15.860489695</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r22</td>
+                <td class="cost">$15.90089842</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r23</td>
+                <td class="cost">$16.00543009</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r3</td>
+                <td class="cost">$16.019228075</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r4</td>
+                <td class="cost">$16.12385598</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r5</td>
+                <td class="cost">$16.164482385</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r6</td>
+                <td class="cost">$16.205156625</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r7</td>
+                <td class="cost">$16.00587621</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r8</td>
+                <td class="cost">$15.925496745</td>
+            </tr>
+            
+            <tr>
+                <td>cpu_hours_s3_r9</td>
+                <td class="cost">$15.909648685</td>
+            </tr>
+            
+            <tr>
+                <td>data_transfer_s0_r0</td>
+                <td class="cost">$4.21881293</td>
+            </tr>
+            
+            <tr>
+                <td>data_transfer_s1_r0</td>
+                <td class="cost">$5.13814468</td>
+            </tr>
+            
+            <tr>
+                <td>data_transfer_s2_r0</td>
+                <td class="cost">$6.046415465</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s0_r0</td>
+                <td class="cost">$0.19925509</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s0_r1</td>
+                <td class="cost">$0.19976602</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s0_r10</td>
+                <td class="cost">$0.20431912</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s0_r11</td>
+                <td class="cost">$0.201792885</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s0_r2</td>
+                <td class="cost">$0.200277575</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s0_r3</td>
+                <td class="cost">$0.20078972</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s0_r4</td>
+                <td class="cost">$0.201302505</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s0_r5</td>
+                <td class="cost">$0.20181587</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s0_r6</td>
+                <td class="cost">$0.203142395</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s0_r7</td>
+                <td class="cost">$0.20429328</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s0_r8</td>
+                <td class="cost">$0.204807515</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s0_r9</td>
+                <td class="cost">$0.205322365</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s1_r0</td>
+                <td class="cost">$0.24257304</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s1_r1</td>
+                <td class="cost">$0.24319418</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s1_r10</td>
+                <td class="cost">$0.245034225</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s1_r11</td>
+                <td class="cost">$0.24478905</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s1_r2</td>
+                <td class="cost">$0.2438161</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s1_r3</td>
+                <td class="cost">$0.24443875</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s1_r4</td>
+                <td class="cost">$0.24506212</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s1_r5</td>
+                <td class="cost">$0.24667291</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s1_r6</td>
+                <td class="cost">$0.24828401</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s1_r7</td>
+                <td class="cost">$0.24869486</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s1_r8</td>
+                <td class="cost">$0.24932003</td>
+            </tr>
+            
+            <tr>
+                <td>database_connections_s1_r9</td>
+                <td class="cost">$0.2481018</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s0_r0</td>
+                <td class="cost">$0.0199255</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s0_r1</td>
+                <td class="cost">$0.019976605</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s0_r10</td>
+                <td class="cost">$0.02043192</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s0_r11</td>
+                <td class="cost">$0.0201793</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s0_r2</td>
+                <td class="cost">$0.02002777</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s0_r3</td>
+                <td class="cost">$0.02007897</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s0_r4</td>
+                <td class="cost">$0.020130255</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s0_r5</td>
+                <td class="cost">$0.020181605</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s0_r6</td>
+                <td class="cost">$0.020314255</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s0_r7</td>
+                <td class="cost">$0.020429315</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s0_r8</td>
+                <td class="cost">$0.020480745</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s0_r9</td>
+                <td class="cost">$0.020532245</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s1_r0</td>
+                <td class="cost">$0.024257295</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s1_r1</td>
+                <td class="cost">$0.024319425</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s1_r10</td>
+                <td class="cost">$0.02450342</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s1_r11</td>
+                <td class="cost">$0.0244789</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s1_r2</td>
+                <td class="cost">$0.02438161</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s1_r3</td>
+                <td class="cost">$0.02444388</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s1_r4</td>
+                <td class="cost">$0.02450622</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s1_r5</td>
+                <td class="cost">$0.024667285</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s1_r6</td>
+                <td class="cost">$0.024828415</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s1_r7</td>
+                <td class="cost">$0.024869495</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s1_r8</td>
+                <td class="cost">$0.024932015</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s1_r9</td>
+                <td class="cost">$0.02481018</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s2_r0</td>
+                <td class="cost">$0.028611075</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s2_r1</td>
+                <td class="cost">$0.028684235</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s2_r10</td>
+                <td class="cost">$0.02879872</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s2_r11</td>
+                <td class="cost">$0.02876999</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s2_r2</td>
+                <td class="cost">$0.02875751</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s2_r3</td>
+                <td class="cost">$0.028830835</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s2_r4</td>
+                <td class="cost">$0.029020345</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s2_r5</td>
+                <td class="cost">$0.029209885</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s2_r6</td>
+                <td class="cost">$0.02928348</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s2_r7</td>
+                <td class="cost">$0.02933176</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s2_r8</td>
+                <td class="cost">$0.02918844</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s2_r9</td>
+                <td class="cost">$0.028827555</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s3_r0</td>
+                <td class="cost">$0.032986885</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s3_r1</td>
+                <td class="cost">$0.03307112</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s3_r10</td>
+                <td class="cost">$0.033085485</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s3_r11</td>
+                <td class="cost">$0.03291847</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s3_r2</td>
+                <td class="cost">$0.033155455</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s3_r3</td>
+                <td class="cost">$0.0333734</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s3_r4</td>
+                <td class="cost">$0.033591375</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s3_r5</td>
+                <td class="cost">$0.03367601</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s3_r6</td>
+                <td class="cost">$0.03376074</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s3_r7</td>
+                <td class="cost">$0.033566715</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s3_r8</td>
+                <td class="cost">$0.033151695</td>
+            </tr>
+            
+            <tr>
+                <td>disk_io_operations_s3_r9</td>
+                <td class="cost">$0.03311851</td>
+            </tr>
+            
+            <tr>
+                <td>egress_gb</td>
+                <td class="cost">$6231</td>
+            </tr>
+            
+            <tr>
+                <td>egress_gb_s0_r0</td>
+                <td class="cost">$75.93863318</td>
+            </tr>
+            
+            <tr>
+                <td>egress_gb_s1_r0</td>
+                <td class="cost">$92.48660434</td>
+            </tr>
+            
+            <tr>
+                <td>egress_gb_s2_r0</td>
+                <td class="cost">$81.626608845</td>
+            </tr>
+            
+            <tr>
+                <td>egress_gb_s3_r0</td>
+                <td class="cost">$61.48685786</td>
+            </tr>
+            
+            <tr>
+                <td>egress_gb_s4_r0</td>
+                <td class="cost">$34.252358315</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours</td>
+                <td class="cost">$37748.7</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r0</td>
+                <td class="cost">$1057.645959225</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r1</td>
+                <td class="cost">$1060.35804614</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r10</td>
+                <td class="cost">$1077.38104606</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r11</td>
+                <td class="cost">$1071.970575215</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r12</td>
+                <td class="cost">$1070.90381682</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r13</td>
+                <td class="cost">$1069.841764845</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r14</td>
+                <td class="cost">$1063.581746425</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r15</td>
+                <td class="cost">$1062.541455475</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r16</td>
+                <td class="cost">$1061.50587097</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r17</td>
+                <td class="cost">$1056.12905111</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r18</td>
+                <td class="cost">$1050.75867159</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r19</td>
+                <td class="cost">$1049.71986691</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r2</td>
+                <td class="cost">$1063.07335322</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r20</td>
+                <td class="cost">$1056.747142785</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r21</td>
+                <td class="cost">$1059.4542384</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r22</td>
+                <td class="cost">$1062.16455419</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r23</td>
+                <td class="cost">$1064.878090185</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r3</td>
+                <td class="cost">$1065.791880495</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r4</td>
+                <td class="cost">$1068.51362794</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r5</td>
+                <td class="cost">$1071.2385956</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r6</td>
+                <td class="cost">$1078.27978023</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r7</td>
+                <td class="cost">$1085.322451065</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r8</td>
+                <td class="cost">$1088.05707926</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s0_r9</td>
+                <td class="cost">$1090.794927685</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r0</td>
+                <td class="cost">$1287.577627435</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r1</td>
+                <td class="cost">$1290.87478603</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r10</td>
+                <td class="cost">$1301.678555635</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r11</td>
+                <td class="cost">$1300.383206125</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r12</td>
+                <td class="cost">$1299.093571605</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r13</td>
+                <td class="cost">$1292.54717553</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r14</td>
+                <td class="cost">$1290.228910225</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r15</td>
+                <td class="cost">$1288.97141474</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r16</td>
+                <td class="cost">$1282.44241917</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r17</td>
+                <td class="cost">$1275.92124409</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r18</td>
+                <td class="cost">$1274.659838375</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r19</td>
+                <td class="cost">$1283.1929591</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r2</td>
+                <td class="cost">$1294.17585489</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r20</td>
+                <td class="cost">$1286.48014662</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r21</td>
+                <td class="cost">$1289.771244355</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r22</td>
+                <td class="cost">$1293.06625237</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r23</td>
+                <td class="cost">$1296.36517058</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r3</td>
+                <td class="cost">$1297.480833955</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r4</td>
+                <td class="cost">$1300.78972321</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r5</td>
+                <td class="cost">$1309.339733125</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r6</td>
+                <td class="cost">$1317.891547735</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r7</td>
+                <td class="cost">$1321.212167725</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r8</td>
+                <td class="cost">$1324.53669793</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s1_r9</td>
+                <td class="cost">$1308.24841304</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r0</td>
+                <td class="cost">$82.399915425</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r1</td>
+                <td class="cost">$82.61063128</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r10</td>
+                <td class="cost">$83.006862765</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r11</td>
+                <td class="cost">$82.924542</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r12</td>
+                <td class="cost">$82.50666841</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r13</td>
+                <td class="cost">$82.426421285</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r14</td>
+                <td class="cost">$82.278418265</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r15</td>
+                <td class="cost">$81.861655375</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r16</td>
+                <td class="cost">$81.445391715</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r17</td>
+                <td class="cost">$81.364872885</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r18</td>
+                <td class="cost">$81.90956429</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r19</td>
+                <td class="cost">$82.119394085</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r2</td>
+                <td class="cost">$82.821596735</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r20</td>
+                <td class="cost">$82.329473475</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r21</td>
+                <td class="cost">$82.539802445</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r22</td>
+                <td class="cost">$82.750381025</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r23</td>
+                <td class="cost">$82.961209215</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r3</td>
+                <td class="cost">$83.03281181</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r4</td>
+                <td class="cost">$83.57858131</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r5</td>
+                <td class="cost">$84.124466005</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r6</td>
+                <td class="cost">$84.33642988</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r7</td>
+                <td class="cost">$84.54864335</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r8</td>
+                <td class="cost">$83.508919495</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s2_r9</td>
+                <td class="cost">$83.089548305</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r0</td>
+                <td class="cost">$95.00222596</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r1</td>
+                <td class="cost">$95.244836235</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r10</td>
+                <td class="cost">$95.363223295</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r11</td>
+                <td class="cost">$94.88266866</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r12</td>
+                <td class="cost">$94.790384445</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r13</td>
+                <td class="cost">$94.698519745</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r14</td>
+                <td class="cost">$94.14090367</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r15</td>
+                <td class="cost">$93.66220046</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r16</td>
+                <td class="cost">$93.569603795</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r17</td>
+                <td class="cost">$94.195998945</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r18</td>
+                <td class="cost">$94.43730319</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r19</td>
+                <td class="cost">$94.67889447</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r2</td>
+                <td class="cost">$95.48773356</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r20</td>
+                <td class="cost">$94.9207728</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r21</td>
+                <td class="cost">$95.162938165</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r22</td>
+                <td class="cost">$95.40539058</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r23</td>
+                <td class="cost">$96.032580595</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r3</td>
+                <td class="cost">$96.11536849</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r4</td>
+                <td class="cost">$96.7431359</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r5</td>
+                <td class="cost">$96.98689435</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r6</td>
+                <td class="cost">$97.230939815</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r7</td>
+                <td class="cost">$96.03525741</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r8</td>
+                <td class="cost">$95.55298054</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s3_r9</td>
+                <td class="cost">$95.457892155</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r0</td>
+                <td class="cost">$71.725047975</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r1</td>
+                <td class="cost">$71.961770225</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r10</td>
+                <td class="cost">$71.3732818</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r11</td>
+                <td class="cost">$71.26061487</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r12</td>
+                <td class="cost">$71.12910742</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r13</td>
+                <td class="cost">$70.82506332</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r14</td>
+                <td class="cost">$70.509004215</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r15</td>
+                <td class="cost">$70.48148351</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r16</td>
+                <td class="cost">$70.897489885</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r17</td>
+                <td class="cost">$71.082846755</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r18</td>
+                <td class="cost">$71.26826032</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r19</td>
+                <td class="cost">$71.45289253</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r2</td>
+                <td class="cost">$72.40993165</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r20</td>
+                <td class="cost">$71.66332769</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r21</td>
+                <td class="cost">$71.899714645</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r22</td>
+                <td class="cost">$72.349129175</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r23</td>
+                <td class="cost">$72.755287735</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r3</td>
+                <td class="cost">$72.789240705</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r4</td>
+                <td class="cost">$72.877811615</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r5</td>
+                <td class="cost">$72.94886324</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r6</td>
+                <td class="cost">$72.14333564</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r7</td>
+                <td class="cost">$71.84098857</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r8</td>
+                <td class="cost">$71.757371875</td>
+            </tr>
+            
+            <tr>
+                <td>instance_hours_s4_r9</td>
+                <td class="cost">$71.674179525</td>
+            </tr>
+            
+            <tr>
+                <td>iops</td>
+                <td class="cost">$1464.75</td>
+            </tr>
+            
+            <tr>
+                <td>iops_s0_r0</td>
+                <td class="cost">$12.95158013</td>
+            </tr>
+            
+            <tr>
+                <td>iops_s1_r0</td>
+                <td class="cost">$15.76724676</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r0</td>
+                <td class="cost">$0.00004781</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r1</td>
+                <td class="cost">$0.00004795</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r10</td>
+                <td class="cost">$0.00004874</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r11</td>
+                <td class="cost">$0.00004848</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r12</td>
+                <td class="cost">$0.00004842</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r13</td>
+                <td class="cost">$0.00004835</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r14</td>
+                <td class="cost">$0.00004805</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r15</td>
+                <td class="cost">$0.00004805</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r16</td>
+                <td class="cost">$0.00004803</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r17</td>
+                <td class="cost">$0.00004777</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r18</td>
+                <td class="cost">$0.00004749</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r19</td>
+                <td class="cost">$0.00004744</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r2</td>
+                <td class="cost">$0.00004808</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r20</td>
+                <td class="cost">$0.00004777</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r21</td>
+                <td class="cost">$0.00004791</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r22</td>
+                <td class="cost">$0.00004804</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r23</td>
+                <td class="cost">$0.00004816</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r3</td>
+                <td class="cost">$0.0000482</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r4</td>
+                <td class="cost">$0.00004831</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r5</td>
+                <td class="cost">$0.00004844</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r6</td>
+                <td class="cost">$0.00004875</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r7</td>
+                <td class="cost">$0.00004906</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r8</td>
+                <td class="cost">$0.00004918</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s0_r9</td>
+                <td class="cost">$0.00004933</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r0</td>
+                <td class="cost">$0.00005821</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r1</td>
+                <td class="cost">$0.00005933</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r10</td>
+                <td class="cost">$0.00006865</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r11</td>
+                <td class="cost">$0.00006956</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r12</td>
+                <td class="cost">$0.00007047</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r13</td>
+                <td class="cost">$0.0000711</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r14</td>
+                <td class="cost">$0.00007195</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r15</td>
+                <td class="cost">$0.00007286</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r16</td>
+                <td class="cost">$0.00007345</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r17</td>
+                <td class="cost">$0.00007407</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r18</td>
+                <td class="cost">$0.00007493</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r19</td>
+                <td class="cost">$0.00007636</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r2</td>
+                <td class="cost">$0.00006047</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r20</td>
+                <td class="cost">$0.0000776</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r21</td>
+                <td class="cost">$0.00007873</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r22</td>
+                <td class="cost">$0.00007991</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r23</td>
+                <td class="cost">$0.00008107</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r3</td>
+                <td class="cost">$0.0000616</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r4</td>
+                <td class="cost">$0.00006273</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r5</td>
+                <td class="cost">$0.00006416</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r6</td>
+                <td class="cost">$0.00006556</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r7</td>
+                <td class="cost">$0.00006672</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r8</td>
+                <td class="cost">$0.00006789</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s1_r9</td>
+                <td class="cost">$0.00006801</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r0</td>
+                <td class="cost">$0.00003434</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r1</td>
+                <td class="cost">$0.000035575</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r10</td>
+                <td class="cost">$0.000046105</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r11</td>
+                <td class="cost">$0.000047225</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r12</td>
+                <td class="cost">$0.00004814</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r13</td>
+                <td class="cost">$0.000049235</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r14</td>
+                <td class="cost">$0.000050295</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r15</td>
+                <td class="cost">$0.000051165</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r16</td>
+                <td class="cost">$0.000052035</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r17</td>
+                <td class="cost">$0.000053115</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r18</td>
+                <td class="cost">$0.00005461</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r19</td>
+                <td class="cost">$0.00005588</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r2</td>
+                <td class="cost">$0.00003681</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r20</td>
+                <td class="cost">$0.0000572</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r21</td>
+                <td class="cost">$0.00005845</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r22</td>
+                <td class="cost">$0.00005977</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r23</td>
+                <td class="cost">$0.000061065</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r3</td>
+                <td class="cost">$0.000038055</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r4</td>
+                <td class="cost">$0.000039455</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r5</td>
+                <td class="cost">$0.000040895</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r6</td>
+                <td class="cost">$0.00004216</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r7</td>
+                <td class="cost">$0.000043445</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r8</td>
+                <td class="cost">$0.000044075</td>
+            </tr>
+            
+            <tr>
+                <td>lambda_invocations_s2_r9</td>
+                <td class="cost">$0.000045005</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r0</td>
+                <td class="cost">$8.96647859</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r1</td>
+                <td class="cost">$8.98947103</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r10</td>
+                <td class="cost">$9.13378807</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r11</td>
+                <td class="cost">$9.08791934</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r12</td>
+                <td class="cost">$9.07887565</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r13</td>
+                <td class="cost">$9.06987178</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r14</td>
+                <td class="cost">$9.01680082</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r15</td>
+                <td class="cost">$9.00798147</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r16</td>
+                <td class="cost">$8.999202</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r17</td>
+                <td class="cost">$8.95361856</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r18</td>
+                <td class="cost">$8.90808973</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r19</td>
+                <td class="cost">$8.89928297</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r2</td>
+                <td class="cost">$9.01249076</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r20</td>
+                <td class="cost">$8.95885863</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r21</td>
+                <td class="cost">$8.98180876</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r22</td>
+                <td class="cost">$9.00478618</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r23</td>
+                <td class="cost">$9.02779089</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r3</td>
+                <td class="cost">$9.0355378</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r4</td>
+                <td class="cost">$9.05861214</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r5</td>
+                <td class="cost">$9.08171379</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r6</td>
+                <td class="cost">$9.14140736</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r7</td>
+                <td class="cost">$9.20111348</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r8</td>
+                <td class="cost">$9.22429705</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s0_r9</td>
+                <td class="cost">$9.24750787</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r0</td>
+                <td class="cost">$10.91578622</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r1</td>
+                <td class="cost">$10.94373875</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r10</td>
+                <td class="cost">$11.03533063</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r11</td>
+                <td class="cost">$11.02434897</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r12</td>
+                <td class="cost">$11.01341572</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r13</td>
+                <td class="cost">$10.9579169</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r14</td>
+                <td class="cost">$10.93826316</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r15</td>
+                <td class="cost">$10.92760244</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r16</td>
+                <td class="cost">$10.87225109</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r17</td>
+                <td class="cost">$10.8169661</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r18</td>
+                <td class="cost">$10.80627218</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r19</td>
+                <td class="cost">$10.87861402</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r2</td>
+                <td class="cost">$10.97172448</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r20</td>
+                <td class="cost">$10.90648203</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r21</td>
+                <td class="cost">$10.93438318</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r22</td>
+                <td class="cost">$10.96231753</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r23</td>
+                <td class="cost">$10.99028498</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r3</td>
+                <td class="cost">$10.99974332</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r4</td>
+                <td class="cost">$11.02779531</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r5</td>
+                <td class="cost">$11.10028033</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r6</td>
+                <td class="cost">$11.17278063</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r7</td>
+                <td class="cost">$11.2009321</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r8</td>
+                <td class="cost">$11.22911668</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s1_r9</td>
+                <td class="cost">$11.09102836</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r0</td>
+                <td class="cost">$12.87498676</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r1</td>
+                <td class="cost">$12.9079111</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r10</td>
+                <td class="cost">$12.9698223</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r11</td>
+                <td class="cost">$12.95695968</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r12</td>
+                <td class="cost">$12.89166692</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r13</td>
+                <td class="cost">$12.8791283</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r14</td>
+                <td class="cost">$12.85600283</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r15</td>
+                <td class="cost">$12.79088363</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r16</td>
+                <td class="cost">$12.72584244</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r17</td>
+                <td class="cost">$12.71326138</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r18</td>
+                <td class="cost">$12.7983694</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r19</td>
+                <td class="cost">$12.83115529</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r2</td>
+                <td class="cost">$12.94087446</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r20</td>
+                <td class="cost">$12.8639802</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r21</td>
+                <td class="cost">$12.8968441</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r22</td>
+                <td class="cost">$12.929747</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r23</td>
+                <td class="cost">$12.96268892</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r3</td>
+                <td class="cost">$12.97387682</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r4</td>
+                <td class="cost">$13.05915331</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r5</td>
+                <td class="cost">$13.1444478</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r6</td>
+                <td class="cost">$13.17756714</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r7</td>
+                <td class="cost">$13.2107255</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r8</td>
+                <td class="cost">$13.04826865</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s2_r9</td>
+                <td class="cost">$12.98274191</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r0</td>
+                <td class="cost">$14.84409779</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r1</td>
+                <td class="cost">$14.88200567</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r10</td>
+                <td class="cost">$14.90050364</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r11</td>
+                <td class="cost">$14.82541699</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r12</td>
+                <td class="cost">$14.81099757</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r13</td>
+                <td class="cost">$14.79664369</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r14</td>
+                <td class="cost">$14.7095162</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r15</td>
+                <td class="cost">$14.63471881</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r16</td>
+                <td class="cost">$14.62025061</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r17</td>
+                <td class="cost">$14.71812483</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r18</td>
+                <td class="cost">$14.75582863</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r19</td>
+                <td class="cost">$14.79357725</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r2</td>
+                <td class="cost">$14.91995838</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r20</td>
+                <td class="cost">$14.83137073</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r21</td>
+                <td class="cost">$14.8692091</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r22</td>
+                <td class="cost">$14.90709229</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r23</td>
+                <td class="cost">$15.00509071</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r3</td>
+                <td class="cost">$15.01802632</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r4</td>
+                <td class="cost">$15.11611502</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r5</td>
+                <td class="cost">$15.15420224</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r6</td>
+                <td class="cost">$15.19233436</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r7</td>
+                <td class="cost">$15.00550896</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r8</td>
+                <td class="cost">$14.93015319</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s3_r9</td>
+                <td class="cost">$14.91529564</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r0</td>
+                <td class="cost">$8.40527907</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r1</td>
+                <td class="cost">$8.433019955</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r10</td>
+                <td class="cost">$8.36405646</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r11</td>
+                <td class="cost">$8.3508533</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r12</td>
+                <td class="cost">$8.335442285</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r13</td>
+                <td class="cost">$8.299812125</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r14</td>
+                <td class="cost">$8.26277393</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r15</td>
+                <td class="cost">$8.259548855</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r16</td>
+                <td class="cost">$8.3082996</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r17</td>
+                <td class="cost">$8.330021105</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r18</td>
+                <td class="cost">$8.35174925</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r19</td>
+                <td class="cost">$8.37338586</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r2</td>
+                <td class="cost">$8.485538865</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r20</td>
+                <td class="cost">$8.398046225</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r21</td>
+                <td class="cost">$8.425747815</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r22</td>
+                <td class="cost">$8.478413575</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r23</td>
+                <td class="cost">$8.526010295</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r3</td>
+                <td class="cost">$8.52998916</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r4</td>
+                <td class="cost">$8.54036854</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r5</td>
+                <td class="cost">$8.548694915</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r6</td>
+                <td class="cost">$8.45429716</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r7</td>
+                <td class="cost">$8.41886585</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r8</td>
+                <td class="cost">$8.409067015</td>
+            </tr>
+            
+            <tr>
+                <td>load_balancer_hours_s4_r9</td>
+                <td class="cost">$8.39931793</td>
+            </tr>
+            
+            <tr>
+                <td>logs_ingestion_gb_s0_r0</td>
+                <td class="cost">$99.62753949</td>
+            </tr>
+            
+            <tr>
+                <td>logs_ingestion_gb_s1_r0</td>
+                <td class="cost">$121.286513505</td>
+            </tr>
+            
+            <tr>
+                <td>logs_ingestion_gb_s2_r0</td>
+                <td class="cost">$143.055408725</td>
+            </tr>
+            
+            <tr>
+                <td>logs_ingestion_gb_s3_r0</td>
+                <td class="cost">$164.934420075</td>
+            </tr>
+            
+            <tr>
+                <td>logs_ingestion_gb_s4_r0</td>
+                <td class="cost">$186.78397912</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r0</td>
+                <td class="cost">$12.353814875</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r1</td>
+                <td class="cost">$12.3854934</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r10</td>
+                <td class="cost">$12.5843302</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r11</td>
+                <td class="cost">$12.521133325</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r12</td>
+                <td class="cost">$12.508673065</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r13</td>
+                <td class="cost">$12.49626782</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r14</td>
+                <td class="cost">$12.423147725</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r15</td>
+                <td class="cost">$12.41099664</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r16</td>
+                <td class="cost">$12.398900535</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r17</td>
+                <td class="cost">$12.33609667</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r18</td>
+                <td class="cost">$12.273368075</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r19</td>
+                <td class="cost">$12.26123429</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r2</td>
+                <td class="cost">$12.41720946</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r20</td>
+                <td class="cost">$12.34331626</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r21</td>
+                <td class="cost">$12.374936485</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r22</td>
+                <td class="cost">$12.40659425</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r23</td>
+                <td class="cost">$12.4382897</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r3</td>
+                <td class="cost">$12.44896321</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r4</td>
+                <td class="cost">$12.48075448</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r5</td>
+                <td class="cost">$12.512583415</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r6</td>
+                <td class="cost">$12.5948279</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r7</td>
+                <td class="cost">$12.677089655</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r8</td>
+                <td class="cost">$12.709031475</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s0_r9</td>
+                <td class="cost">$12.74101081</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r0</td>
+                <td class="cost">$15.03952767</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r1</td>
+                <td class="cost">$15.07804008</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r10</td>
+                <td class="cost">$15.20423333</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r11</td>
+                <td class="cost">$15.189103015</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r12</td>
+                <td class="cost">$15.174039465</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r13</td>
+                <td class="cost">$15.0975744</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r14</td>
+                <td class="cost">$15.07049593</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r15</td>
+                <td class="cost">$15.055807785</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r16</td>
+                <td class="cost">$14.97954597</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r17</td>
+                <td class="cost">$14.903375485</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r18</td>
+                <td class="cost">$14.888641675</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r19</td>
+                <td class="cost">$14.988312625</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r2</td>
+                <td class="cost">$15.116598135</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r20</td>
+                <td class="cost">$15.02670856</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r21</td>
+                <td class="cost">$15.06515018</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r22</td>
+                <td class="cost">$15.103637445</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r23</td>
+                <td class="cost">$15.142170415</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r3</td>
+                <td class="cost">$15.155201905</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r4</td>
+                <td class="cost">$15.193851335</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r5</td>
+                <td class="cost">$15.293719555</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r6</td>
+                <td class="cost">$15.39360888</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r7</td>
+                <td class="cost">$15.43239533</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r8</td>
+                <td class="cost">$15.47122743</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s1_r9</td>
+                <td class="cost">$15.28097243</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r0</td>
+                <td class="cost">$3.433329815</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r1</td>
+                <td class="cost">$3.442109645</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r10</td>
+                <td class="cost">$3.45861928</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r11</td>
+                <td class="cost">$3.45518925</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r12</td>
+                <td class="cost">$3.437777855</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r13</td>
+                <td class="cost">$3.434434225</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r14</td>
+                <td class="cost">$3.42826743</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r15</td>
+                <td class="cost">$3.410902305</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r16</td>
+                <td class="cost">$3.39355799</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r17</td>
+                <td class="cost">$3.39020304</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r18</td>
+                <td class="cost">$3.412898515</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r19</td>
+                <td class="cost">$3.421641415</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r2</td>
+                <td class="cost">$3.45089986</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r20</td>
+                <td class="cost">$3.43039473</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r21</td>
+                <td class="cost">$3.439158445</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r22</td>
+                <td class="cost">$3.44793254</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r23</td>
+                <td class="cost">$3.456717045</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r3</td>
+                <td class="cost">$3.45970049</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r4</td>
+                <td class="cost">$3.482440895</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r5</td>
+                <td class="cost">$3.50518609</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r6</td>
+                <td class="cost">$3.5140179</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r7</td>
+                <td class="cost">$3.522860145</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r8</td>
+                <td class="cost">$3.479538315</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s2_r9</td>
+                <td class="cost">$3.46206451</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r0</td>
+                <td class="cost">$3.958426095</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r1</td>
+                <td class="cost">$3.968534865</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r10</td>
+                <td class="cost">$3.97346763</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r11</td>
+                <td class="cost">$3.953444535</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r12</td>
+                <td class="cost">$3.94959935</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r13</td>
+                <td class="cost">$3.945771665</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r14</td>
+                <td class="cost">$3.92253764</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r15</td>
+                <td class="cost">$3.902591695</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r16</td>
+                <td class="cost">$3.8987335</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r17</td>
+                <td class="cost">$3.924833295</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r18</td>
+                <td class="cost">$3.934887635</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r19</td>
+                <td class="cost">$3.944953925</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r2</td>
+                <td class="cost">$3.978655555</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r20</td>
+                <td class="cost">$3.95503221</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r21</td>
+                <td class="cost">$3.965122445</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r22</td>
+                <td class="cost">$3.975224595</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r23</td>
+                <td class="cost">$4.001357535</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r3</td>
+                <td class="cost">$4.00480703</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r4</td>
+                <td class="cost">$4.03096398</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r5</td>
+                <td class="cost">$4.041120595</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r6</td>
+                <td class="cost">$4.051289165</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r7</td>
+                <td class="cost">$4.00146906</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r8</td>
+                <td class="cost">$3.98137418</td>
+            </tr>
+            
+            <tr>
+                <td>memory_gb_hours_s3_r9</td>
+                <td class="cost">$3.97741216</td>
+            </tr>
+            
+            <tr>
+                <td>monitoring_checks_s0_r0</td>
+                <td class="cost">$0.39851018</td>
+            </tr>
+            
+            <tr>
+                <td>monitoring_checks_s0_r1</td>
+                <td class="cost">$0.39953204</td>
+            </tr>
+            
+            <tr>
+                <td>monitoring_checks_s0_r2</td>
+                <td class="cost">$0.40055515</td>
+            </tr>
+            
+            <tr>
+                <td>monitoring_checks_s0_r3</td>
+                <td class="cost">$0.40123513</td>
+            </tr>
+            
+            <tr>
+                <td>monitoring_checks_s1_r0</td>
+                <td class="cost">$0.48514608</td>
+            </tr>
+            
+            <tr>
+                <td>monitoring_checks_s1_r1</td>
+                <td class="cost">$0.48638836</td>
+            </tr>
+            
+            <tr>
+                <td>monitoring_checks_s1_r2</td>
+                <td class="cost">$0.4876322</td>
+            </tr>
+            
+            <tr>
+                <td>monitoring_checks_s1_r3</td>
+                <td class="cost">$0.48845713</td>
+            </tr>
+            
+            <tr>
+                <td>monitoring_checks_s2_r0</td>
+                <td class="cost">$0.286110805</td>
+            </tr>
+            
+            <tr>
+                <td>monitoring_checks_s2_r1</td>
+                <td class="cost">$0.286842455</td>
+            </tr>
+            
+            <tr>
+                <td>monitoring_checks_s2_r2</td>
+                <td class="cost">$0.287574975</td>
+            </tr>
+            
+            <tr>
+                <td>monitoring_checks_s2_r3</td>
+                <td class="cost">$0.28805975</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r0</td>
+                <td class="cost">$8.966478545</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r1</td>
+                <td class="cost">$8.98947099</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r10</td>
+                <td class="cost">$9.13378807</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r11</td>
+                <td class="cost">$9.087919335</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r12</td>
+                <td class="cost">$9.078875615</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r13</td>
+                <td class="cost">$9.069871785</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r14</td>
+                <td class="cost">$9.01680078</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r15</td>
+                <td class="cost">$9.007981435</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r16</td>
+                <td class="cost">$8.999201995</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r17</td>
+                <td class="cost">$8.95361855</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r18</td>
+                <td class="cost">$8.908089715</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r19</td>
+                <td class="cost">$8.899282975</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r2</td>
+                <td class="cost">$9.01249075</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r20</td>
+                <td class="cost">$8.95885859</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r21</td>
+                <td class="cost">$8.981808715</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r22</td>
+                <td class="cost">$9.00478616</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r23</td>
+                <td class="cost">$9.027790895</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r3</td>
+                <td class="cost">$9.035537795</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r4</td>
+                <td class="cost">$9.05861213</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r5</td>
+                <td class="cost">$9.08171378</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r6</td>
+                <td class="cost">$9.141407335</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r7</td>
+                <td class="cost">$9.201113465</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r8</td>
+                <td class="cost">$9.224297005</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s0_r9</td>
+                <td class="cost">$9.247507865</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r0</td>
+                <td class="cost">$10.915786215</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r1</td>
+                <td class="cost">$10.94373877</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r10</td>
+                <td class="cost">$11.035330645</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r11</td>
+                <td class="cost">$11.02434896</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r12</td>
+                <td class="cost">$11.013415745</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r13</td>
+                <td class="cost">$10.9579169</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r14</td>
+                <td class="cost">$10.93826318</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r15</td>
+                <td class="cost">$10.927602425</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r16</td>
+                <td class="cost">$10.872251105</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r17</td>
+                <td class="cost">$10.816966095</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r18</td>
+                <td class="cost">$10.80627219</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r19</td>
+                <td class="cost">$10.878614005</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r2</td>
+                <td class="cost">$10.97172446</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r20</td>
+                <td class="cost">$10.90648203</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r21</td>
+                <td class="cost">$10.9343832</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r22</td>
+                <td class="cost">$10.962317505</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r23</td>
+                <td class="cost">$10.990284985</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r3</td>
+                <td class="cost">$10.99974332</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r4</td>
+                <td class="cost">$11.02779532</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r5</td>
+                <td class="cost">$11.100280335</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r6</td>
+                <td class="cost">$11.17278065</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r7</td>
+                <td class="cost">$11.200932095</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r8</td>
+                <td class="cost">$11.229116685</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s1_r9</td>
+                <td class="cost">$11.09102838</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r0</td>
+                <td class="cost">$12.87498679</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r1</td>
+                <td class="cost">$12.90791115</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r10</td>
+                <td class="cost">$12.969822315</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r11</td>
+                <td class="cost">$12.9569597</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r12</td>
+                <td class="cost">$12.891666955</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r13</td>
+                <td class="cost">$12.87912833</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r14</td>
+                <td class="cost">$12.85600286</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r15</td>
+                <td class="cost">$12.79088367</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r16</td>
+                <td class="cost">$12.72584247</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r17</td>
+                <td class="cost">$12.7132614</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r18</td>
+                <td class="cost">$12.79836944</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r19</td>
+                <td class="cost">$12.83115534</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r2</td>
+                <td class="cost">$12.94087451</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r20</td>
+                <td class="cost">$12.863980235</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r21</td>
+                <td class="cost">$12.896844145</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r22</td>
+                <td class="cost">$12.929747055</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r23</td>
+                <td class="cost">$12.96268895</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r3</td>
+                <td class="cost">$12.973876855</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r4</td>
+                <td class="cost">$13.059153335</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r5</td>
+                <td class="cost">$13.14444783</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r6</td>
+                <td class="cost">$13.177567175</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r7</td>
+                <td class="cost">$13.21072552</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r8</td>
+                <td class="cost">$13.048268685</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s2_r9</td>
+                <td class="cost">$12.98274194</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r0</td>
+                <td class="cost">$14.84409782</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r1</td>
+                <td class="cost">$14.88200566</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r10</td>
+                <td class="cost">$14.90050364</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r11</td>
+                <td class="cost">$14.825416965</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r12</td>
+                <td class="cost">$14.810997565</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r13</td>
+                <td class="cost">$14.796643715</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r14</td>
+                <td class="cost">$14.709516205</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r15</td>
+                <td class="cost">$14.634718815</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r16</td>
+                <td class="cost">$14.620250595</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r17</td>
+                <td class="cost">$14.718124835</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r18</td>
+                <td class="cost">$14.75582861</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r19</td>
+                <td class="cost">$14.793577265</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r2</td>
+                <td class="cost">$14.91995837</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r20</td>
+                <td class="cost">$14.831370765</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r21</td>
+                <td class="cost">$14.869209085</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r22</td>
+                <td class="cost">$14.90709228</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r23</td>
+                <td class="cost">$15.005090735</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r3</td>
+                <td class="cost">$15.01802634</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r4</td>
+                <td class="cost">$15.116114975</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r5</td>
+                <td class="cost">$15.15420224</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r6</td>
+                <td class="cost">$15.192334355</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r7</td>
+                <td class="cost">$15.005508975</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r8</td>
+                <td class="cost">$14.93015322</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s3_r9</td>
+                <td class="cost">$14.91529566</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r0</td>
+                <td class="cost">$16.810558105</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r1</td>
+                <td class="cost">$16.866039895</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r10</td>
+                <td class="cost">$16.72811292</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r11</td>
+                <td class="cost">$16.701706615</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r12</td>
+                <td class="cost">$16.67088455</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r13</td>
+                <td class="cost">$16.5996242</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r14</td>
+                <td class="cost">$16.525547855</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r15</td>
+                <td class="cost">$16.5190977</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r16</td>
+                <td class="cost">$16.616599185</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r17</td>
+                <td class="cost">$16.6600422</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r18</td>
+                <td class="cost">$16.70349852</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r19</td>
+                <td class="cost">$16.746771675</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r2</td>
+                <td class="cost">$16.97107773</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r20</td>
+                <td class="cost">$16.79609241</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r21</td>
+                <td class="cost">$16.85149562</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r22</td>
+                <td class="cost">$16.95682715</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r23</td>
+                <td class="cost">$17.052020555</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r3</td>
+                <td class="cost">$17.059978285</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r4</td>
+                <td class="cost">$17.08073709</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r5</td>
+                <td class="cost">$17.09738982</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r6</td>
+                <td class="cost">$16.908594275</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r7</td>
+                <td class="cost">$16.837731685</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r8</td>
+                <td class="cost">$16.818134035</td>
+            </tr>
+            
+            <tr>
+                <td>nat_gateway_hours_s4_r9</td>
+                <td class="cost">$16.798635825</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r0</td>
+                <td class="cost">$0.04782122</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r1</td>
+                <td class="cost">$0.047943855</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r10</td>
+                <td class="cost">$0.048713535</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r11</td>
+                <td class="cost">$0.048468905</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r12</td>
+                <td class="cost">$0.04842067</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r13</td>
+                <td class="cost">$0.048372645</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r14</td>
+                <td class="cost">$0.04808959</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r15</td>
+                <td class="cost">$0.048042555</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r16</td>
+                <td class="cost">$0.04799574</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r17</td>
+                <td class="cost">$0.047752635</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r18</td>
+                <td class="cost">$0.04750981</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r19</td>
+                <td class="cost">$0.04746285</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r2</td>
+                <td class="cost">$0.04806661</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r20</td>
+                <td class="cost">$0.04778058</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r21</td>
+                <td class="cost">$0.04790299</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r22</td>
+                <td class="cost">$0.04802552</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r23</td>
+                <td class="cost">$0.04814822</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r3</td>
+                <td class="cost">$0.04818954</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r4</td>
+                <td class="cost">$0.048312595</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r5</td>
+                <td class="cost">$0.048435805</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r6</td>
+                <td class="cost">$0.04875417</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r7</td>
+                <td class="cost">$0.04907261</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r8</td>
+                <td class="cost">$0.049196245</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s0_r9</td>
+                <td class="cost">$0.049320045</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r0</td>
+                <td class="cost">$0.058217535</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r1</td>
+                <td class="cost">$0.059339365</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r10</td>
+                <td class="cost">$0.068664265</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r11</td>
+                <td class="cost">$0.069575905</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r12</td>
+                <td class="cost">$0.07048585</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r13</td>
+                <td class="cost">$0.071104715</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r14</td>
+                <td class="cost">$0.071949445</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r15</td>
+                <td class="cost">$0.07285068</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r16</td>
+                <td class="cost">$0.07344809</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r17</td>
+                <td class="cost">$0.07403612</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r18</td>
+                <td class="cost">$0.0749235</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r19</td>
+                <td class="cost">$0.07639205</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r2</td>
+                <td class="cost">$0.06046638</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r20</td>
+                <td class="cost">$0.077557205</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r21</td>
+                <td class="cost">$0.07872756</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r22</td>
+                <td class="cost">$0.079903115</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r23</td>
+                <td class="cost">$0.08108388</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r3</td>
+                <td class="cost">$0.06159857</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r4</td>
+                <td class="cost">$0.062735905</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r5</td>
+                <td class="cost">$0.06413496</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r6</td>
+                <td class="cost">$0.06554698</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r7</td>
+                <td class="cost">$0.06670778</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r8</td>
+                <td class="cost">$0.067873775</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s1_r9</td>
+                <td class="cost">$0.068024975</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r0</td>
+                <td class="cost">$0.0686666</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r1</td>
+                <td class="cost">$0.071136945</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r10</td>
+                <td class="cost">$0.092229845</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r11</td>
+                <td class="cost">$0.09444183</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r12</td>
+                <td class="cost">$0.09625778</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r13</td>
+                <td class="cost">$0.098453775</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r14</td>
+                <td class="cost">$0.10056251</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r15</td>
+                <td class="cost">$0.102327055</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r16</td>
+                <td class="cost">$0.104069115</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r17</td>
+                <td class="cost">$0.106226365</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r18</td>
+                <td class="cost">$0.10921275</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r19</td>
+                <td class="cost">$0.111773615</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r2</td>
+                <td class="cost">$0.07361918</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r20</td>
+                <td class="cost">$0.1143465</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r21</td>
+                <td class="cost">$0.116931385</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r22</td>
+                <td class="cost">$0.119528335</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r23</td>
+                <td class="cost">$0.122137325</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r3</td>
+                <td class="cost">$0.076113415</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r4</td>
+                <td class="cost">$0.078935335</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r5</td>
+                <td class="cost">$0.08178769</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r6</td>
+                <td class="cost">$0.084336425</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r7</td>
+                <td class="cost">$0.086897215</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r8</td>
+                <td class="cost">$0.0881483</td>
+            </tr>
+            
+            <tr>
+                <td>requests_count_s2_r9</td>
+                <td class="cost">$0.090013675</td>
+            </tr>
+            
+            <tr>
+                <td>snapshot_storage_s0_r0</td>
+                <td class="cost">$9.96275395</td>
+            </tr>
+            
+            <tr>
+                <td>snapshot_storage_s1_r0</td>
+                <td class="cost">$12.128651345</td>
+            </tr>
+            
+            <tr>
+                <td>snapshot_storage_s2_r0</td>
+                <td class="cost">$14.30554086</td>
+            </tr>
+            
+            <tr>
+                <td>snapshot_storage_s3_r0</td>
+                <td class="cost">$16.493442005</td>
+            </tr>
+            
+            <tr>
+                <td>storage_gb_month</td>
+                <td class="cost">$6603</td>
+            </tr>
+            
+            <tr>
+                <td>storage_gb_month_s0_r0</td>
+                <td class="cost">$60.83309807</td>
+            </tr>
+            
+            <tr>
+                <td>storage_gb_month_s1_r0</td>
+                <td class="cost">$74.059094795</td>
+            </tr>
+            
+            <tr>
+                <td>storage_gb_month_s2_r0</td>
+                <td class="cost">$45.137321985</td>
+            </tr>
+            
+            <tr>
+                <td>storage_gb_month_s3_r0</td>
+                <td class="cost">$40.2030934</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r0</td>
+                <td class="cost">$9.96275395</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r1</td>
+                <td class="cost">$9.98830111</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r10</td>
+                <td class="cost">$10.148653405</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r11</td>
+                <td class="cost">$10.097688145</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r12</td>
+                <td class="cost">$10.087639575</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r13</td>
+                <td class="cost">$10.077635315</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r14</td>
+                <td class="cost">$10.018667545</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r15</td>
+                <td class="cost">$10.00886827</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r16</td>
+                <td class="cost">$9.99911332</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r17</td>
+                <td class="cost">$9.94846506</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r18</td>
+                <td class="cost">$9.89787746</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r19</td>
+                <td class="cost">$9.888092195</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r2</td>
+                <td class="cost">$10.0138786</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r20</td>
+                <td class="cost">$9.954287325</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r21</td>
+                <td class="cost">$9.97978747</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r22</td>
+                <td class="cost">$10.005317945</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r23</td>
+                <td class="cost">$10.030878775</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r3</td>
+                <td class="cost">$10.039486445</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r4</td>
+                <td class="cost">$10.065124605</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r5</td>
+                <td class="cost">$10.090793095</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r6</td>
+                <td class="cost">$10.15711925</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r7</td>
+                <td class="cost">$10.2234594</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r8</td>
+                <td class="cost">$10.24921891</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s0_r9</td>
+                <td class="cost">$10.27500874</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r0</td>
+                <td class="cost">$12.128651345</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r1</td>
+                <td class="cost">$12.159709745</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r10</td>
+                <td class="cost">$12.261478495</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r11</td>
+                <td class="cost">$12.249276625</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r12</td>
+                <td class="cost">$12.237128605</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r13</td>
+                <td class="cost">$12.17546322</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r14</td>
+                <td class="cost">$12.153625745</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r15</td>
+                <td class="cost">$12.141780475</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r16</td>
+                <td class="cost">$12.08027901</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r17</td>
+                <td class="cost">$12.01885121</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r18</td>
+                <td class="cost">$12.00696909</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r19</td>
+                <td class="cost">$12.08734889</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r2</td>
+                <td class="cost">$12.190804955</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r20</td>
+                <td class="cost">$12.118313355</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r21</td>
+                <td class="cost">$12.149314665</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r22</td>
+                <td class="cost">$12.180352785</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r23</td>
+                <td class="cost">$12.21142776</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r3</td>
+                <td class="cost">$12.221937025</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r4</td>
+                <td class="cost">$12.25310592</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r5</td>
+                <td class="cost">$12.3336448</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r6</td>
+                <td class="cost">$12.414200715</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r7</td>
+                <td class="cost">$12.445480105</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r8</td>
+                <td class="cost">$12.47679632</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s1_r9</td>
+                <td class="cost">$12.323364865</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r0</td>
+                <td class="cost">$14.30554086</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r1</td>
+                <td class="cost">$14.342123495</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r10</td>
+                <td class="cost">$14.41091367</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r11</td>
+                <td class="cost">$14.396621865</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r12</td>
+                <td class="cost">$14.324074375</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r13</td>
+                <td class="cost">$14.31014257</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r14</td>
+                <td class="cost">$14.284447605</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r15</td>
+                <td class="cost">$14.21209295</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r16</td>
+                <td class="cost">$14.139824945</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r17</td>
+                <td class="cost">$14.12584598</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r18</td>
+                <td class="cost">$14.220410455</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r19</td>
+                <td class="cost">$14.256839245</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r2</td>
+                <td class="cost">$14.378749425</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r20</td>
+                <td class="cost">$14.293311355</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r21</td>
+                <td class="cost">$14.32982682</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r22</td>
+                <td class="cost">$14.36638559</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r23</td>
+                <td class="cost">$14.402987705</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r3</td>
+                <td class="cost">$14.41541871</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r4</td>
+                <td class="cost">$14.51017035</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r5</td>
+                <td class="cost">$14.60494201</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r6</td>
+                <td class="cost">$14.641741295</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r7</td>
+                <td class="cost">$14.678583905</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r8</td>
+                <td class="cost">$14.4980763</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s2_r9</td>
+                <td class="cost">$14.425268785</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r0</td>
+                <td class="cost">$16.493442005</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r1</td>
+                <td class="cost">$16.535561845</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r10</td>
+                <td class="cost">$16.55611517</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r11</td>
+                <td class="cost">$16.47268554</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r12</td>
+                <td class="cost">$16.456663965</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r13</td>
+                <td class="cost">$16.440715255</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r14</td>
+                <td class="cost">$16.34390689</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r15</td>
+                <td class="cost">$16.26079868</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r16</td>
+                <td class="cost">$16.244722895</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r17</td>
+                <td class="cost">$16.35347204</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r18</td>
+                <td class="cost">$16.395365135</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r19</td>
+                <td class="cost">$16.43730809</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r2</td>
+                <td class="cost">$16.577731535</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r20</td>
+                <td class="cost">$16.479300835</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r21</td>
+                <td class="cost">$16.52134343</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r22</td>
+                <td class="cost">$16.563435875</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r23</td>
+                <td class="cost">$16.672323015</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r3</td>
+                <td class="cost">$16.68669591</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r4</td>
+                <td class="cost">$16.795683325</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r5</td>
+                <td class="cost">$16.83800251</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r6</td>
+                <td class="cost">$16.880371495</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r7</td>
+                <td class="cost">$16.672787755</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r8</td>
+                <td class="cost">$16.58905913</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s3_r9</td>
+                <td class="cost">$16.572550715</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r0</td>
+                <td class="cost">$18.67839791</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r1</td>
+                <td class="cost">$18.74004433</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r10</td>
+                <td class="cost">$18.586792135</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r11</td>
+                <td class="cost">$18.557451775</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r12</td>
+                <td class="cost">$18.523205045</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r13</td>
+                <td class="cost">$18.444026905</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r14</td>
+                <td class="cost">$18.361719835</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r15</td>
+                <td class="cost">$18.354553</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r16</td>
+                <td class="cost">$18.462888</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r17</td>
+                <td class="cost">$18.511158005</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r18</td>
+                <td class="cost">$18.559442785</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r19</td>
+                <td class="cost">$18.6075241</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r2</td>
+                <td class="cost">$18.856753035</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r20</td>
+                <td class="cost">$18.66232492</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r21</td>
+                <td class="cost">$18.72388402</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r22</td>
+                <td class="cost">$18.84091906</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r23</td>
+                <td class="cost">$18.946689525</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r3</td>
+                <td class="cost">$18.955531445</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r4</td>
+                <td class="cost">$18.978596775</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r5</td>
+                <td class="cost">$18.9970998</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r6</td>
+                <td class="cost">$18.78732698</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r7</td>
+                <td class="cost">$18.708590765</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r8</td>
+                <td class="cost">$18.686815595</td>
+            </tr>
+            
+            <tr>
+                <td>vpn_hours_s4_r9</td>
+                <td class="cost">$18.66515093</td>
+            </tr>
+            
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Optimization Insights</h2>
+        
+        <div class="insight high-severity">
+            <h3>High Cost Node</h3>
+            <p><strong>Node:</strong> rds_shared</p>
+            <p><strong>Current Cost:</strong> <span class="cost">$74671.902338975</span></p>
+            <p><strong>Potential Savings:</strong> <span class="savings">$11200.78535084625</span></p>
+            <p><strong>Description:</strong> Node rds_shared has high costs that may need optimization</p>
+            <p><strong>Recommendation:</strong> Review resource utilization and consider rightsizing or reserved instances</p>
+        </div>
+        
+        <div class="insight high-severity">
+            <h3>High Cost Node</h3>
+            <p><strong>Node:</strong> platform_pool</p>
+            <p><strong>Current Cost:</strong> <span class="cost">$35149.617834675</span></p>
+            <p><strong>Potential Savings:</strong> <span class="savings">$5272.44267520125</span></p>
+            <p><strong>Description:</strong> Node platform_pool has high costs that may need optimization</p>
+            <p><strong>Recommendation:</strong> Review resource utilization and consider rightsizing or reserved instances</p>
+        </div>
+        
+        <div class="insight high-severity">
+            <h3>High Cost Node</h3>
+            <p><strong>Node:</strong> ec2_p</p>
+            <p><strong>Current Cost:</strong> <span class="cost">$13956.92319093</span></p>
+            <p><strong>Potential Savings:</strong> <span class="savings">$2093.5384786395</span></p>
+            <p><strong>Description:</strong> Node ec2_p has high costs that may need optimization</p>
+            <p><strong>Recommendation:</strong> Review resource utilization and consider rightsizing or reserved instances</p>
+        </div>
+        
+        <div class="insight medium-severity">
+            <h3>Storage Optimization Opportunity</h3>
+            <p><strong>Node:</strong> rds_shared</p>
+            <p><strong>Current Cost:</strong> <span class="cost">$4203.6</span></p>
+            <p><strong>Potential Savings:</strong> <span class="savings">$1050.9</span></p>
+            <p><strong>Description:</strong> Node rds_shared has high storage costs</p>
+            <p><strong>Recommendation:</strong> Consider storage tiering, compression, or lifecycle policies</p>
+        </div>
+        
+        <div class="insight high-severity">
+            <h3>High Cost Node</h3>
+            <p><strong>Node:</strong> s3_p</p>
+            <p><strong>Current Cost:</strong> <span class="cost">$4268.41596498</span></p>
+            <p><strong>Potential Savings:</strong> <span class="savings">$640.262394747</span></p>
+            <p><strong>Description:</strong> Node s3_p has high costs that may need optimization</p>
+            <p><strong>Recommendation:</strong> Review resource utilization and consider rightsizing or reserved instances</p>
+        </div>
+        
+        <div class="insight medium-severity">
+            <h3>Storage Optimization Opportunity</h3>
+            <p><strong>Node:</strong> s3_p</p>
+            <p><strong>Current Cost:</strong> <span class="cost">$2399.4</span></p>
+            <p><strong>Potential Savings:</strong> <span class="savings">$599.85</span></p>
+            <p><strong>Description:</strong> Node s3_p has high storage costs</p>
+            <p><strong>Recommendation:</strong> Consider storage tiering, compression, or lifecycle policies</p>
+        </div>
+        
+        <div class="insight medium-severity">
+            <h3>Potentially Underutilized Resource</h3>
+            <p><strong>Node:</strong> product_p</p>
+            <p><strong>Current Cost:</strong> <span class="cost">$3.03608047</span></p>
+            <p><strong>Potential Savings:</strong> <span class="savings">$2.428864376</span></p>
+            <p><strong>Description:</strong> Node product_p has very low costs, may be underutilized</p>
+            <p><strong>Recommendation:</strong> Review if this resource is needed or can be terminated</p>
+        </div>
+        
+        <div class="insight medium-severity">
+            <h3>Potentially Underutilized Resource</h3>
+            <p><strong>Node:</strong> product_q</p>
+            <p><strong>Current Cost:</strong> <span class="cost">$1.84057612</span></p>
+            <p><strong>Potential Savings:</strong> <span class="savings">$1.472460896</span></p>
+            <p><strong>Description:</strong> Node product_q has very low costs, may be underutilized</p>
+            <p><strong>Recommendation:</strong> Review if this resource is needed or can be terminated</p>
+        </div>
+        
+    </div>
+
+    <div class="section">
+        <h2>Key Recommendations</h2>
+        <ul>
+            
+            <li>Review 4 high-cost nodes for rightsizing opportunities</li>
+            
+            <li>Investigate 2 potentially underutilized resources for termination</li>
+            
+            <li>Implement storage optimization for 2 nodes with high storage costs</li>
+            
+            <li>Set up automated cost allocation runs for regular reporting</li>
+            
+            <li>Implement tagging strategy for better cost attribution</li>
+            
+            <li>Consider reserved instances for predictable workloads</li>
+            
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Allocation Efficiency</h2>
+        <table>
+            <tr>
+                <th>Node</th>
+                <th>Direct Cost Ratio</th>
+                <th>Indirect Cost Ratio</th>
+                <th>Allocation Accuracy</th>
+                <th>Efficiency Score</th>
+            </tr>
+            
+            <tr>
+                <td>ec2_p</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>ec2_p</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>ec2_p</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>ec2_p</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>ec2_p</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>platform_pool</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>platform_pool</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>platform_pool</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>platform_pool</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>platform_pool</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>product_p</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>product_p</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>product_p</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>product_p</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>product_p</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>product_q</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>product_q</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>product_q</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>product_q</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>product_q</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>rds_shared</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>rds_shared</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>rds_shared</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>rds_shared</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>rds_shared</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>s3_p</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>s3_p</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>s3_p</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>s3_p</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+            <tr>
+                <td>s3_p</td>
+                <td>70.0%</td>
+                <td>30.0%</td>
+                <td>85.0%</td>
+                <td>82.0%</td>
+            </tr>
+            
+        </table>
+    </div>
+</body>
+</html>

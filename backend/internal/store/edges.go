@@ -353,3 +353,28 @@ func (r *EdgeRepository) GetStrategiesForEdge(ctx context.Context, edgeID uuid.U
 
 	return strategies, nil
 }
+
+// CreateStrategy creates a new edge strategy
+func (r *EdgeRepository) CreateStrategy(ctx context.Context, strategy *models.EdgeStrategy) error {
+	if strategy.ID == uuid.Nil {
+		strategy.ID = uuid.New()
+	}
+
+	parametersJSON, err := json.Marshal(strategy.Parameters)
+	if err != nil {
+		return fmt.Errorf("failed to marshal strategy parameters: %w", err)
+	}
+
+	query := r.QueryBuilder().
+		Insert("edge_strategies").
+		Columns("id", "edge_id", "dimension", "strategy", "parameters").
+		Values(strategy.ID, strategy.EdgeID, strategy.Dimension, strategy.Strategy, parametersJSON).
+		Suffix("RETURNING created_at, updated_at")
+
+	row := r.QueryRow(ctx, query)
+	if err := row.Scan(&strategy.CreatedAt, &strategy.UpdatedAt); err != nil {
+		return fmt.Errorf("failed to create edge strategy: %w", err)
+	}
+
+	return nil
+}
