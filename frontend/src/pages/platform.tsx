@@ -177,7 +177,7 @@ export default function PlatformPage() {
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Allocated To</p>
                     <p className="text-sm font-semibold">
-                      {service.allocated_to.length} target(s)
+                      {(service.allocated_to || []).length} target(s)
                     </p>
                   </div>
                   <div>
@@ -271,7 +271,7 @@ export default function PlatformPage() {
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Allocated To</p>
                     <p className="text-sm font-semibold">
-                      {service.weighted_targets.length} target(s)
+                      {(service.weighted_targets || []).length} target(s)
                     </p>
                   </div>
                   <div>
