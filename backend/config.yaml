@@ -1,5 +1,5 @@
 postgres:
-  dsn: postgresql://finops:finops@localhost:5432/finops?sslmode=disable
+  dsn: postgresql://finops:finops@postgres:5432/finops?sslmode=disable
 
 compute:
   base_currency: GBP
@@ -24,4 +24,5 @@ jobs:
     exports: 1
 
 logging:
-  level: info
+  level: debug
+

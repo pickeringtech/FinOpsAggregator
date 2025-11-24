@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pickeringtech/FinOpsAggregator/internal/analysis"
+	"github.com/pickeringtech/FinOpsAggregator/internal/analyzer"
 	"github.com/pickeringtech/FinOpsAggregator/internal/models"
 	"github.com/pickeringtech/FinOpsAggregator/internal/store"
 	"github.com/shopspring/decimal"
@@ -14,39 +15,72 @@ import (
 
 // Service provides business logic for the API
 type Service struct {
-	store    *store.Store
-	analyzer *analysis.FinOpsAnalyzer
+	store                  *store.Store
+	analyzer               *analysis.FinOpsAnalyzer
+	recommendationAnalyzer *analyzer.RecommendationAnalyzer
 }
 
 // NewService creates a new API service
 func NewService(store *store.Store) *Service {
 	return &Service{
-		store:    store,
-		analyzer: analysis.NewFinOpsAnalyzer(store),
+		store:                  store,
+		analyzer:               analysis.NewFinOpsAnalyzer(store),
+		recommendationAnalyzer: analyzer.NewRecommendationAnalyzer(store),
 	}
 }
 
 // GetProductHierarchy retrieves the product hierarchy with cost data
 func (s *Service) GetProductHierarchy(ctx context.Context, req CostAttributionRequest) (*ProductHierarchyResponse, error) {
-	// Get product cost analysis
-	productSummary, err := s.analyzer.AnalyzeProductCosts(ctx, req.StartDate, req.EndDate)
-	if err != nil {
-		return nil, fmt.Errorf("failed to analyze product costs: %w", err)
-	}
-
 	// Build product hierarchy tree
 	products, err := s.buildProductTree(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build product tree: %w", err)
 	}
 
+	// Calculate total allocated costs (sum of product holistic costs)
+	totalAllocatedCost := decimal.Zero
+	for _, product := range products {
+		totalAllocatedCost = totalAllocatedCost.Add(product.HolisticCosts.Total)
+	}
+
+	// Get all direct costs to calculate unallocated
+	allDirectCosts, err := s.store.Costs.GetTotalCostByDateRange(ctx, req.StartDate, req.EndDate, req.Currency)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get total direct costs: %w", err)
+	}
+
+	// Calculate unallocated costs
+	unallocatedCost := allDirectCosts.Sub(totalAllocatedCost)
+
+	// Get platform and shared nodes for unallocated breakdown
+	unallocatedNode, err := s.buildUnallocatedNode(ctx, req, unallocatedCost)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build unallocated node: %w", err)
+	}
+
+	// Track product count before adding unallocated node
+	productCount := len(products)
+
+	// Add unallocated node to products list if there are unallocated costs
+	if unallocatedCost.GreaterThan(decimal.Zero) {
+		products = append(products, *unallocatedNode)
+	}
+
+	currency := req.Currency
+	if currency == "" {
+		currency = "USD"
+	}
+
+	// Total cost shown in summary is sum of all product holistic costs (including unallocated)
+	totalCostForSummary := totalAllocatedCost.Add(unallocatedCost)
+
 	summary := CostSummary{
-		TotalCost:    productSummary.TotalCost,
-		Currency:     productSummary.Currency,
-		Period:       productSummary.Period,
-		StartDate:    productSummary.StartDate,
-		EndDate:      productSummary.EndDate,
-		ProductCount: productSummary.ProductCount,
+		TotalCost:    totalCostForSummary,
+		Currency:     currency,
+		Period:       fmt.Sprintf("%s to %s", req.StartDate.Format("2006-01-02"), req.EndDate.Format("2006-01-02")),
+		StartDate:    req.StartDate,
+		EndDate:      req.EndDate,
+		ProductCount: productCount, // Exclude unallocated node from count
 	}
 
 	return &ProductHierarchyResponse{
@@ -335,14 +369,15 @@ func (s *Service) buildProductNode(ctx context.Context, node models.CostNode, re
 	}, nil
 }
 
-// getNodeDirectCosts retrieves direct costs for a node
+// getNodeDirectCosts retrieves direct costs for a node from allocation results
 func (s *Service) getNodeDirectCosts(ctx context.Context, nodeID uuid.UUID, req CostAttributionRequest) (*CostBreakdown, error) {
-	costs, err := s.store.Costs.GetByNodeAndDateRange(ctx, nodeID, req.StartDate, req.EndDate, req.Dimensions)
+	// Use allocated costs from computation results instead of raw input costs
+	allocatedCosts, err := s.store.Costs.GetAllocatedCostsByNodeAndDateRange(ctx, nodeID, req.StartDate, req.EndDate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node costs: %w", err)
 	}
 
-	return s.buildCostBreakdown(costs, req), nil
+	return s.buildCostBreakdownFromAllocations(allocatedCosts, req), nil
 }
 
 // buildCostBreakdown builds a cost breakdown from cost data
@@ -374,6 +409,71 @@ func (s *Service) buildCostBreakdown(costs []models.NodeCostByDimension, req Cos
 	}
 
 	return breakdown
+}
+
+// buildCostBreakdownFromAllocations builds a cost breakdown from allocation results
+// Uses DirectAmount to get only the node's own costs (not including costs allocated TO it)
+func (s *Service) buildCostBreakdownFromAllocations(allocations []models.AllocationResultByDimension, req CostAttributionRequest) *CostBreakdown {
+	breakdown := &CostBreakdown{
+		Total:      decimal.Zero,
+		Currency:   req.Currency,
+		Dimensions: make(map[string]decimal.Decimal),
+		Trend:      []DailyCostPoint{},
+	}
+
+	if breakdown.Currency == "" {
+		breakdown.Currency = "USD"
+	}
+
+	// Aggregate by dimension using DirectAmount (node's own costs)
+	for _, alloc := range allocations {
+		breakdown.Total = breakdown.Total.Add(alloc.DirectAmount)
+		if existing, exists := breakdown.Dimensions[alloc.Dimension]; exists {
+			breakdown.Dimensions[alloc.Dimension] = existing.Add(alloc.DirectAmount)
+		} else {
+			breakdown.Dimensions[alloc.Dimension] = alloc.DirectAmount
+		}
+	}
+
+	// Build trend if requested
+	if req.IncludeTrend {
+		breakdown.Trend = s.buildCostTrendFromAllocations(allocations, req.StartDate, req.EndDate, true)
+	}
+
+	return breakdown
+}
+
+// buildCostTrendFromAllocations builds daily cost trend data from allocations
+// If useDirect is true, uses DirectAmount; otherwise uses TotalAmount
+func (s *Service) buildCostTrendFromAllocations(allocations []models.AllocationResultByDimension, startDate, endDate time.Time, useDirect bool) []DailyCostPoint {
+	// Group costs by date
+	dailyCosts := make(map[time.Time]decimal.Decimal)
+	for _, alloc := range allocations {
+		amount := alloc.TotalAmount
+		if useDirect {
+			amount = alloc.DirectAmount
+		}
+		if existing, exists := dailyCosts[alloc.AllocationDate]; exists {
+			dailyCosts[alloc.AllocationDate] = existing.Add(amount)
+		} else {
+			dailyCosts[alloc.AllocationDate] = amount
+		}
+	}
+
+	// Build trend points
+	var trend []DailyCostPoint
+	for date := startDate; !date.After(endDate); date = date.AddDate(0, 0, 1) {
+		cost := decimal.Zero
+		if c, exists := dailyCosts[date]; exists {
+			cost = c
+		}
+		trend = append(trend, DailyCostPoint{
+			Date: date,
+			Cost: cost,
+		})
+	}
+
+	return trend
 }
 
 // buildCostTrend builds daily cost trend data
@@ -939,4 +1039,239 @@ func (s *Service) calculatePlatformSummary(ctx context.Context, req CostAttribut
 		NodeCount:         nodeCount,
 		PlatformNodeCount: platformCount,
 	}, nil
+}
+
+
+// GetRecommendations retrieves cost optimization recommendations
+func (s *Service) GetRecommendations(ctx context.Context, req CostAttributionRequest, nodeID *uuid.UUID) (*RecommendationsResponse, error) {
+	var recommendations []models.CostRecommendation
+	var err error
+
+	if nodeID != nil {
+		// Get recommendations for specific node
+		recommendations, err = s.recommendationAnalyzer.AnalyzeNode(ctx, *nodeID, req.StartDate, req.EndDate)
+	} else {
+		// Get recommendations for all nodes
+		recommendations, err = s.recommendationAnalyzer.AnalyzeAllNodes(ctx, req.StartDate, req.EndDate)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to analyze recommendations: %w", err)
+	}
+
+	// Convert to API models and count by severity
+	apiRecommendations := make([]CostRecommendation, len(recommendations))
+	highCount := 0
+	mediumCount := 0
+	lowCount := 0
+	totalSavings := decimal.Zero
+
+	for i, rec := range recommendations {
+		apiRecommendations[i] = CostRecommendation{
+			ID:                 rec.ID,
+			NodeID:             rec.NodeID,
+			NodeName:           rec.NodeName,
+			NodeType:           rec.NodeType,
+			Type:               string(rec.Type),
+			Severity:           string(rec.Severity),
+			Title:              rec.Title,
+			Description:        rec.Description,
+			CurrentCost:        rec.CurrentCost,
+			PotentialSavings:   rec.PotentialSavings,
+			Currency:           rec.Currency,
+			Metric:             rec.Metric,
+			CurrentValue:       rec.CurrentValue,
+			PeakValue:          rec.PeakValue,
+			AverageValue:       rec.AverageValue,
+			UtilizationPercent: rec.UtilizationPercent,
+			RecommendedAction:  rec.RecommendedAction,
+			AnalysisPeriod:     rec.AnalysisPeriod,
+			StartDate:          rec.StartDate,
+			EndDate:            rec.EndDate,
+			CreatedAt:          rec.CreatedAt,
+		}
+
+		totalSavings = totalSavings.Add(rec.PotentialSavings)
+
+		switch rec.Severity {
+		case models.RecommendationSeverityHigh:
+			highCount++
+		case models.RecommendationSeverityMedium:
+			mediumCount++
+		case models.RecommendationSeverityLow:
+			lowCount++
+		}
+	}
+
+	currency := req.Currency
+	if currency == "" {
+		currency = "USD"
+	}
+
+	return &RecommendationsResponse{
+		Recommendations:     apiRecommendations,
+		TotalSavings:        totalSavings,
+		Currency:            currency,
+		HighSeverityCount:   highCount,
+		MediumSeverityCount: mediumCount,
+		LowSeverityCount:    lowCount,
+	}, nil
+}
+
+
+
+// buildUnallocatedNode creates a synthetic node representing unallocated platform/shared costs
+func (s *Service) buildUnallocatedNode(ctx context.Context, req CostAttributionRequest, unallocatedCost decimal.Decimal) (*ProductNode, error) {
+	currency := req.Currency
+	if currency == "" {
+		currency = "USD"
+	}
+
+	// Get platform and shared nodes to show as children
+	platformNodes, err := s.store.Nodes.List(ctx, store.NodeFilters{
+		IsPlatform: &[]bool{true}[0],
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get platform nodes: %w", err)
+	}
+
+	sharedNodes, err := s.store.Nodes.List(ctx, store.NodeFilters{
+		Type: string(models.NodeTypeShared),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get shared nodes: %w", err)
+	}
+
+	// Build children showing unallocated portions
+	children := make([]ProductNode, 0)
+
+	// Add platform nodes
+	for _, node := range platformNodes {
+		directCosts, err := s.getNodeDirectCosts(ctx, node.ID, req)
+		if err != nil {
+			continue
+		}
+
+		// Get how much was allocated to products
+		allocatedToProducts, err := s.getNodeAllocatedToProducts(ctx, node.ID, req)
+		if err != nil {
+			continue
+		}
+
+		// Calculate unallocated portion
+		unallocatedPortion := directCosts.Total.Sub(allocatedToProducts)
+
+		if unallocatedPortion.GreaterThan(decimal.Zero) {
+			children = append(children, ProductNode{
+				ID:   node.ID,
+				Name: node.Name,
+				Type: node.Type,
+				DirectCosts: CostBreakdown{
+					Total:      unallocatedPortion,
+					Currency:   currency,
+					Dimensions: map[string]decimal.Decimal{},
+				},
+				HolisticCosts: CostBreakdown{
+					Total:      unallocatedPortion,
+					Currency:   currency,
+					Dimensions: map[string]decimal.Decimal{},
+				},
+				SharedServiceCosts: CostBreakdown{
+					Total:      decimal.Zero,
+					Currency:   currency,
+					Dimensions: map[string]decimal.Decimal{},
+				},
+				Metadata: node.Metadata,
+			})
+		}
+	}
+
+	// Add shared nodes
+	for _, node := range sharedNodes {
+		directCosts, err := s.getNodeDirectCosts(ctx, node.ID, req)
+		if err != nil {
+			continue
+		}
+
+		// Get how much was allocated to products
+		allocatedToProducts, err := s.getNodeAllocatedToProducts(ctx, node.ID, req)
+		if err != nil {
+			continue
+		}
+
+		// Calculate unallocated portion
+		unallocatedPortion := directCosts.Total.Sub(allocatedToProducts)
+
+		if unallocatedPortion.GreaterThan(decimal.Zero) {
+			children = append(children, ProductNode{
+				ID:   node.ID,
+				Name: node.Name,
+				Type: node.Type,
+				DirectCosts: CostBreakdown{
+					Total:      unallocatedPortion,
+					Currency:   currency,
+					Dimensions: map[string]decimal.Decimal{},
+				},
+				HolisticCosts: CostBreakdown{
+					Total:      unallocatedPortion,
+					Currency:   currency,
+					Dimensions: map[string]decimal.Decimal{},
+				},
+				SharedServiceCosts: CostBreakdown{
+					Total:      decimal.Zero,
+					Currency:   currency,
+					Dimensions: map[string]decimal.Decimal{},
+				},
+				Metadata: node.Metadata,
+			})
+		}
+	}
+
+	return &ProductNode{
+		ID:   uuid.New(),
+		Name: "Unallocated Platform & Shared Costs",
+		Type: "unallocated",
+		DirectCosts: CostBreakdown{
+			Total:      unallocatedCost,
+			Currency:   currency,
+			Dimensions: map[string]decimal.Decimal{},
+		},
+		HolisticCosts: CostBreakdown{
+			Total:      unallocatedCost,
+			Currency:   currency,
+			Dimensions: map[string]decimal.Decimal{},
+		},
+		SharedServiceCosts: CostBreakdown{
+			Total:      decimal.Zero,
+			Currency:   currency,
+			Dimensions: map[string]decimal.Decimal{},
+		},
+		Children: children,
+		Metadata: map[string]interface{}{
+			"description": "Platform and shared service costs that are not allocated to any product",
+		},
+	}, nil
+}
+
+// getNodeAllocatedToProducts calculates how much of a node's cost was allocated to products
+func (s *Service) getNodeAllocatedToProducts(ctx context.Context, nodeID uuid.UUID, req CostAttributionRequest) (decimal.Decimal, error) {
+	// Get all contributions where this node is the child (contributing to products)
+	contributions, err := s.store.Runs.GetContributionsByChildAndDateRange(ctx, nodeID, req.StartDate, req.EndDate, req.Dimensions)
+	if err != nil {
+		return decimal.Zero, fmt.Errorf("failed to get contributions: %w", err)
+	}
+
+	total := decimal.Zero
+	for _, contrib := range contributions {
+		// Only count contributions to product nodes
+		parentNode, err := s.store.Nodes.GetByID(ctx, contrib.ParentID)
+		if err != nil {
+			continue
+		}
+		if parentNode.Type == string(models.NodeTypeProduct) {
+			total = total.Add(contrib.ContributedAmount)
+		}
+	}
+
+	return total, nil
 }

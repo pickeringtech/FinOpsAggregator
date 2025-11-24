@@ -5,8 +5,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: string | number, currency?: string): string {
+export function formatCurrency(amount: string | number | undefined, currency?: string): string {
+  if (amount === undefined || amount === null || amount === "") {
+    return "$0.00"
+  }
+
   const numAmount = typeof amount === "string" ? parseFloat(amount) : amount
+
+  if (isNaN(numAmount)) {
+    console.warn("formatCurrency received NaN value:", amount)
+    return "$0.00"
+  }
+
   const currencyCode = currency && currency.trim() !== "" ? currency : "USD"
 
   return new Intl.NumberFormat("en-US", {

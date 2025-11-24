@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { format, subDays } from "date-fns"
-import { Server, Share2, ArrowRight } from "lucide-react"
+import { Server, Share2 } from "lucide-react"
 import { DateRangePicker } from "@/components/date-range-picker"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -43,16 +43,14 @@ export default function PlatformPage() {
 
   const platformChartData = platformData?.platform_services.map((service) => ({
     name: service.name,
-    direct: parseFloat(service.direct_costs?.total || "0"),
-    allocated: parseFloat(service.allocated_costs?.total || "0"),
-    total: parseFloat(service.total_costs?.total || "0"),
+    direct: parseFloat(service.direct_costs.total || "0"),
+    allocated: (service.allocated_to || []).reduce((sum, target) => sum + parseFloat(target.amount || "0"), 0),
   })) || []
 
   const sharedChartData = platformData?.shared_services.map((service) => ({
     name: service.name,
-    direct: parseFloat(service.direct_costs?.total || "0"),
-    allocated: parseFloat(service.allocated_costs?.total || "0"),
-    total: parseFloat(service.total_costs?.total || "0"),
+    direct: parseFloat(service.direct_costs.total || "0"),
+    allocated: (service.weighted_targets || []).reduce((sum, target) => sum + parseFloat(target.amount || "0"), 0),
   })) || []
 
   if (loading) {
@@ -156,11 +154,11 @@ export default function PlatformPage() {
                     )}
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Total Cost</p>
+                    <p className="text-sm text-muted-foreground">Direct Cost</p>
                     <p className="text-xl font-bold">
                       {formatCurrency(
-                        service.total_costs?.total || "0",
-                        service.total_costs?.currency
+                        service.direct_costs.total || "0",
+                        service.direct_costs.currency
                       )}
                     </p>
                   </div>
@@ -171,24 +169,21 @@ export default function PlatformPage() {
                     <p className="text-xs text-muted-foreground mb-1">Direct</p>
                     <p className="text-sm font-semibold">
                       {formatCurrency(
-                        service.direct_costs?.total || "0",
-                        service.direct_costs?.currency
+                        service.direct_costs.total || "0",
+                        service.direct_costs.currency
                       )}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">Allocated</p>
+                    <p className="text-xs text-muted-foreground mb-1">Allocated To</p>
                     <p className="text-sm font-semibold">
-                      {formatCurrency(
-                        service.allocated_costs?.total || "0",
-                        service.allocated_costs?.currency
-                      )}
+                      {service.allocated_to.length} target(s)
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Dimensions</p>
                     <p className="text-sm font-semibold">
-                      {Object.keys(service.direct_costs?.dimensions || {}).length}
+                      {Object.keys(service.direct_costs.dimensions || {}).length}
                     </p>
                   </div>
                 </div>
@@ -244,20 +239,20 @@ export default function PlatformPage() {
                     {service.metadata?.description && (
                       <p className="text-sm text-muted-foreground">{service.metadata.description}</p>
                     )}
-                    {service.allocation_targets && service.allocation_targets.length > 0 && (
+                    {service.weighted_targets && service.weighted_targets.length > 0 && (
                       <div className="flex items-center gap-2 mt-2">
                         <span className="text-xs text-muted-foreground">
-                          Allocated to {service.allocation_targets.length} target(s)
+                          Allocated to {service.weighted_targets.length} target(s)
                         </span>
                       </div>
                     )}
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Total Cost</p>
+                    <p className="text-sm text-muted-foreground">Direct Cost</p>
                     <p className="text-xl font-bold">
                       {formatCurrency(
-                        service.total_costs?.total || "0",
-                        service.total_costs?.currency
+                        service.direct_costs.total || "0",
+                        service.direct_costs.currency
                       )}
                     </p>
                   </div>
@@ -268,24 +263,21 @@ export default function PlatformPage() {
                     <p className="text-xs text-muted-foreground mb-1">Direct</p>
                     <p className="text-sm font-semibold">
                       {formatCurrency(
-                        service.direct_costs?.total || "0",
-                        service.direct_costs?.currency
+                        service.direct_costs.total || "0",
+                        service.direct_costs.currency
                       )}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">Allocated</p>
+                    <p className="text-xs text-muted-foreground mb-1">Allocated To</p>
                     <p className="text-sm font-semibold">
-                      {formatCurrency(
-                        service.allocated_costs?.total || "0",
-                        service.allocated_costs?.currency
-                      )}
+                      {service.weighted_targets.length} target(s)
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Dimensions</p>
                     <p className="text-sm font-semibold">
-                      {Object.keys(service.direct_costs?.dimensions || {}).length}
+                      {Object.keys(service.direct_costs.dimensions || {}).length}
                     </p>
                   </div>
                 </div>
@@ -295,44 +287,6 @@ export default function PlatformPage() {
         </CardContent>
       </Card>
 
-      {/* Weighted Allocations */}
-      {platformData && platformData.weighted_allocations && platformData.weighted_allocations.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Cost Allocations</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {platformData.weighted_allocations.map((allocation, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card"
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <Badge variant="outline" className="text-xs">
-                      {allocation.strategy}
-                    </Badge>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                    {allocation.dimension && (
-                      <span className="text-sm text-muted-foreground">{allocation.dimension}</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-sm text-muted-foreground">
-                      Weight: {(allocation.weight * 100).toFixed(1)}%
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-semibold">
-                        {formatCurrency(allocation.allocation_amount, "USD")}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

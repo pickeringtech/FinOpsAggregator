@@ -43,8 +43,8 @@ func (r *CostRepository) Upsert(ctx context.Context, cost *models.NodeCostByDime
 		Insert("node_costs_by_dimension").
 		Columns("node_id", "cost_date", "dimension", "amount", "currency", "metadata").
 		Values(cost.NodeID, cost.CostDate, cost.Dimension, cost.Amount, cost.Currency, metadataJSON).
-		Suffix(`ON CONFLICT (node_id, cost_date, dimension) 
-			DO UPDATE SET 
+		Suffix(`ON CONFLICT (node_id, cost_date, dimension)
+			DO UPDATE SET
 				amount = EXCLUDED.amount,
 				currency = EXCLUDED.currency,
 				metadata = EXCLUDED.metadata,
@@ -829,8 +829,8 @@ func (r *CostRepository) BulkUpsert(ctx context.Context, costs []models.NodeCost
 		query = query.Values(cost.NodeID, cost.CostDate, cost.Dimension, cost.Amount, cost.Currency, metadataJSON)
 	}
 
-	query = query.Suffix(`ON CONFLICT (node_id, cost_date, dimension) 
-		DO UPDATE SET 
+	query = query.Suffix(`ON CONFLICT (node_id, cost_date, dimension)
+		DO UPDATE SET
 			amount = EXCLUDED.amount,
 			currency = EXCLUDED.currency,
 			metadata = EXCLUDED.metadata,
@@ -926,3 +926,91 @@ type OptimizationInsight struct {
 	CurrentCost      decimal.Decimal `json:"current_cost"`
 	PotentialSavings decimal.Decimal `json:"potential_savings"`
 }
+
+
+
+// GetTotalCostByDateRange retrieves the total of all costs within a date range
+// Uses allocation_results_by_dimension which contains the computed costs after allocation
+func (r *CostRepository) GetTotalCostByDateRange(ctx context.Context, startDate, endDate time.Time, currency string) (decimal.Decimal, error) {
+	query := `
+		WITH latest_run AS (
+			SELECT id
+			FROM computation_runs
+			WHERE window_start <= $1 AND window_end >= $2
+			  AND status = 'completed'
+			ORDER BY created_at DESC
+			LIMIT 1
+		)
+		SELECT COALESCE(SUM(total_amount), 0) as total
+		FROM allocation_results_by_dimension a
+		JOIN latest_run lr ON a.run_id = lr.id
+		WHERE a.allocation_date >= $1
+		  AND a.allocation_date <= $2
+	`
+
+	row := r.db.QueryRow(ctx, query, startDate, endDate)
+
+	var total decimal.Decimal
+	if err := row.Scan(&total); err != nil {
+		return decimal.Zero, fmt.Errorf("failed to get total cost: %w", err)
+	}
+
+	return total, nil
+}
+
+
+// GetAllocatedCostsByNodeAndDateRange retrieves allocated costs for a node from allocation results
+// This uses the computed allocation results rather than raw input costs
+// Returns direct_amount (node's own costs) in TotalAmount field
+func (r *CostRepository) GetAllocatedCostsByNodeAndDateRange(ctx context.Context, nodeID uuid.UUID, startDate, endDate time.Time) ([]models.AllocationResultByDimension, error) {
+	query := `
+		WITH latest_run AS (
+			SELECT id
+			FROM computation_runs
+			WHERE window_start <= $2 AND window_end >= $3
+			  AND status = 'completed'
+			ORDER BY created_at DESC
+			LIMIT 1
+		)
+		SELECT a.run_id, a.node_id, a.allocation_date, a.dimension, a.direct_amount, a.indirect_amount, a.total_amount, a.created_at, a.updated_at
+		FROM allocation_results_by_dimension a
+		JOIN latest_run lr ON a.run_id = lr.id
+		WHERE a.node_id = $1
+		  AND a.allocation_date >= $2
+		  AND a.allocation_date <= $3
+		ORDER BY a.allocation_date, a.dimension
+	`
+
+	rows, err := r.db.Query(ctx, query, nodeID, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get allocated costs: %w", err)
+	}
+	defer rows.Close()
+
+	var results []models.AllocationResultByDimension
+	for rows.Next() {
+		var result models.AllocationResultByDimension
+		err := rows.Scan(
+			&result.RunID,
+			&result.NodeID,
+			&result.AllocationDate,
+			&result.Dimension,
+			&result.DirectAmount,
+			&result.IndirectAmount,
+			&result.TotalAmount,
+			&result.CreatedAt,
+			&result.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan allocation result: %w", err)
+		}
+		results = append(results, result)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating allocation results: %w", err)
+	}
+
+	return results, nil
+}
+

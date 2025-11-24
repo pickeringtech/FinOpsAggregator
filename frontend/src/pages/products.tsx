@@ -5,6 +5,8 @@ import { NodeDetailPanel } from "@/components/node-detail-panel"
 import { DateRangePicker } from "@/components/date-range-picker"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Info } from "lucide-react"
 import { api } from "@/lib/api"
 import { formatCurrency } from "@/lib/utils"
 import type { ProductHierarchyResponse, ProductNode, IndividualNodeResponse } from "@/types/api"
@@ -99,6 +101,16 @@ export default function ProductsPage() {
         </div>
         <DateRangePicker value={dateRange} onChange={setDateRange} />
       </div>
+
+      {/* Cost Explanation */}
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Total Cost</strong> ({formatCurrency(hierarchyData?.summary.total_cost || "0", hierarchyData?.summary.currency)}) represents the sum of all product holistic costs.
+          Each product's <strong>holistic cost</strong> includes its direct resources plus allocated platform/shared service costs.
+          The <strong>Unallocated Platform & Shared Costs</strong> node shows platform and shared infrastructure that hasn't been allocated to any product yet.
+        </AlertDescription>
+      </Alert>
 
       {/* Summary Stats */}
       <div className="grid gap-4 md:grid-cols-4">

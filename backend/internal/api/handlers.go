@@ -184,6 +184,36 @@ func (h *Handler) GetCostsByDimension(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// GetRecommendations handles requests for cost optimization recommendations
+func (h *Handler) GetRecommendations(c *gin.Context) {
+	req, err := h.parseCostAttributionRequest(c)
+	if err != nil {
+		h.handleError(c, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+
+	// Optional node_id filter
+	nodeIDStr := c.Query("node_id")
+	var nodeID *uuid.UUID
+	if nodeIDStr != "" {
+		parsed, err := uuid.Parse(nodeIDStr)
+		if err != nil {
+			h.handleError(c, http.StatusBadRequest, "invalid_request", "invalid node_id format")
+			return
+		}
+		nodeID = &parsed
+	}
+
+	response, err := h.service.GetRecommendations(c.Request.Context(), *req, nodeID)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get recommendations")
+		h.handleError(c, http.StatusInternalServerError, "internal_error", "Failed to retrieve recommendations")
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 // parseCostAttributionRequest parses common request parameters
 func (h *Handler) parseCostAttributionRequest(c *gin.Context) (*CostAttributionRequest, error) {
 	req := &CostAttributionRequest{}

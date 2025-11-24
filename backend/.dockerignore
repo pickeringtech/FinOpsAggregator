@@ -1,0 +1,52 @@
+# Binaries
+bin/
+tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test files
+*_test.go
+testdata/
+coverage.out
+
+# Documentation
+*.md
+docs/
+
+# Charts and reports
+charts/
+*.html
+*.png
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+.dockerignore
+
+# Scripts
+scripts/
+dev.sh
+validate-syntax.sh
+
+# Build artifacts
+*.log
+

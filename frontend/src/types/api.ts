@@ -62,12 +62,21 @@ export interface NodeDependency {
 }
 
 export interface AllocationDetail {
-  source_node_id: string
-  target_node_id: string
+  from_node: {
+    id: string
+    name: string
+    type: string
+  }
+  to_node: {
+    id: string
+    name: string
+    type: string
+  }
   amount: string
-  strategy: AllocationStrategy
-  weight: number
-  dimension?: string
+  currency: string
+  dimension: string
+  strategy: string
+  allocation_date: string
 }
 
 export interface IndividualNodeResponse {
@@ -79,13 +88,31 @@ export interface IndividualNodeResponse {
   allocations?: AllocationDetail[]
 }
 
+export interface AllocationTarget {
+  node_id: string
+  node_name: string
+  node_type: string
+  amount: string
+  currency: string
+  percentage: number
+}
+
+export interface WeightedTarget {
+  node_id: string
+  node_name: string
+  node_type: string
+  weight: string
+  amount: string
+  currency: string
+  percentage: number
+}
+
 export interface PlatformService {
   id: string
   name: string
   type: "platform"
-  direct_costs?: CostBreakdown
-  allocated_costs?: CostBreakdown
-  total_costs?: CostBreakdown
+  direct_costs: CostBreakdown
+  allocated_to: AllocationTarget[]
   metadata?: {
     description?: string
     [key: string]: unknown
@@ -96,10 +123,8 @@ export interface SharedService {
   id: string
   name: string
   type: "shared"
-  direct_costs?: CostBreakdown
-  allocated_costs?: CostBreakdown
-  total_costs?: CostBreakdown
-  allocation_targets?: string[]
+  direct_costs: CostBreakdown
+  weighted_targets: WeightedTarget[]
   metadata?: {
     description?: string
     [key: string]: unknown
@@ -149,6 +174,43 @@ export interface CostsByTypeResponse {
   aggregations: TypeAggregation[]
   total_cost: string
   currency: string
+}
+
+// Cost Optimization Recommendations
+export type RecommendationType = "downsize" | "rightsize" | "unused" | "overprovisioned"
+export type RecommendationSeverity = "low" | "medium" | "high"
+
+export interface CostRecommendation {
+  id: string
+  node_id: string
+  node_name: string
+  node_type: string
+  type: RecommendationType
+  severity: RecommendationSeverity
+  title: string
+  description: string
+  current_cost: string
+  potential_savings: string
+  currency: string
+  metric: string
+  current_value: string
+  peak_value: string
+  average_value: string
+  utilization_percent: string
+  recommended_action: string
+  analysis_period: string
+  start_date: string
+  end_date: string
+  created_at: string
+}
+
+export interface RecommendationsResponse {
+  recommendations: CostRecommendation[]
+  total_savings: string
+  currency: string
+  high_severity_count: number
+  medium_severity_count: number
+  low_severity_count: number
 }
 
 export interface TypeAggregation {

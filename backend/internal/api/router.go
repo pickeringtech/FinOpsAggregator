@@ -48,6 +48,12 @@ func SetupRouter(handler *Handler) *gin.Engine {
 		{
 			platform.GET("/services", handler.GetPlatformServices)
 		}
+
+		// Cost optimization recommendations
+		recommendations := v1.Group("/recommendations")
+		{
+			recommendations.GET("", handler.GetRecommendations)
+		}
 	}
 
 	return router

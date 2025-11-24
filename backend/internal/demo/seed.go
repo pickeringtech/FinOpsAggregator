@@ -28,9 +28,9 @@ func NewSeeder(store *store.Store) *Seeder {
 func (s *Seeder) SeedBasicDAG(ctx context.Context) error {
 	log.Info().Msg("Seeding basic DAG structure")
 
-	// Create nodes - Payment Cards Industry Products
+	// Create nodes - 25 Products across multiple business units
 	nodes := []models.CostNode{
-		// Products (no direct costs - only allocated costs from dependencies)
+		// Payment Products
 		{
 			ID:         uuid.New(),
 			Name:       "card_issuing",
@@ -63,6 +63,186 @@ func (s *Seeder) SeedBasicDAG(ctx context.Context) error {
 			IsPlatform: false,
 			Metadata:   map[string]interface{}{"description": "Merchant Onboarding and KYC Platform"},
 		},
+		{
+			ID:         uuid.New(),
+			Name:       "payment_gateway",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "payment_gateway", "team": "payments", "business_unit": "processing"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Payment Gateway API for merchant integrations"},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "recurring_billing",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "recurring_billing", "team": "payments", "business_unit": "subscriptions"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Subscription and recurring billing management"},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "dispute_management",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "dispute_management", "team": "risk", "business_unit": "operations"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Chargeback and dispute resolution platform"},
+		},
+
+		// Banking Products
+		{
+			ID:         uuid.New(),
+			Name:       "digital_banking",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "digital_banking", "team": "banking", "business_unit": "retail"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Digital banking platform with account management"},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "loan_origination",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "loan_origination", "team": "lending", "business_unit": "credit"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Automated loan origination and underwriting"},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "wealth_management",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "wealth_management", "team": "investment", "business_unit": "wealth"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Investment portfolio and wealth management platform"},
+		},
+
+		// Analytics & Data Products
+		{
+			ID:         uuid.New(),
+			Name:       "business_intelligence",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "business_intelligence", "team": "analytics", "business_unit": "data"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Business intelligence and reporting platform"},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "data_warehouse",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "data_warehouse", "team": "data_engineering", "business_unit": "data"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Enterprise data warehouse and ETL pipelines"},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "ml_platform",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "ml_platform", "team": "ml_engineering", "business_unit": "ai"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Machine learning model training and serving platform"},
+		},
+
+		// Customer Experience Products
+		{
+			ID:         uuid.New(),
+			Name:       "customer_portal",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "customer_portal", "team": "customer_experience", "business_unit": "cx"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Self-service customer portal and dashboard"},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "mobile_app",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "mobile_app", "team": "mobile", "business_unit": "cx"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Native mobile applications for iOS and Android"},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "notification_service",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "notification_service", "team": "communications", "business_unit": "cx"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Multi-channel notification and messaging service"},
+		},
+
+		// Compliance & Security Products
+		{
+			ID:         uuid.New(),
+			Name:       "kyc_verification",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "kyc_verification", "team": "compliance", "business_unit": "security"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Know Your Customer verification and identity checks"},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "aml_monitoring",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "aml_monitoring", "team": "compliance", "business_unit": "security"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Anti-Money Laundering transaction monitoring"},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "audit_logging",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "audit_logging", "team": "security", "business_unit": "security"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Centralized audit logging and compliance reporting"},
+		},
+
+		// Integration & API Products
+		{
+			ID:         uuid.New(),
+			Name:       "api_marketplace",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "api_marketplace", "team": "platform", "business_unit": "developer"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "API marketplace and developer portal"},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "webhook_service",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "webhook_service", "team": "platform", "business_unit": "developer"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Webhook delivery and event streaming service"},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "partner_integrations",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "partner_integrations", "team": "partnerships", "business_unit": "business_dev"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Third-party partner integration platform"},
+		},
+
+		// Operations Products
+		{
+			ID:         uuid.New(),
+			Name:       "admin_console",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "admin_console", "team": "operations", "business_unit": "ops"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Internal admin and operations console"},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "support_ticketing",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "support_ticketing", "team": "support", "business_unit": "ops"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Customer support ticketing and case management"},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "reporting_engine",
+			Type:       string(models.NodeTypeProduct),
+			CostLabels: map[string]interface{}{"product": "reporting_engine", "team": "analytics", "business_unit": "ops"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Automated reporting and dashboard generation"},
+		},
 
 		// Platform Services (shared across products)
 		{
@@ -81,15 +261,31 @@ func (s *Seeder) SeedBasicDAG(ctx context.Context) error {
 			IsPlatform: true,
 			Metadata:   map[string]interface{}{"description": "Shared Kubernetes Platform (EKS)"},
 		},
+		{
+			ID:         uuid.New(),
+			Name:       "cdn_platform",
+			Type:       string(models.NodeTypePlatform),
+			CostLabels: map[string]interface{}{"environment": "prod", "region": "global", "service": "cloudfront"},
+			IsPlatform: true,
+			Metadata:   map[string]interface{}{"description": "Global CDN for static assets and API acceleration"},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "monitoring_platform",
+			Type:       string(models.NodeTypePlatform),
+			CostLabels: map[string]interface{}{"environment": "prod", "region": "us-east-1", "service": "datadog"},
+			IsPlatform: true,
+			Metadata:   map[string]interface{}{"description": "Centralized monitoring and observability platform"},
+		},
 
-		// Dedicated Resources per Product
+		// Dedicated Resources - High-cost compute for major products
 		{
 			ID:         uuid.New(),
 			Name:       "card_issuing_compute",
 			Type:       string(models.NodeTypeResource),
 			CostLabels: map[string]interface{}{"service": "ec2", "product": "card_issuing", "workload": "compute"},
 			IsPlatform: false,
-			Metadata:   map[string]interface{}{"description": "Dedicated EC2 instances for Card Issuing workloads"},
+			Metadata:   map[string]interface{}{"description": "Dedicated EC2 instances for Card Issuing workloads", "instance_type": "c5.4xlarge", "count": 20},
 		},
 		{
 			ID:         uuid.New(),
@@ -97,7 +293,7 @@ func (s *Seeder) SeedBasicDAG(ctx context.Context) error {
 			Type:       string(models.NodeTypeResource),
 			CostLabels: map[string]interface{}{"service": "ec2", "product": "payment_processing", "workload": "compute"},
 			IsPlatform: false,
-			Metadata:   map[string]interface{}{"description": "High-performance EC2 instances for Payment Processing"},
+			Metadata:   map[string]interface{}{"description": "High-performance EC2 instances for Payment Processing", "instance_type": "c5.9xlarge", "count": 50},
 		},
 		{
 			ID:         uuid.New(),
@@ -105,25 +301,49 @@ func (s *Seeder) SeedBasicDAG(ctx context.Context) error {
 			Type:       string(models.NodeTypeResource),
 			CostLabels: map[string]interface{}{"service": "ec2", "product": "fraud_detection", "workload": "ml"},
 			IsPlatform: false,
-			Metadata:   map[string]interface{}{"description": "GPU-enabled EC2 instances for ML-based Fraud Detection"},
+			Metadata:   map[string]interface{}{"description": "GPU-enabled EC2 instances for ML-based Fraud Detection", "instance_type": "p3.8xlarge", "count": 15},
 		},
 		{
 			ID:         uuid.New(),
-			Name:       "card_data_storage",
+			Name:       "data_warehouse_compute",
 			Type:       string(models.NodeTypeResource),
-			CostLabels: map[string]interface{}{"service": "s3", "product": "card_issuing", "workload": "storage"},
+			CostLabels: map[string]interface{}{"service": "redshift", "product": "data_warehouse", "workload": "analytics"},
 			IsPlatform: false,
-			Metadata:   map[string]interface{}{"description": "Encrypted S3 storage for card data and documents"},
+			Metadata:   map[string]interface{}{"description": "Redshift cluster for data warehousing", "node_type": "ra3.4xlarge", "count": 30},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "ml_platform_compute",
+			Type:       string(models.NodeTypeResource),
+			CostLabels: map[string]interface{}{"service": "sagemaker", "product": "ml_platform", "workload": "ml_training"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "SageMaker instances for ML training", "instance_type": "ml.p3.16xlarge", "count": 10},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "digital_banking_compute",
+			Type:       string(models.NodeTypeResource),
+			CostLabels: map[string]interface{}{"service": "ec2", "product": "digital_banking", "workload": "compute"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "EC2 instances for digital banking platform", "instance_type": "m5.2xlarge", "count": 25},
 		},
 
-		// Shared Infrastructure
+		// Shared Infrastructure - High-cost shared services
 		{
 			ID:         uuid.New(),
 			Name:       "payments_database_cluster",
 			Type:       string(models.NodeTypeShared),
 			CostLabels: map[string]interface{}{"service": "rds", "shared": true, "workload": "database"},
 			IsPlatform: false,
-			Metadata:   map[string]interface{}{"description": "Shared RDS PostgreSQL cluster for payment data"},
+			Metadata:   map[string]interface{}{"description": "Shared RDS PostgreSQL cluster for payment data", "instance_type": "db.r5.12xlarge", "count": 8},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "analytics_database_cluster",
+			Type:       string(models.NodeTypeShared),
+			CostLabels: map[string]interface{}{"service": "rds", "shared": true, "workload": "analytics"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Shared RDS cluster for analytics workloads", "instance_type": "db.r5.8xlarge", "count": 5},
 		},
 		{
 			ID:         uuid.New(),
@@ -131,7 +351,23 @@ func (s *Seeder) SeedBasicDAG(ctx context.Context) error {
 			Type:       string(models.NodeTypeShared),
 			CostLabels: map[string]interface{}{"service": "elasticache", "shared": true, "workload": "cache"},
 			IsPlatform: false,
-			Metadata:   map[string]interface{}{"description": "Shared Redis cluster for session and transaction caching"},
+			Metadata:   map[string]interface{}{"description": "Shared Redis cluster for session and transaction caching", "node_type": "cache.r5.4xlarge", "count": 12},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "message_queue_cluster",
+			Type:       string(models.NodeTypeShared),
+			CostLabels: map[string]interface{}{"service": "kafka", "shared": true, "workload": "messaging"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Kafka cluster for event streaming", "instance_type": "kafka.m5.4xlarge", "count": 9},
+		},
+		{
+			ID:         uuid.New(),
+			Name:       "object_storage",
+			Type:       string(models.NodeTypeShared),
+			CostLabels: map[string]interface{}{"service": "s3", "shared": true, "workload": "storage"},
+			IsPlatform: false,
+			Metadata:   map[string]interface{}{"description": "Shared S3 storage for documents and backups", "storage_tb": 500},
 		},
 		{
 			ID:         uuid.New(),
@@ -139,7 +375,7 @@ func (s *Seeder) SeedBasicDAG(ctx context.Context) error {
 			Type:       string(models.NodeTypeShared),
 			CostLabels: map[string]interface{}{"service": "cloudwatch", "shared": true, "workload": "logging"},
 			IsPlatform: false,
-			Metadata:   map[string]interface{}{"description": "Centralized compliance and audit logging infrastructure"},
+			Metadata:   map[string]interface{}{"description": "Centralized compliance and audit logging infrastructure", "log_ingestion_gb_day": 5000},
 		},
 	}
 
@@ -153,198 +389,114 @@ func (s *Seeder) SeedBasicDAG(ctx context.Context) error {
 		log.Debug().Str("name", node.Name).Str("id", node.ID.String()).Msg("Created node")
 	}
 
-	// Create edges - Payment Cards Industry Dependencies
-	activeFrom := time.Now().AddDate(0, 0, -30) // 30 days ago
-	edges := []models.DependencyEdge{
-		// Card Issuing Product Dependencies
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["card_issuing"],
-			ChildID:         nodeMap["card_issuing_compute"],
-			DefaultStrategy: string(models.StrategyEqual),
-			DefaultParameters: map[string]interface{}{},
-			ActiveFrom: activeFrom,
-		},
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["card_issuing"],
-			ChildID:         nodeMap["card_data_storage"],
-			DefaultStrategy: string(models.StrategyEqual),
-			DefaultParameters: map[string]interface{}{},
-			ActiveFrom: activeFrom,
-		},
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["card_issuing"],
-			ChildID:         nodeMap["payments_database_cluster"],
-			DefaultStrategy: string(models.StrategyProportionalOn),
-			DefaultParameters: map[string]interface{}{
-				"metric": "db_queries",
-			},
-			ActiveFrom: activeFrom,
-		},
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["card_issuing"],
-			ChildID:         nodeMap["api_gateway_platform"],
-			DefaultStrategy: string(models.StrategyProportionalOn),
-			DefaultParameters: map[string]interface{}{
-				"metric": "api_requests",
-			},
-			ActiveFrom: activeFrom,
-		},
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["card_issuing"],
-			ChildID:         nodeMap["kubernetes_platform"],
-			DefaultStrategy: string(models.StrategyProportionalOn),
-			DefaultParameters: map[string]interface{}{
-				"metric": "pod_hours",
-			},
-			ActiveFrom: activeFrom,
-		},
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["card_issuing"],
-			ChildID:         nodeMap["compliance_logging"],
-			DefaultStrategy: string(models.StrategyProportionalOn),
-			DefaultParameters: map[string]interface{}{
-				"metric": "log_volume",
-			},
-			ActiveFrom: activeFrom,
-		},
+	// Create edges programmatically - All products connect to shared platform/infrastructure
+	activeFrom := time.Now().AddDate(0, 0, -60) // 60 days ago to ensure edges are active for all demo data
+	edges := []models.DependencyEdge{}
 
-		// Payment Processing Product Dependencies
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["payment_processing"],
-			ChildID:         nodeMap["payment_processing_compute"],
-			DefaultStrategy: string(models.StrategyEqual),
-			DefaultParameters: map[string]interface{}{},
-			ActiveFrom: activeFrom,
-		},
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["payment_processing"],
-			ChildID:         nodeMap["payments_database_cluster"],
-			DefaultStrategy: string(models.StrategyProportionalOn),
-			DefaultParameters: map[string]interface{}{
-				"metric": "transaction_volume",
-			},
-			ActiveFrom: activeFrom,
-		},
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["payment_processing"],
-			ChildID:         nodeMap["redis_cache_cluster"],
-			DefaultStrategy: string(models.StrategyProportionalOn),
-			DefaultParameters: map[string]interface{}{
-				"metric": "cache_operations",
-			},
-			ActiveFrom: activeFrom,
-		},
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["payment_processing"],
-			ChildID:         nodeMap["api_gateway_platform"],
-			DefaultStrategy: string(models.StrategyProportionalOn),
-			DefaultParameters: map[string]interface{}{
-				"metric": "api_requests",
-			},
-			ActiveFrom: activeFrom,
-		},
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["payment_processing"],
-			ChildID:         nodeMap["kubernetes_platform"],
-			DefaultStrategy: string(models.StrategyProportionalOn),
-			DefaultParameters: map[string]interface{}{
-				"metric": "pod_hours",
-			},
-			ActiveFrom: activeFrom,
-		},
+	// Define product-to-resource mappings (dedicated resources)
+	productResources := map[string][]string{
+		"card_issuing":         {"card_issuing_compute"},
+		"payment_processing":   {"payment_processing_compute"},
+		"fraud_detection":      {"fraud_ml_compute"},
+		"data_warehouse":       {"data_warehouse_compute"},
+		"ml_platform":          {"ml_platform_compute"},
+		"digital_banking":      {"digital_banking_compute"},
+	}
 
-		// Fraud Detection Product Dependencies
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["fraud_detection"],
-			ChildID:         nodeMap["fraud_ml_compute"],
-			DefaultStrategy: string(models.StrategyEqual),
-			DefaultParameters: map[string]interface{}{},
-			ActiveFrom: activeFrom,
-		},
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["fraud_detection"],
-			ChildID:         nodeMap["payments_database_cluster"],
-			DefaultStrategy: string(models.StrategyProportionalOn),
-			DefaultParameters: map[string]interface{}{
-				"metric": "fraud_checks",
-			},
-			ActiveFrom: activeFrom,
-		},
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["fraud_detection"],
-			ChildID:         nodeMap["redis_cache_cluster"],
-			DefaultStrategy: string(models.StrategyProportionalOn),
-			DefaultParameters: map[string]interface{}{
-				"metric": "ml_model_cache",
-			},
-			ActiveFrom: activeFrom,
-		},
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["fraud_detection"],
-			ChildID:         nodeMap["kubernetes_platform"],
-			DefaultStrategy: string(models.StrategyProportionalOn),
-			DefaultParameters: map[string]interface{}{
-				"metric": "ml_pod_hours",
-			},
-			ActiveFrom: activeFrom,
-		},
+	// All products that use shared infrastructure
+	allProducts := []string{
+		"card_issuing", "payment_processing", "fraud_detection", "merchant_onboarding",
+		"payment_gateway", "recurring_billing", "dispute_management", "digital_banking",
+		"loan_origination", "wealth_management", "business_intelligence", "data_warehouse",
+		"ml_platform", "customer_portal", "mobile_app", "notification_service",
+		"kyc_verification", "aml_monitoring", "audit_logging", "api_marketplace",
+		"webhook_service", "partner_integrations", "admin_console", "support_ticketing",
+		"reporting_engine",
+	}
 
-		// Merchant Onboarding Product Dependencies
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["merchant_onboarding"],
-			ChildID:         nodeMap["payments_database_cluster"],
-			DefaultStrategy: string(models.StrategyProportionalOn),
-			DefaultParameters: map[string]interface{}{
-				"metric": "kyc_checks",
-			},
-			ActiveFrom: activeFrom,
-		},
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["merchant_onboarding"],
-			ChildID:         nodeMap["api_gateway_platform"],
-			DefaultStrategy: string(models.StrategyProportionalOn),
-			DefaultParameters: map[string]interface{}{
-				"metric": "onboarding_api_calls",
-			},
-			ActiveFrom: activeFrom,
-		},
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["merchant_onboarding"],
-			ChildID:         nodeMap["kubernetes_platform"],
-			DefaultStrategy: string(models.StrategyProportionalOn),
-			DefaultParameters: map[string]interface{}{
-				"metric": "pod_hours",
-			},
-			ActiveFrom: activeFrom,
-		},
-		{
-			ID:              uuid.New(),
-			ParentID:        nodeMap["merchant_onboarding"],
-			ChildID:         nodeMap["compliance_logging"],
-			DefaultStrategy: string(models.StrategyProportionalOn),
-			DefaultParameters: map[string]interface{}{
-				"metric": "compliance_events",
-			},
-			ActiveFrom: activeFrom,
-		},
+	// Create edges from products to their dedicated resources
+	for product, resources := range productResources {
+		for _, resource := range resources {
+			if _, ok := nodeMap[product]; !ok {
+				continue
+			}
+			if _, ok := nodeMap[resource]; !ok {
+				continue
+			}
+			edges = append(edges, models.DependencyEdge{
+				ID:              uuid.New(),
+				ParentID:        nodeMap[product],
+				ChildID:         nodeMap[resource],
+				DefaultStrategy: string(models.StrategyEqual),
+				DefaultParameters: map[string]interface{}{},
+				ActiveFrom: activeFrom,
+			})
+		}
+	}
+
+	// Create edges from all products to shared platform services
+	sharedPlatform := []string{"api_gateway_platform", "kubernetes_platform", "cdn_platform", "monitoring_platform"}
+	for _, product := range allProducts {
+		if _, ok := nodeMap[product]; !ok {
+			continue
+		}
+		for _, platform := range sharedPlatform {
+			if _, ok := nodeMap[platform]; !ok {
+				continue
+			}
+			edges = append(edges, models.DependencyEdge{
+				ID:              uuid.New(),
+				ParentID:        nodeMap[product],
+				ChildID:         nodeMap[platform],
+				DefaultStrategy: string(models.StrategyProportionalOn),
+				DefaultParameters: map[string]interface{}{
+					"metric": "api_requests",
+				},
+				ActiveFrom: activeFrom,
+			})
+		}
+	}
+
+	// Create edges from all products to shared infrastructure
+	sharedInfra := []string{
+		"payments_database_cluster", "analytics_database_cluster", "redis_cache_cluster",
+		"message_queue_cluster", "object_storage", "compliance_logging",
+	}
+	for _, product := range allProducts {
+		if _, ok := nodeMap[product]; !ok {
+			continue
+		}
+		for _, infra := range sharedInfra {
+			if _, ok := nodeMap[infra]; !ok {
+				continue
+			}
+			edges = append(edges, models.DependencyEdge{
+				ID:              uuid.New(),
+				ParentID:        nodeMap[product],
+				ChildID:         nodeMap[infra],
+				DefaultStrategy: string(models.StrategyProportionalOn),
+				DefaultParameters: map[string]interface{}{
+					"metric": "usage_metric",
+				},
+				ActiveFrom: activeFrom,
+			})
+		}
+	}
+
+	// Add product-to-product dependency: Payment Processing calls Fraud Detection
+	if _, ok := nodeMap["payment_processing"]; ok {
+		if _, ok := nodeMap["fraud_detection"]; ok {
+			edges = append(edges, models.DependencyEdge{
+				ID:              uuid.New(),
+				ParentID:        nodeMap["payment_processing"],
+				ChildID:         nodeMap["fraud_detection"],
+				DefaultStrategy: string(models.StrategyProportionalOn),
+				DefaultParameters: map[string]interface{}{
+					"metric": "fraud_check_requests",
+				},
+				ActiveFrom: activeFrom,
+			})
+		}
 	}
 
 	// Create edges in database and collect edge IDs for strategies
@@ -590,139 +742,209 @@ func (s *Seeder) generateCostAmount(nodeName, dimension string, serviceIdx, reco
 // getBaseCostAmount returns base cost amounts for different node/dimension combinations
 func (s *Seeder) getBaseCostAmount(nodeName, dimension string) decimal.Decimal {
 	// Products should have NO direct costs - only allocated costs from dependencies
-	switch nodeName {
-	case "card_issuing", "payment_processing", "fraud_detection", "merchant_onboarding":
-		return decimal.Zero // Products have no direct infrastructure costs
+	// All products return zero
+	productNames := []string{
+		"card_issuing", "payment_processing", "fraud_detection", "merchant_onboarding",
+		"payment_gateway", "recurring_billing", "dispute_management", "digital_banking",
+		"loan_origination", "wealth_management", "business_intelligence", "data_warehouse",
+		"ml_platform", "customer_portal", "mobile_app", "notification_service",
+		"kyc_verification", "aml_monitoring", "audit_logging", "api_marketplace",
+		"webhook_service", "partner_integrations", "admin_console", "support_ticketing",
+		"reporting_engine",
+	}
+	for _, product := range productNames {
+		if nodeName == product {
+			return decimal.Zero // Products have no direct infrastructure costs
+		}
+	}
 
-	// Shared Infrastructure
+	// High-cost Shared Infrastructure
+	switch nodeName {
 	case "payments_database_cluster":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(8.50) // $8.50/hour for high-performance RDS cluster
+			return decimal.NewFromFloat(85.00) // $85/hour for db.r5.12xlarge cluster (8 instances)
 		case "storage_gb_month":
-			return decimal.NewFromFloat(0.125) // $0.125/GB/month for encrypted RDS storage
+			return decimal.NewFromFloat(1.25) // $1.25/GB/month for encrypted RDS storage
 		case "egress_gb":
-			return decimal.NewFromFloat(0.09) // $0.09/GB for RDS egress
+			return decimal.NewFromFloat(0.90) // $0.90/GB for RDS egress
 		case "iops":
-			return decimal.NewFromFloat(0.075) // $0.075/IOPS for provisioned IOPS
+			return decimal.NewFromFloat(0.75) // $0.75/IOPS for provisioned IOPS
 		case "backups_gb_month":
-			return decimal.NewFromFloat(0.095) // $0.095/GB/month for automated backups
+			return decimal.NewFromFloat(0.95) // $0.95/GB/month for automated backups
 		case "cpu_hours":
-			return decimal.NewFromFloat(0.35) // $0.35/CPU hour for high-performance
+			return decimal.NewFromFloat(3.50) // $3.50/CPU hour for high-performance
 		case "memory_gb_hours":
-			return decimal.NewFromFloat(0.08) // $0.08/GB/hour memory
+			return decimal.NewFromFloat(0.80) // $0.80/GB/hour memory
 		case "database_connections":
-			return decimal.NewFromFloat(0.002) // $0.002/connection for payment workloads
+			return decimal.NewFromFloat(0.02) // $0.02/connection for payment workloads
+		}
+	case "analytics_database_cluster":
+		switch dimension {
+		case "instance_hours":
+			return decimal.NewFromFloat(55.00) // $55/hour for db.r5.8xlarge cluster (5 instances)
+		case "storage_gb_month":
+			return decimal.NewFromFloat(1.00) // $1.00/GB/month
+		case "egress_gb":
+			return decimal.NewFromFloat(0.90) // $0.90/GB
+		case "iops":
+			return decimal.NewFromFloat(0.65) // $0.65/IOPS
+		}
+	case "message_queue_cluster":
+		switch dimension {
+		case "instance_hours":
+			return decimal.NewFromFloat(45.00) // $45/hour for Kafka cluster (9 instances)
+		case "storage_gb_month":
+			return decimal.NewFromFloat(0.80) // $0.80/GB/month
+		case "egress_gb":
+			return decimal.NewFromFloat(0.90) // $0.90/GB
+		}
+	case "object_storage":
+		switch dimension {
+		case "storage_gb_month":
+			return decimal.NewFromFloat(0.23) // $0.23/GB/month for S3 (500TB)
+		case "egress_gb":
+			return decimal.NewFromFloat(0.90) // $0.90/GB
+		case "requests_count":
+			return decimal.NewFromFloat(0.004) // $0.004/1000 requests
 		}
 
-	// Dedicated Compute Resources
+	// High-cost Dedicated Compute Resources
 	case "card_issuing_compute":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(0.192) // $0.192/hour for EC2 m5.xlarge
+			return decimal.NewFromFloat(30.72) // $30.72/hour for 20x c5.4xlarge instances
 		case "storage_gb_month":
-			return decimal.NewFromFloat(0.10) // $0.10/GB/month for EBS
+			return decimal.NewFromFloat(2.00) // $2.00/GB/month for EBS
 		case "egress_gb":
-			return decimal.NewFromFloat(0.09) // $0.09/GB for EC2 egress
+			return decimal.NewFromFloat(0.90) // $0.90/GB for EC2 egress
 		case "cpu_hours":
-			return decimal.NewFromFloat(0.096) // $0.096/CPU hour
+			return decimal.NewFromFloat(1.92) // $1.92/CPU hour
 		case "memory_gb_hours":
-			return decimal.NewFromFloat(0.024) // $0.024/GB/hour memory
-		case "disk_io_operations":
-			return decimal.NewFromFloat(0.0001) // $0.0001/IO operation
-		case "snapshot_storage":
-			return decimal.NewFromFloat(0.05) // $0.05/GB/month for snapshots
+			return decimal.NewFromFloat(0.48) // $0.48/GB/hour memory
 		}
 	case "payment_processing_compute":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(0.384) // $0.384/hour for EC2 c5.2xlarge (high-performance)
+			return decimal.NewFromFloat(153.60) // $153.60/hour for 50x c5.9xlarge instances
 		case "storage_gb_month":
-			return decimal.NewFromFloat(0.125) // $0.125/GB/month for high-IOPS EBS
+			return decimal.NewFromFloat(2.50) // $2.50/GB/month for high-IOPS EBS
 		case "egress_gb":
-			return decimal.NewFromFloat(0.09) // $0.09/GB for EC2 egress
+			return decimal.NewFromFloat(0.90) // $0.90/GB for EC2 egress
 		case "cpu_hours":
-			return decimal.NewFromFloat(0.192) // $0.192/CPU hour for high-performance
+			return decimal.NewFromFloat(3.84) // $3.84/CPU hour for high-performance
 		case "memory_gb_hours":
-			return decimal.NewFromFloat(0.048) // $0.048/GB/hour memory
-		case "disk_io_operations":
-			return decimal.NewFromFloat(0.0002) // $0.0002/IO operation for high-IOPS
+			return decimal.NewFromFloat(0.96) // $0.96/GB/hour memory
 		}
 	case "fraud_ml_compute":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(3.06) // $3.06/hour for GPU instances (p3.2xlarge)
+			return decimal.NewFromFloat(183.60) // $183.60/hour for 15x p3.8xlarge GPU instances
 		case "storage_gb_month":
-			return decimal.NewFromFloat(0.15) // $0.15/GB/month for NVMe SSD
+			return decimal.NewFromFloat(2.25) // $2.25/GB/month for NVMe SSD
 		case "egress_gb":
-			return decimal.NewFromFloat(0.09) // $0.09/GB for EC2 egress
+			return decimal.NewFromFloat(0.90) // $0.90/GB for EC2 egress
 		case "cpu_hours":
-			return decimal.NewFromFloat(0.765) // $0.765/CPU hour for GPU instances
+			return decimal.NewFromFloat(11.48) // $11.48/CPU hour for GPU instances
 		case "memory_gb_hours":
-			return decimal.NewFromFloat(0.153) // $0.153/GB/hour memory for GPU instances
+			return decimal.NewFromFloat(2.30) // $2.30/GB/hour memory for GPU instances
 		}
-	case "card_data_storage":
+	case "data_warehouse_compute":
 		switch dimension {
+		case "instance_hours":
+			return decimal.NewFromFloat(195.00) // $195/hour for 30x ra3.4xlarge Redshift nodes
 		case "storage_gb_month":
-			return decimal.NewFromFloat(0.023) // $0.023/GB/month for S3 Standard
+			return decimal.NewFromFloat(3.00) // $3.00/GB/month for Redshift storage
 		case "egress_gb":
-			return decimal.NewFromFloat(0.09) // $0.09/GB for S3 egress
-		case "requests_count":
-			return decimal.NewFromFloat(0.0004) // $0.0004/1000 requests
-		case "data_transfer":
-			return decimal.NewFromFloat(0.02) // $0.02/GB internal transfer
+			return decimal.NewFromFloat(0.90) // $0.90/GB
+		}
+	case "ml_platform_compute":
+		switch dimension {
+		case "instance_hours":
+			return decimal.NewFromFloat(244.80) // $244.80/hour for 10x ml.p3.16xlarge SageMaker instances
+		case "storage_gb_month":
+			return decimal.NewFromFloat(2.50) // $2.50/GB/month
+		case "egress_gb":
+			return decimal.NewFromFloat(0.90) // $0.90/GB
+		}
+	case "digital_banking_compute":
+		switch dimension {
+		case "instance_hours":
+			return decimal.NewFromFloat(47.50) // $47.50/hour for 25x m5.2xlarge instances
+		case "storage_gb_month":
+			return decimal.NewFromFloat(2.00) // $2.00/GB/month
+		case "egress_gb":
+			return decimal.NewFromFloat(0.90) // $0.90/GB
 		}
 
 	// Platform Services
 	case "api_gateway_platform":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(0.0036) // $0.0036/hour per million requests for API Gateway
+			return decimal.NewFromFloat(3.60) // $3.60/hour for high-volume API Gateway
 		case "egress_gb":
-			return decimal.NewFromFloat(0.09) // $0.09/GB for API Gateway egress
+			return decimal.NewFromFloat(0.90) // $0.90/GB for API Gateway egress
 		case "load_balancer_hours":
-			return decimal.NewFromFloat(0.0225) // $0.0225/hour for ALB
+			return decimal.NewFromFloat(2.25) // $2.25/hour for ALB
 		case "requests_count":
-			return decimal.NewFromFloat(0.0000035) // $3.50 per million API requests
+			return decimal.NewFromFloat(0.0035) // $3.50 per million API requests
 		case "data_transfer":
-			return decimal.NewFromFloat(0.02) // $0.02/GB internal transfer
+			return decimal.NewFromFloat(0.20) // $0.20/GB internal transfer
 		}
 	case "kubernetes_platform":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(0.10) // $0.10/hour for EKS cluster
+			return decimal.NewFromFloat(25.00) // $25/hour for large EKS cluster
 		case "storage_gb_month":
-			return decimal.NewFromFloat(0.10) // $0.10/GB/month for EBS
+			return decimal.NewFromFloat(2.00) // $2.00/GB/month for EBS
 		case "egress_gb":
-			return decimal.NewFromFloat(0.09) // $0.09/GB for EKS egress
+			return decimal.NewFromFloat(0.90) // $0.90/GB for EKS egress
 		case "cpu_hours":
-			return decimal.NewFromFloat(0.05) // $0.05/CPU hour for worker nodes
+			return decimal.NewFromFloat(1.25) // $1.25/CPU hour for worker nodes
 		case "memory_gb_hours":
-			return decimal.NewFromFloat(0.0125) // $0.0125/GB/hour memory
+			return decimal.NewFromFloat(0.31) // $0.31/GB/hour memory
 		case "load_balancer_hours":
-			return decimal.NewFromFloat(0.0225) // $0.0225/hour for ALB
+			return decimal.NewFromFloat(2.25) // $2.25/hour for ALB
+		}
+	case "cdn_platform":
+		switch dimension {
+		case "egress_gb":
+			return decimal.NewFromFloat(0.85) // $0.85/GB for CloudFront
+		case "requests_count":
+			return decimal.NewFromFloat(0.0075) // $7.50 per million requests
+		case "data_transfer":
+			return decimal.NewFromFloat(0.20) // $0.20/GB
+		}
+	case "monitoring_platform":
+		switch dimension {
+		case "instance_hours":
+			return decimal.NewFromFloat(15.00) // $15/hour for Datadog infrastructure
+		case "metrics_count":
+			return decimal.NewFromFloat(0.05) // $0.05/custom metric
+		case "logs_ingestion_gb":
+			return decimal.NewFromFloat(0.10) // $0.10/GB for log ingestion
 		}
 
 	// Additional Shared Infrastructure
 	case "redis_cache_cluster":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(0.017) // $0.017/hour for cache.t3.micro
+			return decimal.NewFromFloat(20.40) // $20.40/hour for 12x cache.r5.4xlarge
 		case "egress_gb":
-			return decimal.NewFromFloat(0.09) // $0.09/GB for ElastiCache egress
+			return decimal.NewFromFloat(0.90) // $0.90/GB for ElastiCache egress
 		case "memory_gb_hours":
-			return decimal.NewFromFloat(0.0085) // $0.0085/GB/hour for cache memory
+			return decimal.NewFromFloat(1.02) // $1.02/GB/hour for cache memory
 		}
 	case "compliance_logging":
 		switch dimension {
 		case "logs_ingestion_gb":
-			return decimal.NewFromFloat(0.50) // $0.50/GB for log ingestion
+			return decimal.NewFromFloat(5.00) // $5.00/GB for log ingestion (5TB/day)
 		case "storage_gb_month":
-			return decimal.NewFromFloat(0.03) // $0.03/GB/month for log storage
+			return decimal.NewFromFloat(0.30) // $0.30/GB/month for log storage
 		case "cloudwatch_metrics":
-			return decimal.NewFromFloat(0.30) // $0.30/metric/month
+			return decimal.NewFromFloat(3.00) // $3.00/metric/month
 		case "monitoring_checks":
-			return decimal.NewFromFloat(0.001) // $0.001/check
+			return decimal.NewFromFloat(0.01) // $0.01/check
 		}
 	}
 	return decimal.Zero
@@ -868,86 +1090,46 @@ func (s *Seeder) generateUsageValue(nodeName, metric string, serviceIdx, recordI
 
 // getBaseUsageValue returns base usage values for different node/metric combinations
 func (s *Seeder) getBaseUsageValue(nodeName, metric string) decimal.Decimal {
-	switch nodeName {
-	case "product_p":
-		switch metric {
-		case "db_queries":
-			return decimal.NewFromInt(625) // 625 queries/hour (15k/day)
-		case "requests":
-			return decimal.NewFromInt(2083) // 2083 requests/hour (50k/day)
-		case "api_requests":
-			return decimal.NewFromInt(1250) // 1250 API requests/hour
-		case "lambda_executions":
-			return decimal.NewFromInt(500) // 500 lambda executions/hour
-		case "cache_hits":
-			return decimal.NewFromInt(8333) // 8333 cache hits/hour
-		}
-	case "product_q":
-		switch metric {
-		case "db_queries":
-			return decimal.NewFromInt(208) // 208 queries/hour (5k/day)
-		case "requests":
-			return decimal.NewFromInt(833) // 833 requests/hour (20k/day)
-		case "api_requests":
-			return decimal.NewFromInt(417) // 417 API requests/hour
-		case "lambda_executions":
-			return decimal.NewFromInt(167) // 167 lambda executions/hour
-		case "cache_hits":
-			return decimal.NewFromInt(2778) // 2778 cache hits/hour
-		}
-	case "rds_shared":
-		switch metric {
-		case "db_queries":
-			return decimal.NewFromInt(1042) // 1042 queries/hour
-		case "connections":
-			return decimal.NewFromInt(45) // 45 connections/hour
-		case "transactions":
-			return decimal.NewFromInt(2500) // 2500 transactions/hour
-		case "disk_reads":
-			return decimal.NewFromInt(15000) // 15k disk reads/hour
-		case "disk_writes":
-			return decimal.NewFromInt(8000) // 8k disk writes/hour
-		case "backup_operations":
-			return decimal.NewFromInt(2) // 2 backup operations/hour
-		}
-	case "ec2_p":
-		switch metric {
-		case "cpu_hours":
-			return decimal.NewFromFloat(0.75) // 75% CPU utilization
-		case "memory_gb_hours":
-			return decimal.NewFromFloat(6.2) // 6.2 GB memory usage/hour
-		case "network_packets":
-			return decimal.NewFromInt(125000) // 125k packets/hour
-		case "disk_reads":
-			return decimal.NewFromInt(5000) // 5k disk reads/hour
-		case "disk_writes":
-			return decimal.NewFromInt(2000) // 2k disk writes/hour
-		case "storage_operations":
-			return decimal.NewFromInt(1500) // 1500 storage ops/hour
-		}
-	case "s3_p":
-		switch metric {
-		case "requests":
-			return decimal.NewFromInt(8333) // 8333 S3 requests/hour
-		case "storage_operations":
-			return decimal.NewFromInt(2083) // 2083 storage ops/hour
-		case "network_packets":
-			return decimal.NewFromInt(41667) // 41667 packets/hour
-		}
-	case "platform_pool":
-		switch metric {
-		case "cpu_hours":
-			return decimal.NewFromFloat(1.2) // 120% CPU utilization (multiple cores)
-		case "memory_gb_hours":
-			return decimal.NewFromFloat(12.8) // 12.8 GB memory usage/hour
-		case "connections":
-			return decimal.NewFromInt(150) // 150 connections/hour
-		case "log_entries":
-			return decimal.NewFromInt(50000) // 50k log entries/hour
-		case "network_packets":
-			return decimal.NewFromInt(200000) // 200k packets/hour
+	// All 25 products generate usage metrics for proportional allocation
+	allProducts := []string{
+		"card_issuing", "payment_processing", "fraud_detection", "merchant_onboarding",
+		"payment_gateway", "recurring_billing", "dispute_management", "digital_banking",
+		"loan_origination", "wealth_management", "business_intelligence", "data_warehouse",
+		"ml_platform", "customer_portal", "mobile_app", "notification_service",
+		"kyc_verification", "aml_monitoring", "audit_logging", "api_marketplace",
+		"webhook_service", "partner_integrations", "admin_console", "support_ticketing",
+		"reporting_engine",
+	}
+
+	// Check if this is a product node
+	isProduct := false
+	for _, p := range allProducts {
+		if nodeName == p {
+			isProduct = true
+			break
 		}
 	}
+
+	if isProduct {
+		// All products generate usage metrics for proportional allocation
+		switch metric {
+		case "api_requests":
+			// Vary by product type - high traffic products get more
+			switch nodeName {
+			case "payment_processing", "payment_gateway", "fraud_detection":
+				return decimal.NewFromInt(5000) // 5000 API requests/hour
+			case "card_issuing", "digital_banking", "mobile_app":
+				return decimal.NewFromInt(3000) // 3000 API requests/hour
+			default:
+				return decimal.NewFromInt(1000) // 1000 API requests/hour
+			}
+		case "usage_metric":
+			// Generic usage metric for shared infrastructure
+			return decimal.NewFromInt(100)
+		}
+	}
+
+	// Infrastructure nodes don't generate usage - they only consume costs
 	return decimal.Zero
 }
 

@@ -4,9 +4,11 @@ import useSWR from "swr"
 import { DollarSign, TrendingUp, Package, Server } from "lucide-react"
 import { CostCard } from "@/components/cost-card"
 import { DateRangePicker } from "@/components/date-range-picker"
+import { RecommendationsPanel } from "@/components/recommendations-panel"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/utils"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
+import { RecommendationsResponse } from "@/types/api"
 
 // Fetcher for SWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -71,6 +73,16 @@ export default function Dashboard() {
     }
   )
 
+  // Fetch recommendations
+  const { data: recommendationsData } = useSWR<RecommendationsResponse>(
+    `/api/v1/recommendations?start_date=${format(dateRange.from, "yyyy-MM-dd")}&end_date=${format(dateRange.to, "yyyy-MM-dd")}&currency=USD`,
+    fetcher,
+    {
+      refreshInterval: 300000, // Refresh every 5 minutes
+      revalidateOnFocus: false,
+    }
+  )
+
   // Prepare chart data
   const topProducts = data?.top_products.map((p) => ({
     id: p.id,
@@ -122,10 +134,10 @@ export default function Dashboard() {
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <CostCard
-          title="Total Cost"
+          title="Total Product Cost"
           amount={data?.summary.total_cost || "0"}
           currency={data?.summary.currency || "USD"}
-          subtitle="Total holistic cost for the period"
+          subtitle="Sum of all product holistic costs"
           icon={<DollarSign className="h-4 w-4" />}
         />
         <CostCard
@@ -234,6 +246,18 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Cost Optimization Recommendations */}
+      {recommendationsData && (
+        <RecommendationsPanel
+          recommendations={recommendationsData.recommendations}
+          totalSavings={recommendationsData.total_savings}
+          currency={recommendationsData.currency}
+          highCount={recommendationsData.high_severity_count}
+          mediumCount={recommendationsData.medium_severity_count}
+          lowCount={recommendationsData.low_severity_count}
+        />
+      )}
 
       {/* Platform and Shared Services Section */}
       <div className="grid gap-4 md:grid-cols-2">

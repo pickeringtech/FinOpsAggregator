@@ -1,0 +1,39 @@
+# Development Dockerfile with hot reload and debugging support
+FROM golang:1.24-alpine
+
+# Install development dependencies
+RUN apk add --no-cache \
+    git \
+    ca-certificates \
+    tzdata \
+    bash \
+    curl \
+    make
+
+# Set working directory
+WORKDIR /app
+
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Install air for hot reload (pinned to v1.61.5 for Go 1.24 compatibility)
+RUN go install github.com/air-verse/air@v1.61.5
+
+# Install delve for debugging
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
+
+# Copy the rest of the application
+COPY . .
+
+# Expose API port
+EXPOSE 8080
+
+# Expose Delve debugger port
+EXPOSE 2345
+
+# Default command (can be overridden in docker-compose)
+CMD ["air", "-c", ".air.toml"]
+

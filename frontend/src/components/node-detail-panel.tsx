@@ -141,6 +141,11 @@ export function NodeDetailPanel({ nodeData }: NodeDetailPanelProps) {
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium">{allocation.from_node.name}</span>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">{allocation.to_node.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-xs">
                         {allocation.strategy}
                       </Badge>
@@ -150,13 +155,10 @@ export function NodeDetailPanel({ nodeData }: NodeDetailPanelProps) {
                         </span>
                       )}
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      Weight: {(allocation.weight * 100).toFixed(1)}%
-                    </div>
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-semibold">
-                      {formatCurrency(allocation.amount, direct_costs.currency)}
+                      {formatCurrency(allocation.amount, allocation.currency)}
                     </p>
                   </div>
                 </div>

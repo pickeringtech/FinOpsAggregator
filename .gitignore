@@ -1,0 +1,26 @@
+# Development environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+postgres_dev_data/
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+

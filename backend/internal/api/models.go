@@ -229,3 +229,38 @@ type HealthResponse struct {
 	Version   string    `json:"version"`
 	Database  string    `json:"database"`
 }
+
+// RecommendationsResponse represents cost optimization recommendations
+type RecommendationsResponse struct {
+	Recommendations   []CostRecommendation `json:"recommendations"`
+	TotalSavings      decimal.Decimal      `json:"total_savings"`
+	Currency          string               `json:"currency"`
+	HighSeverityCount int                  `json:"high_severity_count"`
+	MediumSeverityCount int                `json:"medium_severity_count"`
+	LowSeverityCount  int                  `json:"low_severity_count"`
+}
+
+// CostRecommendation represents a cost optimization recommendation
+type CostRecommendation struct {
+	ID                 uuid.UUID       `json:"id"`
+	NodeID             uuid.UUID       `json:"node_id"`
+	NodeName           string          `json:"node_name"`
+	NodeType           string          `json:"node_type"`
+	Type               string          `json:"type"`
+	Severity           string          `json:"severity"`
+	Title              string          `json:"title"`
+	Description        string          `json:"description"`
+	CurrentCost        decimal.Decimal `json:"current_cost"`
+	PotentialSavings   decimal.Decimal `json:"potential_savings"`
+	Currency           string          `json:"currency"`
+	Metric             string          `json:"metric"`
+	CurrentValue       decimal.Decimal `json:"current_value"`
+	PeakValue          decimal.Decimal `json:"peak_value"`
+	AverageValue       decimal.Decimal `json:"average_value"`
+	UtilizationPercent decimal.Decimal `json:"utilization_percent"`
+	RecommendedAction  string          `json:"recommended_action"`
+	AnalysisPeriod     string          `json:"analysis_period"`
+	StartDate          time.Time       `json:"start_date"`
+	EndDate            time.Time       `json:"end_date"`
+	CreatedAt          time.Time       `json:"created_at"`
+}
