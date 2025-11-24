@@ -546,9 +546,11 @@ func (s *Seeder) SeedCostData(ctx context.Context) error {
 		return fmt.Errorf("no nodes found - run seed basic DAG first")
 	}
 
-	// Generate costs for the last 6 months for comprehensive analysis (targeting ~100k records)
-	endDate := time.Now()
-	startDate := endDate.AddDate(0, -6, 0) // 6 months of data
+	// Generate costs for the previous 12 months AND next 12 months (24 months total)
+	// Costs get less accurate as they're further into the future
+	now := time.Now()
+	startDate := now.AddDate(0, -12, 0) // 12 months ago
+	endDate := now.AddDate(0, 12, 0)    // 12 months in the future
 
 	var costs []models.NodeCostByDimension
 
@@ -651,9 +653,10 @@ func (s *Seeder) SeedUsageData(ctx context.Context) error {
 		return fmt.Errorf("no nodes found - run seed basic DAG first")
 	}
 
-	// Generate usage for the last 6 months to match cost data
-	endDate := time.Now()
-	startDate := endDate.AddDate(0, -6, 0)
+	// Generate usage for the previous 12 months AND next 12 months to match cost data
+	now := time.Now()
+	startDate := now.AddDate(0, -12, 0) // 12 months ago
+	endDate := now.AddDate(0, 12, 0)    // 12 months in the future
 
 	var usage []models.NodeUsageByDimension
 	metrics := []string{
@@ -1005,6 +1008,7 @@ func (s *Seeder) getGranularity(dimension string) string {
 // calculateCostVariation adds realistic variations to base costs
 func (s *Seeder) calculateCostVariation(nodeName, dimension string, serviceIdx, recordIdx int, date time.Time) decimal.Decimal {
 	variation := decimal.NewFromFloat(1.0) // Start with base multiplier
+	now := time.Now()
 
 	// Add service-specific variation (different instance sizes, etc.)
 	serviceVariation := 1.0 + (float64(serviceIdx%5)-2)*0.15 // ±30% variation across services
@@ -1031,9 +1035,24 @@ func (s *Seeder) calculateCostVariation(nodeName, dimension string, serviceIdx, 
 	growthFactor := 1.0 + (monthsSinceStart * 0.02) // 2% growth per month
 	variation = variation.Mul(decimal.NewFromFloat(growthFactor))
 
-	// Add some random variation (±10%)
-	randomFactor := 0.9 + (float64((serviceIdx+recordIdx+date.Day())%20) / 100.0) // 0.9 to 1.1
-	variation = variation.Mul(decimal.NewFromFloat(randomFactor))
+	// Add future uncertainty - costs become less accurate further into the future
+	if date.After(now) {
+		monthsInFuture := float64(date.Sub(now).Hours()) / (24 * 30)
+
+		// Base uncertainty increases with time: 5% per month into the future
+		uncertaintyFactor := 1.0 + (monthsInFuture * 0.05)
+
+		// Add random variation that increases with distance into future
+		// Near future: ±5%, far future: ±60%
+		maxRandomVariation := 0.05 + (monthsInFuture * 0.05) // 5% to 60%
+		randomVariation := 1.0 + (float64((serviceIdx+recordIdx+date.Day())%200-100) / 100.0 * maxRandomVariation)
+
+		variation = variation.Mul(decimal.NewFromFloat(uncertaintyFactor * randomVariation))
+	} else {
+		// Historical data has normal random variation (±10%)
+		randomFactor := 0.9 + (float64((serviceIdx+recordIdx+date.Day())%20) / 100.0) // 0.9 to 1.1
+		variation = variation.Mul(decimal.NewFromFloat(randomFactor))
+	}
 
 	// Dimension-specific variations
 	switch dimension {
@@ -1137,6 +1156,7 @@ func (s *Seeder) getBaseUsageValue(nodeName, metric string) decimal.Decimal {
 func (s *Seeder) calculateUsageVariation(nodeName, metric string, serviceIdx, recordIdx int, date time.Time) decimal.Decimal {
 	// Similar to cost variation but with different patterns for usage
 	variation := decimal.NewFromFloat(1.0)
+	now := time.Now()
 
 	// Service-specific variation
 	serviceVariation := 1.0 + (float64(serviceIdx%3)-1)*0.2 // ±20% variation across services
@@ -1163,9 +1183,24 @@ func (s *Seeder) calculateUsageVariation(nodeName, metric string, serviceIdx, re
 	growthFactor := 1.0 + (monthsSinceStart * 0.03) // 3% growth per month for usage
 	variation = variation.Mul(decimal.NewFromFloat(growthFactor))
 
-	// Random variation
-	randomFactor := 0.8 + (float64((serviceIdx+recordIdx+date.Hour())%40) / 100.0) // 0.8 to 1.2
-	variation = variation.Mul(decimal.NewFromFloat(randomFactor))
+	// Add future uncertainty - usage becomes less predictable further into the future
+	if date.After(now) {
+		monthsInFuture := float64(date.Sub(now).Hours()) / (24 * 30)
+
+		// Base uncertainty increases with time: 7% per month into the future (higher than costs)
+		uncertaintyFactor := 1.0 + (monthsInFuture * 0.07)
+
+		// Add random variation that increases with distance into future
+		// Near future: ±8%, far future: ±80%
+		maxRandomVariation := 0.08 + (monthsInFuture * 0.06) // 8% to 80%
+		randomVariation := 1.0 + (float64((serviceIdx+recordIdx+date.Hour())%200-100) / 100.0 * maxRandomVariation)
+
+		variation = variation.Mul(decimal.NewFromFloat(uncertaintyFactor * randomVariation))
+	} else {
+		// Historical data has normal random variation
+		randomFactor := 0.8 + (float64((serviceIdx+recordIdx+date.Hour())%40) / 100.0) // 0.8 to 1.2
+		variation = variation.Mul(decimal.NewFromFloat(randomFactor))
+	}
 
 	// Metric-specific variations
 	switch metric {

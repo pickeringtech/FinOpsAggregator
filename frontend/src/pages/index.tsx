@@ -63,19 +63,56 @@ export default function Dashboard() {
     to: new Date(),
   })
 
-  // Use SWR to fetch dashboard data with automatic caching and revalidation
-  const { data, error, isLoading } = useSWR<DashboardSummary>(
-    `/api/dashboard/summary?start_date=${format(dateRange.from, "yyyy-MM-dd")}&end_date=${format(dateRange.to, "yyyy-MM-dd")}&currency=USD`,
-    fetcher,
-    {
-      refreshInterval: 60000, // Refresh every minute
-      revalidateOnFocus: true,
-    }
+  // Fetch data directly from backend API
+  const startDate = format(dateRange.from, "yyyy-MM-dd")
+  const endDate = format(dateRange.to, "yyyy-MM-dd")
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+
+  // Fetch all data in parallel
+  const { data: productsData } = useSWR(
+    `${backendUrl}/api/v1/products?start_date=${startDate}&end_date=${endDate}&currency=USD&limit=5`,
+    fetcher
   )
+  const { data: platformData } = useSWR(
+    `${backendUrl}/api/v1/nodes?start_date=${startDate}&end_date=${endDate}&currency=USD&type=platform`,
+    fetcher
+  )
+  const { data: resourceData } = useSWR(
+    `${backendUrl}/api/v1/nodes?start_date=${startDate}&end_date=${endDate}&currency=USD&type=resource`,
+    fetcher
+  )
+  const { data: sharedData } = useSWR(
+    `${backendUrl}/api/v1/nodes?start_date=${startDate}&end_date=${endDate}&currency=USD&type=shared`,
+    fetcher
+  )
+  const { data: costsByTypeData } = useSWR(
+    `${backendUrl}/api/v1/costs/by-type?start_date=${startDate}&end_date=${endDate}&currency=USD`,
+    fetcher
+  )
+
+  // Compose dashboard data from individual responses
+  const data: DashboardSummary | undefined = productsData && costsByTypeData ? {
+    top_products: productsData.nodes || [],
+    platform_nodes: platformData?.nodes || [],
+    resource_nodes: resourceData?.nodes || [],
+    shared_nodes: sharedData?.nodes || [],
+    cost_by_type: costsByTypeData.aggregations || [],
+    summary: {
+      total_cost: costsByTypeData.total_cost || "0",
+      currency: costsByTypeData.currency || "USD",
+      product_count: costsByTypeData.aggregations?.find((a: any) => a.type === "product")?.node_count || 0,
+      platform_count: costsByTypeData.aggregations?.find((a: any) => a.type === "platform")?.node_count || 0,
+      resource_count: costsByTypeData.aggregations?.find((a: any) => a.type === "resource")?.node_count || 0,
+      shared_count: costsByTypeData.aggregations?.find((a: any) => a.type === "shared")?.node_count || 0,
+    },
+  } : undefined
+
+  const isLoading = !productsData || !costsByTypeData
+  const error = null
 
   // Fetch recommendations
   const { data: recommendationsData } = useSWR<RecommendationsResponse>(
-    `/api/v1/recommendations?start_date=${format(dateRange.from, "yyyy-MM-dd")}&end_date=${format(dateRange.to, "yyyy-MM-dd")}&currency=USD`,
+    `${backendUrl}/api/v1/recommendations?start_date=${startDate}&end_date=${endDate}&currency=USD`,
     fetcher,
     {
       refreshInterval: 300000, // Refresh every 5 minutes
@@ -84,17 +121,17 @@ export default function Dashboard() {
   )
 
   // Prepare chart data
-  const topProducts = data?.top_products.map((p) => ({
+  const topProducts = (data?.top_products || []).map((p) => ({
     id: p.id,
     name: p.name,
     cost: parseFloat(p.total_cost || "0"),
     currency: p.currency,
-  })) || []
+  }))
 
-  const pieData = data?.cost_by_type.map((ct) => ({
+  const pieData = (data?.cost_by_type || []).map((ct) => ({
     name: ct.type.charAt(0).toUpperCase() + ct.type.slice(1),
     value: parseFloat(ct.total_cost || "0"),
-  })) || []
+  }))
 
   const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))"]
 
@@ -135,28 +172,28 @@ export default function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <CostCard
           title="Total Product Cost"
-          amount={data?.summary.total_cost || "0"}
-          currency={data?.summary.currency || "USD"}
+          amount={data?.summary?.total_cost || "0"}
+          currency={data?.summary?.currency || "USD"}
           subtitle="Sum of all product holistic costs"
           icon={<DollarSign className="h-4 w-4" />}
         />
         <CostCard
           title="Products"
-          amount={data?.summary.product_count.toString() || "0"}
+          amount={data?.summary?.product_count?.toString() || "0"}
           subtitle="Active products"
           icon={<Package className="h-4 w-4" />}
           showCurrency={false}
         />
         <CostCard
           title="Platform Services"
-          amount={data?.summary.platform_count.toString() || "0"}
+          amount={data?.summary?.platform_count?.toString() || "0"}
           subtitle="Platform nodes"
           icon={<Server className="h-4 w-4" />}
           showCurrency={false}
         />
         <CostCard
           title="Resources"
-          amount={data?.summary.resource_count.toString() || "0"}
+          amount={data?.summary?.resource_count?.toString() || "0"}
           subtitle="Resource nodes"
           icon={<TrendingUp className="h-4 w-4" />}
           showCurrency={false}
