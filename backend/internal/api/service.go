@@ -43,14 +43,19 @@ func (s *Service) GetProductHierarchy(ctx context.Context, req CostAttributionRe
 		totalAllocatedCost = totalAllocatedCost.Add(product.HolisticCosts.Total)
 	}
 
-	// Get all direct costs to calculate unallocated
-	allDirectCosts, err := s.store.Costs.GetTotalCostByDateRange(ctx, req.StartDate, req.EndDate, req.Currency)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get total direct costs: %w", err)
+	// Get all raw direct costs (pre-allocation) to calculate unallocated and coverage
+	currency := req.Currency
+	if currency == "" {
+		currency = "USD"
 	}
 
-	// Calculate unallocated costs
-	unallocatedCost := allDirectCosts.Sub(totalAllocatedCost)
+	rawTotalCosts, err := s.store.Costs.GetRawTotalCostByDateRange(ctx, req.StartDate, req.EndDate, currency)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get raw total costs: %w", err)
+	}
+
+	// Calculate unallocated costs as the gap between raw infra spend and allocated product totals
+	unallocatedCost := rawTotalCosts.Sub(totalAllocatedCost)
 
 	// Get platform and shared nodes for unallocated breakdown
 	unallocatedNode, err := s.buildUnallocatedNode(ctx, req, unallocatedCost)
@@ -66,21 +71,32 @@ func (s *Service) GetProductHierarchy(ctx context.Context, req CostAttributionRe
 		products = append(products, *unallocatedNode)
 	}
 
-	currency := req.Currency
-	if currency == "" {
-		currency = "USD"
-	}
-
 	// Total cost shown in summary is sum of all product holistic costs (including unallocated)
 	totalCostForSummary := totalAllocatedCost.Add(unallocatedCost)
 
+	// Derive allocation coverage percentage; guard against divide-by-zero
+	coveragePercent := 0.0
+	if !rawTotalCosts.IsZero() {
+		// Clamp to [0, 100]
+		ratio, _ := totalCostForSummary.Div(rawTotalCosts).Float64()
+		if ratio < 0 {
+			ratio = 0
+		}
+		if ratio > 1 {
+			ratio = 1
+		}
+		coveragePercent = ratio * 100
+	}
+
 	summary := CostSummary{
-		TotalCost:    totalCostForSummary,
-		Currency:     currency,
-		Period:       fmt.Sprintf("%s to %s", req.StartDate.Format("2006-01-02"), req.EndDate.Format("2006-01-02")),
-		StartDate:    req.StartDate,
-		EndDate:      req.EndDate,
-		ProductCount: productCount, // Exclude unallocated node from count
+		TotalCost:                 totalCostForSummary,
+		RawTotalCost:              rawTotalCosts,
+		AllocationCoveragePercent: coveragePercent,
+		Currency:                  currency,
+		Period:                    fmt.Sprintf("%s to %s", req.StartDate.Format("2006-01-02"), req.EndDate.Format("2006-01-02")),
+		StartDate:                 req.StartDate,
+		EndDate:                   req.EndDate,
+		ProductCount:              productCount, // Exclude unallocated node from count
 	}
 
 	return &ProductHierarchyResponse{

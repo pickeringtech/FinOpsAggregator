@@ -7,7 +7,12 @@ export interface CostBreakdown {
 }
 
 export interface CostSummary {
+  // Allocated product total (including the Unallocated bucket on the Products page)
   total_cost: string
+  // Raw infrastructure spend from node_costs_by_dimension for the same date range
+  raw_total_cost: string
+  // 0-100: how much of the raw spend is covered by allocated totals
+  allocation_coverage_percent: number
   currency: string
   period: string
   start_date: string

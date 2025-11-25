@@ -473,7 +473,7 @@ func (r *CostRepository) ListNodesWithCosts(ctx context.Context, startDate, endD
 		WITH latest_run AS (
 			SELECT id
 			FROM computation_runs
-			WHERE window_start <= $1 AND window_end >= $2
+			WHERE window_start <= $2 AND window_end >= $1
 			  AND status = 'completed'
 			ORDER BY created_at DESC
 			LIMIT 1
@@ -554,7 +554,7 @@ func (r *CostRepository) GetCostsByType(ctx context.Context, startDate, endDate 
 		WITH latest_run AS (
 			SELECT id
 			FROM computation_runs
-			WHERE window_start <= $1 AND window_end >= $2
+			WHERE window_start <= $2 AND window_end >= $1
 			  AND status = 'completed'
 			ORDER BY created_at DESC
 			LIMIT 1
@@ -612,7 +612,7 @@ func (r *CostRepository) GetCostsByDimension(ctx context.Context, startDate, end
 		WITH latest_run AS (
 			SELECT id
 			FROM computation_runs
-			WHERE window_start <= $1 AND window_end >= $2
+			WHERE window_start <= $2 AND window_end >= $1
 			  AND status = 'completed'
 			ORDER BY created_at DESC
 			LIMIT 1
@@ -929,14 +929,14 @@ type OptimizationInsight struct {
 
 
 
-// GetTotalCostByDateRange retrieves the total of all costs within a date range
+// GetTotalCostByDateRange retrieves the total of all allocated costs within a date range
 // Uses allocation_results_by_dimension which contains the computed costs after allocation
 func (r *CostRepository) GetTotalCostByDateRange(ctx context.Context, startDate, endDate time.Time, currency string) (decimal.Decimal, error) {
 	query := `
 		WITH latest_run AS (
 			SELECT id
 			FROM computation_runs
-			WHERE window_start <= $1 AND window_end >= $2
+			WHERE window_start <= $2 AND window_end >= $1
 			  AND status = 'completed'
 			ORDER BY created_at DESC
 			LIMIT 1
@@ -952,7 +952,28 @@ func (r *CostRepository) GetTotalCostByDateRange(ctx context.Context, startDate,
 
 	var total decimal.Decimal
 	if err := row.Scan(&total); err != nil {
-		return decimal.Zero, fmt.Errorf("failed to get total cost: %w", err)
+		return decimal.Zero, fmt.Errorf("failed to get total allocated cost: %w", err)
+	}
+
+	return total, nil
+}
+
+// GetRawTotalCostByDateRange retrieves the total raw infrastructure cost within a date range
+// Uses node_costs_by_dimension which contains the ingested pre-allocation spend
+func (r *CostRepository) GetRawTotalCostByDateRange(ctx context.Context, startDate, endDate time.Time, currency string) (decimal.Decimal, error) {
+	query := `
+			SELECT COALESCE(SUM(amount), 0) as total
+			FROM node_costs_by_dimension
+			WHERE cost_date >= $1
+			  AND cost_date <= $2
+			  AND currency = $3
+	`
+
+	row := r.db.QueryRow(ctx, query, startDate, endDate, currency)
+
+	var total decimal.Decimal
+	if err := row.Scan(&total); err != nil {
+		return decimal.Zero, fmt.Errorf("failed to get raw total cost: %w", err)
 	}
 
 	return total, nil
@@ -967,7 +988,7 @@ func (r *CostRepository) GetAllocatedCostsByNodeAndDateRange(ctx context.Context
 		WITH latest_run AS (
 			SELECT id
 			FROM computation_runs
-			WHERE window_start <= $2 AND window_end >= $3
+			WHERE window_start <= $3 AND window_end >= $2
 			  AND status = 'completed'
 			ORDER BY created_at DESC
 			LIMIT 1

@@ -40,15 +40,20 @@ type DailyCostPoint struct {
 }
 
 // CostSummary provides overall cost summary information
+// TotalCost here represents the allocated product total shown on the Products page
+// RawTotalCost represents the underlying raw infrastructure spend for the same date range
+// AllocationCoveragePercent indicates how much of the raw spend has been allocated into products
 type CostSummary struct {
-	TotalCost         decimal.Decimal `json:"total_cost"`
-	Currency          string          `json:"currency"`
-	Period            string          `json:"period"`
-	StartDate         time.Time       `json:"start_date"`
-	EndDate           time.Time       `json:"end_date"`
-	NodeCount         int             `json:"node_count"`
-	ProductCount      int             `json:"product_count"`
-	PlatformNodeCount int             `json:"platform_node_count"`
+	TotalCost                 decimal.Decimal `json:"total_cost"`                  // allocated product total (including unallocated bucket)
+	RawTotalCost              decimal.Decimal `json:"raw_total_cost"`              // raw infra spend from node_costs_by_dimension
+	AllocationCoveragePercent float64         `json:"allocation_coverage_percent"` // 0-100, how much of raw is represented in allocated total
+	Currency                  string          `json:"currency"`
+	Period                    string          `json:"period"`
+	StartDate                 time.Time       `json:"start_date"`
+	EndDate                   time.Time       `json:"end_date"`
+	NodeCount                 int             `json:"node_count"`
+	ProductCount              int             `json:"product_count"`
+	PlatformNodeCount         int             `json:"platform_node_count"`
 }
 
 // IndividualNodeResponse represents detailed cost data for a single node
