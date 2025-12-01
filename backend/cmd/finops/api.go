@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pickeringtech/FinOpsAggregator/internal/allocate"
 	"github.com/pickeringtech/FinOpsAggregator/internal/api"
 	"github.com/pickeringtech/FinOpsAggregator/internal/demo"
 	"github.com/pickeringtech/FinOpsAggregator/internal/store"
@@ -117,6 +118,22 @@ func seedDemoData() error {
 	if err := seeder.SeedUsageData(ctx); err != nil {
 		return fmt.Errorf("failed to seed usage data: %w", err)
 	}
+
+	// After seeding demo data, run allocation over the same 24-month window
+	fmt.Println("Running allocation over seeded demo period...")
+
+	// Match the seed date window: 12 months in the past to 12 months in the future
+	now := time.Now()
+	startDate := now.AddDate(0, -12, 0)
+	endDate := now.AddDate(0, 12, 0)
+
+	engine := allocate.NewEngine(st)
+	result, err := engine.AllocateForPeriod(ctx, startDate, endDate, cfg.Compute.ActiveDimensions)
+	if err != nil {
+		return fmt.Errorf("failed to run allocation after seeding demo data: %w", err)
+	}
+
+	fmt.Printf("Allocation completed successfully! Run ID: %s, processed_days=%d\n", result.RunID, result.Summary.ProcessedDays)
 
 	return nil
 }

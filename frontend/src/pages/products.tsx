@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react"
-import { format, subDays } from "date-fns"
+import { format } from "date-fns"
 import { ProductTree } from "@/components/product-tree"
 import { NodeDetailPanel } from "@/components/node-detail-panel"
-import { DateRangePicker } from "@/components/date-range-picker"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -10,14 +9,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from "@/components/ui/button"
 import { Info, HelpCircle } from "lucide-react"
 import { api } from "@/lib/api"
+import { useDateRange } from "@/context/date-range-context"
 import { formatCurrency } from "@/lib/utils"
 import type { ProductHierarchyResponse, ProductNode, IndividualNodeResponse } from "@/types/api"
 
 export default function ProductsPage() {
-  const [dateRange, setDateRange] = useState({
-    from: subDays(new Date(), 30),
-    to: new Date(),
-  })
+  const { dateRange } = useDateRange()
   const [hierarchyData, setHierarchyData] = useState<ProductHierarchyResponse | null>(null)
   const [selectedNode, setSelectedNode] = useState<ProductNode | null>(null)
   const [nodeDetails, setNodeDetails] = useState<IndividualNodeResponse | null>(null)
@@ -101,7 +98,6 @@ export default function ProductsPage() {
             Explore product costs with direct and rolled-up allocations
           </p>
         </div>
-        <DateRangePicker value={dateRange} onChange={setDateRange} />
       </div>
 
       {/* Cost Explanation */}

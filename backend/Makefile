@@ -63,7 +63,8 @@ demo-validate: build
 	./bin/$(BINARY_NAME) graph validate
 
 demo-allocate: build
-	./bin/$(BINARY_NAME) allocate --from 2024-01-01 --to 2024-01-31
+	@echo "Running demo allocation over seeded period..."
+	./bin/$(BINARY_NAME) demo allocate
 
 demo-charts: build
 	chmod +x scripts/generate-charts.sh

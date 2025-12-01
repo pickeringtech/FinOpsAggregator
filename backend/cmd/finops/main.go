@@ -35,7 +35,7 @@ func main() {
 var rootCmd = &cobra.Command{
 	Use:   "finops",
 	Short: "FinOps DAG Cost Attribution Tool",
-	Long: `A dimension-aware FinOps aggregation tool that models cost attribution 
+	Long: `A dimension-aware FinOps aggregation tool that models cost attribution
 as a weighted directed acyclic graph (DAG) and provides both TUI and API interfaces.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		var err error
@@ -68,7 +68,7 @@ as a weighted directed acyclic graph (DAG) and provides both TUI and API interfa
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml)")
-	
+
 	// Add subcommands
 	rootCmd.AddCommand(importCmd)
 	rootCmd.AddCommand(graphCmd)
@@ -86,18 +86,7 @@ var importCmd = &cobra.Command{
 	Short: "Import data from various sources",
 }
 
-var graphCmd = &cobra.Command{
-	Use:   "graph",
-	Short: "Graph operations and validation",
-}
-
-var allocateCmd = &cobra.Command{
-	Use:   "allocate",
-	Short: "Run cost allocation computations",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		from, _ := cmd.Flags().GetString("from")
-		to, _ := cmd.Flags().GetString("to")
-
+	func runAllocation(ctx context.Context, st *store.Store, from, to string) error {
 		startDate, err := time.Parse("2006-01-02", from)
 		if err != nil {
 			return fmt.Errorf("invalid start date format: %w", err)
@@ -111,7 +100,7 @@ var allocateCmd = &cobra.Command{
 		fmt.Printf("Running allocation from %s to %s\n", from, to)
 
 		engine := allocate.NewEngine(st)
-		result, err := engine.AllocateForPeriod(context.Background(), startDate, endDate, cfg.Compute.ActiveDimensions)
+		result, err := engine.AllocateForPeriod(ctx, startDate, endDate, cfg.Compute.ActiveDimensions)
 		if err != nil {
 			return fmt.Errorf("allocation failed: %w", err)
 		}
@@ -124,6 +113,21 @@ var allocateCmd = &cobra.Command{
 		fmt.Printf("Processing time: %v\n", result.Summary.ProcessingTime)
 
 		return nil
+	}
+
+
+var graphCmd = &cobra.Command{
+	Use:   "graph",
+	Short: "Graph operations and validation",
+}
+
+var allocateCmd = &cobra.Command{
+	Use:   "allocate",
+	Short: "Run cost allocation computations",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		from, _ := cmd.Flags().GetString("from")
+		to, _ := cmd.Flags().GetString("to")
+		return runAllocation(cmd.Context(), st, from, to)
 	},
 }
 
@@ -233,7 +237,7 @@ func init() {
 		Use:   "chart",
 		Short: "Export charts",
 	}
-	
+
 	chartCmd.AddCommand(&cobra.Command{
 		Use:   "graph",
 		Short: "Generate graph structure chart",
@@ -446,6 +450,19 @@ func init() {
 	})
 
 	demoCmd.AddCommand(&cobra.Command{
+		Use:   "allocate",
+		Short: "Run allocation for the full demo seed period",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Align with demo seed range: 12 months past to 12 months future
+			now := time.Now()
+			from := now.AddDate(0, -12, 0).Format("2006-01-02")
+			to := now.AddDate(0, 12, 0).Format("2006-01-02")
+			fmt.Printf("Running demo allocation from %s to %s...\n", from, to)
+			return runAllocation(cmd.Context(), st, from, to)
+		},
+	})
+
+	demoCmd.AddCommand(&cobra.Command{
 		Use:   "synth",
 		Short: "Generate synthetic data",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -453,7 +470,7 @@ func init() {
 			edges, _ := cmd.Flags().GetInt("edges")
 			days, _ := cmd.Flags().GetInt("days")
 			dimensions, _ := cmd.Flags().GetInt("dimensions")
-			fmt.Printf("Generating synthetic data: %d nodes, %d edges, %d days, %d dimensions\n", 
+			fmt.Printf("Generating synthetic data: %d nodes, %d edges, %d days, %d dimensions\n",
 				nodes, edges, days, dimensions)
 			// TODO: Implement synthetic data generation
 			return nil
@@ -461,7 +478,7 @@ func init() {
 	})
 
 	// Demo synth flags
-	synthCmd := demoCmd.Commands()[1] // synth command
+	synthCmd := demoCmd.Commands()[2] // synth command
 	synthCmd.Flags().Int("nodes", 1000, "Number of nodes")
 	synthCmd.Flags().Int("edges", 3000, "Number of edges")
 	synthCmd.Flags().Int("days", 30, "Number of days")

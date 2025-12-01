@@ -1,20 +1,17 @@
-import { useState, useEffect } from "react"
-import { format, subDays } from "date-fns"
+import { useEffect, useState } from "react"
+import { format } from "date-fns"
 import { Server, Share2 } from "lucide-react"
-import { DateRangePicker } from "@/components/date-range-picker"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { api } from "@/lib/api"
 import { formatCurrency } from "@/lib/utils"
 import type { PlatformServicesResponse } from "@/types/api"
+import { useDateRange } from "@/context/date-range-context"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
 export default function PlatformPage() {
-  const [dateRange, setDateRange] = useState({
-    from: subDays(new Date(), 30),
-    to: new Date(),
-  })
+  const { dateRange } = useDateRange()
   const [platformData, setPlatformData] = useState<PlatformServicesResponse | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -73,7 +70,6 @@ export default function PlatformPage() {
             Infrastructure and shared service cost allocation
           </p>
         </div>
-        <DateRangePicker value={dateRange} onChange={setDateRange} />
       </div>
 
       {/* Summary */}

@@ -74,11 +74,12 @@ func (s *Service) GetProductHierarchy(ctx context.Context, req CostAttributionRe
 	// Total cost shown in summary is sum of all product holistic costs (including unallocated)
 	totalCostForSummary := totalAllocatedCost.Add(unallocatedCost)
 
-	// Derive allocation coverage percentage; guard against divide-by-zero
+	// Derive allocation coverage percentage based only on costs allocated to actual products (excluding the unallocated bucket);
+	// guard against divide-by-zero on the raw total.
 	coveragePercent := 0.0
 	if !rawTotalCosts.IsZero() {
 		// Clamp to [0, 100]
-		ratio, _ := totalCostForSummary.Div(rawTotalCosts).Float64()
+		ratio, _ := totalAllocatedCost.Div(rawTotalCosts).Float64()
 		if ratio < 0 {
 			ratio = 0
 		}

@@ -1,9 +1,9 @@
-import { useState } from "react"
-import { format, subDays } from "date-fns"
+import { format } from "date-fns"
 import useSWR from "swr"
 import { DollarSign, TrendingUp, Package, Server } from "lucide-react"
 import { CostCard } from "@/components/cost-card"
-import { DateRangePicker } from "@/components/date-range-picker"
+import { useDateRange } from "@/context/date-range-context"
+import type { TypeAggregation } from "@/types/api"
 import { RecommendationsPanel } from "@/components/recommendations-panel"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/utils"
@@ -58,10 +58,7 @@ interface DashboardSummary {
 }
 
 export default function Dashboard() {
-  const [dateRange, setDateRange] = useState({
-    from: subDays(new Date(), 30),
-    to: new Date(),
-  })
+  const { dateRange } = useDateRange()
 
   // Fetch data directly from backend API
   const startDate = format(dateRange.from, "yyyy-MM-dd")
@@ -100,15 +97,19 @@ export default function Dashboard() {
     summary: {
       total_cost: costsByTypeData.total_cost || "0",
       currency: costsByTypeData.currency || "USD",
-      product_count: costsByTypeData.aggregations?.find((a: any) => a.type === "product")?.node_count || 0,
-      platform_count: costsByTypeData.aggregations?.find((a: any) => a.type === "platform")?.node_count || 0,
-      resource_count: costsByTypeData.aggregations?.find((a: any) => a.type === "resource")?.node_count || 0,
-      shared_count: costsByTypeData.aggregations?.find((a: any) => a.type === "shared")?.node_count || 0,
+      product_count:
+        costsByTypeData.aggregations?.find((a: TypeAggregation) => a.type === "product")?.node_count || 0,
+      platform_count:
+        costsByTypeData.aggregations?.find((a: TypeAggregation) => a.type === "platform")?.node_count || 0,
+      resource_count:
+        costsByTypeData.aggregations?.find((a: TypeAggregation) => a.type === "resource")?.node_count || 0,
+      shared_count:
+        costsByTypeData.aggregations?.find((a: TypeAggregation) => a.type === "shared")?.node_count || 0,
     },
   } : undefined
 
   const isLoading = !productsData || !costsByTypeData
-  const error = null
+  const error: Error | null = null
 
   // Fetch recommendations
   const { data: recommendationsData } = useSWR<RecommendationsResponse>(
@@ -139,7 +140,7 @@ export default function Dashboard() {
     return (
       <div className="container py-8">
         <div className="flex items-center justify-center h-96">
-          <div className="text-lg text-destructive">Error loading dashboard: {error.message}</div>
+          <div className="text-lg text-destructive">Error loading dashboard</div>
         </div>
       </div>
     )
@@ -165,7 +166,6 @@ export default function Dashboard() {
             Cost attribution and analysis for {format(dateRange.from, "MMM d, yyyy")} - {format(dateRange.to, "MMM d, yyyy")}
           </p>
         </div>
-        <DateRangePicker value={dateRange} onChange={setDateRange} />
       </div>
 
       {/* Summary Cards */}
@@ -240,7 +240,7 @@ export default function Dashboard() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${(Number(percent) * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"

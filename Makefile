@@ -93,11 +93,11 @@ dev-rebuild-up:
 	docker-compose -f docker-compose.dev.yml up -d --build
 	@echo "✅ Containers rebuilt and started!"
 
-# Seed database with demo data
+# Seed database with demo data and run allocation
 dev-seed:
-	@echo "Seeding database with demo data..."
-	docker-compose -f docker-compose.dev.yml exec backend sh -c "cd /app && make demo-seed"
-	@echo "✅ Database seeded!"
+	@echo "Seeding database with demo data and running allocation..."
+	docker-compose -f docker-compose.dev.yml exec backend sh -c "cd /app && make demo-seed demo-allocate"
+	@echo "✅ Database seeded and allocated!"
 
 # Run database migrations
 dev-migrate:

@@ -13,12 +13,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 })
 
+import { DateRangeProvider } from "@/context/date-range-context"
+
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <div className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
-      <MainLayout>
-        <Component {...pageProps} />
-      </MainLayout>
+      <DateRangeProvider>
+        <MainLayout>
+          <Component {...pageProps} />
+        </MainLayout>
+      </DateRangeProvider>
     </div>
   )
 }

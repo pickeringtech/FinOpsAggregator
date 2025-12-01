@@ -14,7 +14,12 @@ interface RecommendationsPanelProps {
   lowCount: number
 }
 
-function getSeverityColor(severity: RecommendationSeverity): string {
+import type { VariantProps } from "class-variance-authority"
+import type { badgeVariants } from "@/components/ui/badge"
+
+type BadgeVariant = VariantProps<typeof badgeVariants>["variant"]
+
+function getSeverityVariant(severity: RecommendationSeverity): BadgeVariant {
   switch (severity) {
     case "high":
       return "destructive"
@@ -114,7 +119,7 @@ export function RecommendationsPanel({
                     <div>
                       <AlertTitle className="flex items-center gap-2">
                         {rec.title}
-                        <Badge variant={getSeverityColor(rec.severity) as any} className="text-xs">
+                        <Badge variant={getSeverityVariant(rec.severity)} className="text-xs">
                           {rec.severity}
                         </Badge>
                         <Badge variant="outline" className="text-xs">

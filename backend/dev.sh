@@ -116,9 +116,9 @@ check_demo_data() {
             echo "Seeding demo data..."
             go run ./cmd/finops demo seed
             echo ""
-            echo "Running allocation..."
-            go run ./cmd/finops allocate --from 2025-09-10 --to 2025-10-10
-            echo -e "${GREEN}✓ Demo data seeded${NC}"
+            echo "Running allocation over seeded demo period..."
+            go run ./cmd/finops demo allocate
+            echo -e "${GREEN}✓ Demo data seeded and allocated${NC}"
         fi
     else
         echo -e "${GREEN}✓ Database has data ($NODE_COUNT nodes)${NC}"

@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
+import type { TypeAggregation } from '@/types/api'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
@@ -103,13 +104,13 @@ export default async function handler(
         total_cost: costsByTypeData.total_cost,
         currency: costsByTypeData.currency,
         product_count:
-          costsByTypeData.aggregations.find((a: any) => a.type === 'product')?.node_count || 0,
+          costsByTypeData.aggregations.find((a: TypeAggregation) => a.type === 'product')?.node_count || 0,
         platform_count:
-          costsByTypeData.aggregations.find((a: any) => a.type === 'platform')?.node_count || 0,
+          costsByTypeData.aggregations.find((a: TypeAggregation) => a.type === 'platform')?.node_count || 0,
         resource_count:
-          costsByTypeData.aggregations.find((a: any) => a.type === 'resource')?.node_count || 0,
+          costsByTypeData.aggregations.find((a: TypeAggregation) => a.type === 'resource')?.node_count || 0,
         shared_count:
-          costsByTypeData.aggregations.find((a: any) => a.type === 'shared')?.node_count || 0,
+          costsByTypeData.aggregations.find((a: TypeAggregation) => a.type === 'shared')?.node_count || 0,
       },
     }
 

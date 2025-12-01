@@ -41,13 +41,13 @@ check_docker() {
 check_ports() {
     local ports=(3000 8080 5432 2345)
     local unavailable_ports=()
-    
+
     for port in "${ports[@]}"; do
         if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
             unavailable_ports+=($port)
         fi
     done
-    
+
     if [ ${#unavailable_ports[@]} -ne 0 ]; then
         print_warning "The following ports are already in use: ${unavailable_ports[*]}"
         print_info "You may need to stop other services or modify docker-compose.dev.yml"
@@ -65,14 +65,14 @@ check_ports() {
 start_dev() {
     print_info "Starting FinOps Aggregator development environment..."
     echo ""
-    
+
     check_docker
     check_ports
-    
+
     echo ""
     print_info "Building and starting containers..."
     docker-compose -f docker-compose.dev.yml up -d --build
-    
+
     echo ""
     print_success "Development environment started!"
     echo ""
@@ -87,26 +87,26 @@ start_dev() {
     echo ""
     print_info "Useful commands:"
     echo "  make dev-logs          - View logs"
-    echo "  make dev-seed          - Seed demo data"
+    echo "  make dev-seed          - Seed demo data and run allocation"
     echo "  make dev-psql          - Connect to database"
     echo "  make dev-down          - Stop environment"
     echo "  make help              - Show all commands"
     echo ""
     print_info "Waiting for services to be ready..."
     sleep 5
-    
+
     # Check if services are healthy
     if docker-compose -f docker-compose.dev.yml ps | grep -q "Up"; then
         print_success "Services are running!"
         echo ""
-        print_info "Would you like to seed the database with demo data? (y/N)"
+        print_info "Would you like to seed the database with demo data and run allocation? (y/N)"
         read -p "" -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            print_info "Seeding database..."
+            print_info "Seeding database and running allocation..."
             sleep 3  # Give backend time to fully start
-            docker-compose -f docker-compose.dev.yml exec backend sh -c "cd /app && make demo-seed" || true
-            print_success "Database seeded!"
+            docker-compose -f docker-compose.dev.yml exec backend sh -c "cd /app && make demo-seed demo-allocate" || true
+            print_success "Database seeded and allocation completed!"
         fi
     else
         print_warning "Some services may not be running correctly"
@@ -133,6 +133,27 @@ clean_dev() {
     fi
 }
 
+# Function to perform full reset + seed + allocation
+full_reset_and_seed() {
+    print_warning "This will fully reset containers, volumes, and data, then reseed demo data and run allocation!"
+    read -p "Are you sure you want to continue? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        return
+    fi
+
+    print_info "Performing full reset (clean + rebuild + up)..."
+    make dev-reset
+
+    print_info "Waiting for services to become healthy..."
+    sleep 5
+
+    print_info "Seeding database with demo data and running allocation..."
+    make dev-seed
+    print_success "Full reset, seed, and allocation completed!"
+}
+
+
 # Function to show logs
 show_logs() {
     print_info "Showing logs (Ctrl+C to exit)..."
@@ -157,7 +178,8 @@ show_menu() {
     echo "  3) Clean development environment"
     echo "  4) Show logs"
     echo "  5) Show status"
-    echo "  6) Exit"
+    echo "  6) Full reset + seed demo data + allocation"
+    echo "  7) Exit"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -175,7 +197,8 @@ if [ $# -eq 0 ]; then
             3) clean_dev ;;
             4) show_logs ;;
             5) show_status ;;
-            6) exit 0 ;;
+            6) full_reset_and_seed ;;
+            7) exit 0 ;;
             *) print_error "Invalid option" ;;
         esac
     done
@@ -197,8 +220,11 @@ else
         status)
             show_status
             ;;
+        reset-seed)
+            full_reset_and_seed
+            ;;
         *)
-            echo "Usage: $0 {start|stop|clean|logs|status}"
+            echo "Usage: $0 {start|stop|clean|logs|status|reset-seed}"
             echo ""
             echo "Or run without arguments for interactive menu"
             exit 1
