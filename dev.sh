@@ -153,6 +153,32 @@ full_reset_and_seed() {
     print_success "Full reset, seed, and allocation completed!"
 }
 
+# Function to run allocation across a date range
+run_allocation_across_date_range() {
+    print_info "Run allocation across a date range"
+
+    read -p "Start date (YYYY-MM-DD, leave empty for default 12 months ago): " start_date
+    read -p "End date   (YYYY-MM-DD, leave empty for default 12 months from now): " end_date
+
+    if [ -z "$start_date" ]; then
+        start_date=$(date -d '12 months ago' '+%Y-%m-%d')
+    fi
+
+    if [ -z "$end_date" ]; then
+        end_date=$(date -d '12 months' '+%Y-%m-%d')
+    fi
+
+    print_info "Running allocation from $start_date to $end_date..."
+
+    docker-compose -f docker-compose.dev.yml exec backend sh -c "cd /app && if [ ! -f ./bin/finops ]; then make build; fi && ./bin/finops allocate --from $start_date --to $end_date" || {
+        print_error "Allocation command failed"
+        return 1
+    }
+
+    print_success "Allocation completed for range $start_date to $end_date"
+}
+
+
 
 # Function to show logs
 show_logs() {
@@ -179,7 +205,8 @@ show_menu() {
     echo "  4) Show logs"
     echo "  5) Show status"
     echo "  6) Full reset + seed demo data + allocation"
-    echo "  7) Exit"
+    echo "  7) Run allocation across date range"
+    echo "  8) Exit"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -198,7 +225,8 @@ if [ $# -eq 0 ]; then
             4) show_logs ;;
             5) show_status ;;
             6) full_reset_and_seed ;;
-            7) exit 0 ;;
+            7) run_allocation_across_date_range ;;
+            8) exit 0 ;;
             *) print_error "Invalid option" ;;
         esac
     done
@@ -223,8 +251,30 @@ else
         reset-seed)
             full_reset_and_seed
             ;;
+        allocate)
+            # Optional CLI: ./dev.sh allocate [FROM] [TO]
+            start_date="$2"
+            end_date="$3"
+
+            if [ -z "$start_date" ]; then
+                start_date=$(date -d '12 months ago' '+%Y-%m-%d')
+            fi
+
+            if [ -z "$end_date" ]; then
+                end_date=$(date -d '12 months' '+%Y-%m-%d')
+            fi
+
+            print_info "Running allocation from $start_date to $end_date..."
+
+            docker-compose -f docker-compose.dev.yml exec backend sh -c "cd /app && if [ ! -f ./bin/finops ]; then make build; fi && ./bin/finops allocate --from $start_date --to $end_date" || {
+                print_error "Allocation command failed"
+                exit 1
+            }
+
+            print_success "Allocation completed for range $start_date to $end_date"
+            ;;
         *)
-            echo "Usage: $0 {start|stop|clean|logs|status|reset-seed}"
+            echo "Usage: $0 {start|stop|clean|logs|status|reset-seed|allocate [FROM] [TO]}"
             echo ""
             echo "Or run without arguments for interactive menu"
             exit 1

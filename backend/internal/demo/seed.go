@@ -661,11 +661,40 @@ func (s *Seeder) SeedUsageData(ctx context.Context) error {
 	startDate := now.AddDate(0, -12, 0) // 12 months ago
 	endDate := now.AddDate(0, 12, 0)    // 12 months in the future
 
+	// We stream non-critical metrics directly to the database in batches, but
+	// aggregate allocation-critical metrics in-memory per (node, day, metric)
+	// to avoid duplicate primary keys on (node_id, usage_date, metric).
+	type usageKey struct {
+		nodeID uuid.UUID
+		date   time.Time
+		metric string
+	}
+
 	var usage []models.NodeUsageByDimension
+	criticalUsage := make(map[usageKey]models.NodeUsageByDimension)
+
 	metrics := []string{
 		"db_queries", "requests", "cpu_hours", "memory_gb_hours", "storage_operations",
 		"network_packets", "cache_hits", "api_requests", "lambda_executions", "disk_reads",
 		"disk_writes", "connections", "transactions", "backup_operations", "log_entries",
+		// Generic usage metric used by shared infrastructure -> product edges
+		"usage_metric",
+	}
+
+	// Metrics that are used directly by allocation strategies and therefore must
+	// be queryable by their exact base name (no _sX_rY suffixes). For these
+	// metrics we aggregate all service/record instances into a single daily
+	// value per node and metric.
+	allocationCriticalMetrics := map[string]struct{}{
+		"api_requests": {},
+		"usage_metric": {},
+		// Additional metrics used in some edge strategies; if usage is ever
+		// generated for them, they will also be correctly aggregated.
+		"fraud_check_requests": {},
+		"database_connections": {},
+		"requests_count":      {},
+		"data_transfer":       {},
+		"backups_gb_month":    {},
 	}
 
 	totalRecords := 0
@@ -691,7 +720,38 @@ func (s *Seeder) SeedUsageData(ctx context.Context) error {
 
 						recordTime := date.Add(time.Duration(recordIdx) * time.Hour * 24 / time.Duration(recordsPerDay))
 
-						// Make metric unique by including service and record identifiers
+						if _, isCritical := allocationCriticalMetrics[metric]; isCritical {
+							// Aggregate all service/record values into a single daily
+							// value for this node and metric.
+							dateOnly := time.Date(recordTime.Year(), recordTime.Month(), recordTime.Day(), 0, 0, 0, 0, time.UTC)
+							key := usageKey{
+								nodeID: node.ID,
+								date:   dateOnly,
+								metric: metric,
+							}
+
+							if existing, ok := criticalUsage[key]; ok {
+								existing.Value = existing.Value.Add(value)
+								criticalUsage[key] = existing
+							} else {
+								criticalUsage[key] = models.NodeUsageByDimension{
+									NodeID:    node.ID,
+									UsageDate: dateOnly,
+									Metric:    metric,
+									Value:     value,
+									Unit:      s.getUsageUnit(metric),
+								}
+								// Count the aggregated record once
+								totalRecords++
+							}
+
+							// Do not append critical metrics directly to the usage slice
+							// here; they will be flushed after aggregation below.
+							continue
+						}
+
+						// Non-critical metrics keep per-service/per-record uniqueness via
+						// a suffixed metric name.
 						uniqueMetric := metric
 						if serviceCount > 1 || recordsPerDay > 1 {
 							uniqueMetric = fmt.Sprintf("%s_s%d_r%d", metric, serviceIdx, recordIdx)
@@ -707,7 +767,7 @@ func (s *Seeder) SeedUsageData(ctx context.Context) error {
 
 						totalRecords++
 
-						// Batch insert to avoid memory issues
+						// Batch insert to avoid memory issues for non-critical metrics
 						if len(usage) >= batchSize {
 							if err := s.store.Usage.BulkUpsert(ctx, usage); err != nil {
 								return fmt.Errorf("failed to bulk insert usage batch: %w", err)
@@ -718,6 +778,19 @@ func (s *Seeder) SeedUsageData(ctx context.Context) error {
 					}
 				}
 			}
+		}
+	}
+
+	// After we've generated all raw values, flush the aggregated critical
+	// metrics to the database in batches together with any remaining records.
+	for _, aggregated := range criticalUsage {
+		usage = append(usage, aggregated)
+		if len(usage) >= batchSize {
+			if err := s.store.Usage.BulkUpsert(ctx, usage); err != nil {
+				return fmt.Errorf("failed to bulk insert usage batch: %w", err)
+			}
+			log.Info().Int("records_inserted", len(usage)).Int("total_so_far", totalRecords).Msg("Usage batch inserted (critical metrics)")
+			usage = usage[:0]
 		}
 	}
 
@@ -877,6 +950,7 @@ func (s *Seeder) getBaseCostAmount(nodeName, dimension string) decimal.Decimal {
 			"backups_gb_month":     3.00,   // BI data backups
 			"cpu_hours":            18.00,  // BI processing CPU
 		},
+	}
 
 	// Application-level, non-infrastructure product costs
 	productAppLevelCosts := map[string]map[string]float64{
