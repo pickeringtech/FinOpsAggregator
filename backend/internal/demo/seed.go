@@ -414,7 +414,7 @@ func (s *Seeder) SeedBasicDAG(ctx context.Context) error {
 		"reporting_engine",
 	}
 
-	// Create edges from products to their dedicated resources
+	// Create edges from dedicated resources to their products (CORRECTED)
 	for product, resources := range productResources {
 		for _, resource := range resources {
 			if _, ok := nodeMap[product]; !ok {
@@ -425,8 +425,8 @@ func (s *Seeder) SeedBasicDAG(ctx context.Context) error {
 			}
 			edges = append(edges, models.DependencyEdge{
 				ID:              uuid.New(),
-				ParentID:        nodeMap[product],
-				ChildID:         nodeMap[resource],
+				ParentID:        nodeMap[resource], // Resource is parent (CORRECTED)
+				ChildID:         nodeMap[product],  // Product is child (CORRECTED)
 				DefaultStrategy: string(models.StrategyEqual),
 				DefaultParameters: map[string]interface{}{},
 				ActiveFrom: activeFrom,
@@ -434,7 +434,7 @@ func (s *Seeder) SeedBasicDAG(ctx context.Context) error {
 		}
 	}
 
-	// Create edges from all products to shared platform services
+	// Create edges from shared platform services to all products (CORRECTED)
 	sharedPlatform := []string{"api_gateway_platform", "kubernetes_platform", "cdn_platform", "monitoring_platform"}
 	for _, product := range allProducts {
 		if _, ok := nodeMap[product]; !ok {
@@ -446,8 +446,8 @@ func (s *Seeder) SeedBasicDAG(ctx context.Context) error {
 			}
 			edges = append(edges, models.DependencyEdge{
 				ID:              uuid.New(),
-				ParentID:        nodeMap[product],
-				ChildID:         nodeMap[platform],
+				ParentID:        nodeMap[platform], // Platform is parent (CORRECTED)
+				ChildID:         nodeMap[product],  // Product is child (CORRECTED)
 				DefaultStrategy: string(models.StrategyProportionalOn),
 				DefaultParameters: map[string]interface{}{
 					"metric": "api_requests",
@@ -457,7 +457,7 @@ func (s *Seeder) SeedBasicDAG(ctx context.Context) error {
 		}
 	}
 
-	// Create edges from all products to shared infrastructure
+	// Create edges from shared infrastructure to all products (CORRECTED)
 	sharedInfra := []string{
 		"payments_database_cluster", "analytics_database_cluster", "redis_cache_cluster",
 		"message_queue_cluster", "object_storage", "compliance_logging",
@@ -472,8 +472,8 @@ func (s *Seeder) SeedBasicDAG(ctx context.Context) error {
 			}
 			edges = append(edges, models.DependencyEdge{
 				ID:              uuid.New(),
-				ParentID:        nodeMap[product],
-				ChildID:         nodeMap[infra],
+				ParentID:        nodeMap[infra],    // Infrastructure is parent (CORRECTED)
+				ChildID:         nodeMap[product],  // Product is child (CORRECTED)
 				DefaultStrategy: string(models.StrategyProportionalOn),
 				DefaultParameters: map[string]interface{}{
 					"metric": "usage_metric",

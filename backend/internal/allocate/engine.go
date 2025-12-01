@@ -74,7 +74,12 @@ func (e *Engine) AllocateForPeriod(ctx context.Context, startDate, endDate time.
 
 	// Process each day
 	processedDays := 0
+	log.Debug().
+		Time("start_date", startDate).
+		Time("end_date", endDate).
+		Msg("Starting daily allocation loop")
 	for date := startDate; !date.After(endDate); date = date.AddDate(0, 0, 1) {
+		log.Debug().Time("processing_date", date).Msg("Processing date")
 		dayAllocations, dayContributions, err := e.allocateForDay(ctx, run.ID, date, dimensions)
 		if err != nil {
 			// Update run status to failed
@@ -144,16 +149,25 @@ func (e *Engine) allocateForDay(ctx context.Context, runID uuid.UUID, date time.
 	log.Debug().Time("date", date).Msg("Processing allocation for day")
 
 	// Build graph for this date
+	log.Debug().Msg("About to build graph")
 	g, err := e.builder.BuildForDate(ctx, date)
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to build graph")
 		return nil, nil, fmt.Errorf("failed to build graph: %w", err)
 	}
+	log.Debug().Msg("Graph built successfully")
 
 	// Get topological order (reverse for allocation)
+	log.Debug().Msg("About to call TopologicalSort")
 	order, err := g.TopologicalSort()
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to get topological order")
 		return nil, nil, fmt.Errorf("failed to get topological order: %w", err)
 	}
+
+	log.Debug().
+		Int("total_nodes", len(order)).
+		Msg("Got topological order")
 
 	// Load direct costs for all nodes
 	directCosts, err := e.store.Costs.GetByDate(ctx, date, dimensions)
@@ -182,30 +196,49 @@ func (e *Engine) allocateForDay(ctx context.Context, runID uuid.UUID, date time.
 	var allocations []models.AllocationResultByDimension
 	var contributions []models.ContributionResultByDimension
 
-	// Process nodes in reverse topological order
-	for i := len(order) - 1; i >= 0; i-- {
+	// Process nodes in forward topological order for top-down allocation
+	log.Debug().
+		Int("total_nodes_to_process", len(order)).
+		Msg("Starting node processing loop")
+
+	for i := 0; i < len(order); i++ {
 		nodeID := order[i]
-		
+
 		// Get outgoing edges for this node
 		edges := g.Edges(nodeID)
-		
+
+		// Get parent costs for this node
+		parentDirectCosts := costsByNode[nodeID]
+		parentIndirectCosts := indirectCosts[nodeID]
+
+		log.Debug().
+			Str("node_id", nodeID.String()).
+			Int("edge_count", len(edges)).
+			Interface("parent_direct_costs", parentDirectCosts).
+			Interface("parent_indirect_costs", parentIndirectCosts).
+			Msg("Processing node for allocation")
+
+		if len(edges) == 0 {
+			continue // No children to allocate to
+		}
+
 		for _, edge := range edges {
 			childID := edge.ChildID
-			
+
 			// Process each dimension
 			for _, dim := range dimensions {
-				// Get child's total cost (direct + indirect)
-				childDirect := decimal.Zero
-				if costsByNode[childID] != nil {
-					childDirect = costsByNode[childID][dim]
+				// Get parent's cost for this dimension
+				parentDirectDim := decimal.Zero
+				if costsByNode[nodeID] != nil {
+					parentDirectDim = costsByNode[nodeID][dim]
 				}
-				childIndirect := indirectCosts[childID][dim]
-				childTotal := childDirect.Add(childIndirect)
-				
-				if childTotal.IsZero() {
-					continue // No cost to allocate
+				parentIndirectDim := indirectCosts[nodeID][dim]
+				parentTotalDim := parentDirectDim.Add(parentIndirectDim)
+
+				if parentTotalDim.IsZero() {
+					continue // No cost to allocate for this dimension
 				}
-				
+
 				// Resolve allocation strategy for this edge and dimension
 				strategy, err := e.strategies.ResolveStrategy(ctx, edge, dim, date)
 				if err != nil {
@@ -219,22 +252,34 @@ func (e *Engine) allocateForDay(ctx context.Context, runID uuid.UUID, date time.
 						Parameters: make(map[string]interface{}),
 					}
 				}
-				
+
 				// Calculate allocation share
 				share, err := strategy.CalculateShare(ctx, e.store, nodeID, childID, dim, date)
 				if err != nil {
 					log.Error().
 						Err(err).
 						Str("strategy", string(strategy.Type)).
+						Str("parent_id", nodeID.String()).
+						Str("child_id", childID.String()).
+						Str("dimension", dim).
 						Msg("Failed to calculate share, using zero")
 					continue
 				}
-				
-				// Calculate contribution amount
-				contribution := childTotal.Mul(share)
-				
-				// Add to parent's indirect costs
-				indirectCosts[nodeID][dim] = indirectCosts[nodeID][dim].Add(contribution)
+
+				log.Debug().
+					Str("parent_id", nodeID.String()).
+					Str("child_id", childID.String()).
+					Str("dimension", dim).
+					Str("strategy", string(strategy.Type)).
+					Str("share", share.String()).
+					Str("parent_total", parentTotalDim.String()).
+					Msg("Calculated allocation share")
+
+				// Calculate contribution amount (parent cost allocated to child)
+				contribution := parentTotalDim.Mul(share)
+
+				// Add to child's indirect costs
+				indirectCosts[childID][dim] = indirectCosts[childID][dim].Add(contribution)
 				
 				// Record contribution
 				if !contribution.IsZero() {
@@ -247,6 +292,19 @@ func (e *Engine) allocateForDay(ctx context.Context, runID uuid.UUID, date time.
 						ContributedAmount: contribution,
 						Path:              []uuid.UUID{nodeID, childID}, // Simple path for now
 					})
+
+					log.Debug().
+						Str("parent_id", nodeID.String()).
+						Str("child_id", childID.String()).
+						Str("dimension", dim).
+						Str("amount", contribution.String()).
+						Msg("Created contribution record")
+				} else {
+					log.Debug().
+						Str("parent_id", nodeID.String()).
+						Str("child_id", childID.String()).
+						Str("dimension", dim).
+						Msg("Skipped zero contribution")
 				}
 			}
 		}

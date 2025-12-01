@@ -83,19 +83,19 @@ func (s *Strategy) CalculateShare(ctx context.Context, store *store.Store, paren
 	}
 }
 
-// calculateEqualShare calculates equal allocation among all parents
+// calculateEqualShare calculates equal allocation among all children
 func (s *Strategy) calculateEqualShare(ctx context.Context, store *store.Store, parentID, childID uuid.UUID, dimension string, date time.Time) (decimal.Decimal, error) {
-	// Get all parents of the child for this date
-	edges, err := store.Edges.GetByChildID(ctx, childID, &date)
+	// Get all children of the parent for this date (for top-down allocation)
+	edges, err := store.Edges.GetByParentID(ctx, parentID, &date)
 	if err != nil {
-		return decimal.Zero, fmt.Errorf("failed to get parent edges: %w", err)
+		return decimal.Zero, fmt.Errorf("failed to get child edges: %w", err)
 	}
 
 	if len(edges) == 0 {
 		return decimal.Zero, nil
 	}
 
-	// Equal share among all parents
+	// Equal share among all children
 	return decimal.NewFromInt(1).Div(decimal.NewFromInt(int64(len(edges)))), nil
 }
 
@@ -107,27 +107,27 @@ func (s *Strategy) calculateProportionalShare(ctx context.Context, store *store.
 		return decimal.Zero, fmt.Errorf("proportional_on strategy requires 'metric' parameter")
 	}
 
-	// Get all parents of the child
-	edges, err := store.Edges.GetByChildID(ctx, childID, &date)
+	// Get all children of the parent (for top-down allocation)
+	edges, err := store.Edges.GetByParentID(ctx, parentID, &date)
 	if err != nil {
-		return decimal.Zero, fmt.Errorf("failed to get parent edges: %w", err)
+		return decimal.Zero, fmt.Errorf("failed to get child edges: %w", err)
 	}
 
 	if len(edges) == 0 {
 		return decimal.Zero, nil
 	}
 
-	// Get usage values for all parents
+	// Get usage values for all children
 	var totalUsage decimal.Decimal
-	var parentUsage decimal.Decimal
-	
+	var childUsage decimal.Decimal
+
 	for _, edge := range edges {
-		usage, err := store.Usage.GetByNodeAndDateRange(ctx, edge.ParentID, date, date, []string{metric})
+		usage, err := store.Usage.GetByNodeAndDateRange(ctx, edge.ChildID, date, date, []string{metric})
 		if err != nil {
-			log.Error().Err(err).Str("node_id", edge.ParentID.String()).Str("metric", metric).Msg("Failed to get usage for proportional allocation")
+			log.Error().Err(err).Str("node_id", edge.ChildID.String()).Str("metric", metric).Msg("Failed to get usage for proportional allocation")
 			continue
 		}
-		
+
 		var nodeUsage decimal.Decimal
 		for _, u := range usage {
 			if u.Metric == metric {
@@ -135,10 +135,10 @@ func (s *Strategy) calculateProportionalShare(ctx context.Context, store *store.
 				break
 			}
 		}
-		
+
 		totalUsage = totalUsage.Add(nodeUsage)
-		if edge.ParentID == parentID {
-			parentUsage = nodeUsage
+		if edge.ChildID == childID {
+			childUsage = nodeUsage
 		}
 	}
 
@@ -147,7 +147,7 @@ func (s *Strategy) calculateProportionalShare(ctx context.Context, store *store.
 		return decimal.NewFromInt(1).Div(decimal.NewFromInt(int64(len(edges)))), nil
 	}
 
-	return parentUsage.Div(totalUsage), nil
+	return childUsage.Div(totalUsage), nil
 }
 
 // calculateFixedPercentShare calculates fixed percentage allocation
