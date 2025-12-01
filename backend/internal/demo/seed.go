@@ -554,7 +554,7 @@ func (s *Seeder) SeedCostData(ctx context.Context) error {
 
 	var costs []models.NodeCostByDimension
 
-	// Expanded dimensions for more realistic FinOps scenarios
+	// Expanded dimensions for more realistic FinOps scenarios, including non-infrastructure product costs
 	dimensions := []string{
 		"instance_hours", "storage_gb_month", "egress_gb", "iops", "backups_gb_month",
 		"cpu_hours", "memory_gb_hours", "network_gb", "requests_count", "lambda_invocations",
@@ -562,6 +562,9 @@ func (s *Seeder) SeedCostData(ctx context.Context) error {
 		"disk_io_operations", "snapshot_storage", "reserved_instances", "spot_instances",
 		"load_balancer_hours", "nat_gateway_hours", "vpn_hours", "cloudwatch_metrics",
 		"logs_ingestion_gb", "monitoring_checks",
+		// Non-infrastructure / application-level product costs
+		"saas_subscriptions", "third_party_api_costs", "software_licenses", "support_contracts",
+		"professional_services", "compliance_fees", "payment_processing_fees", "data_provider_costs",
 	}
 
 	// Generate costs with multiple granularities and variations
@@ -744,20 +747,301 @@ func (s *Seeder) generateCostAmount(nodeName, dimension string, serviceIdx, reco
 
 // getBaseCostAmount returns base cost amounts for different node/dimension combinations
 func (s *Seeder) getBaseCostAmount(nodeName, dimension string) decimal.Decimal {
-	// Products should have NO direct costs - only allocated costs from dependencies
-	// All products return zero
-	productNames := []string{
-		"card_issuing", "payment_processing", "fraud_detection", "merchant_onboarding",
-		"payment_gateway", "recurring_billing", "dispute_management", "digital_banking",
-		"loan_origination", "wealth_management", "business_intelligence", "data_warehouse",
-		"ml_platform", "customer_portal", "mobile_app", "notification_service",
-		"kyc_verification", "aml_monitoring", "audit_logging", "api_marketplace",
-		"webhook_service", "partner_integrations", "admin_console", "support_ticketing",
-		"reporting_engine",
+	// Products have direct costs for application-specific resources (databases, storage, etc.)
+	// These are costs that are directly attributable to the product, separate from shared platform costs
+	productCosts := map[string]map[string]float64{
+		// High-revenue products with significant direct infrastructure
+		"payment_processing": {
+			"instance_hours":       150.00, // Dedicated high-performance application servers
+			"storage_gb_month":     25.00,  // Large application databases and file storage
+			"egress_gb":            8.50,   // High data transfer costs
+			"database_connections": 85.00,  // Multiple dedicated RDS instances
+			"iops":                 45.00,  // High IOPS for transaction processing
+			"backups_gb_month":     12.00,  // Comprehensive backup strategy
+			"cpu_hours":            75.00,  // High CPU for transaction processing
+			"memory_gb_hours":      35.00,  // Memory-intensive operations
+		},
+		"card_issuing": {
+			"instance_hours":       120.00, // Dedicated card management infrastructure
+			"storage_gb_month":     20.00,  // Card data and transaction history
+			"egress_gb":            6.50,   // API and data transfer
+			"database_connections": 65.00,  // Card database clusters
+			"iops":                 35.00,  // Card transaction IOPS
+			"backups_gb_month":     8.00,   // Card data backups
+			"cpu_hours":            55.00,  // Card processing CPU
+			"memory_gb_hours":      25.00,  // In-memory card caching
+		},
+		"fraud_detection": {
+			"instance_hours":       200.00, // GPU and ML inference servers
+			"storage_gb_month":     40.00,  // Model storage and training data
+			"egress_gb":            5.50,   // ML model serving
+			"cpu_hours":            120.00, // Intensive ML computations
+			"memory_gb_hours":      80.00,  // Memory-intensive ML operations
+			"iops":                 25.00,  // Model data access
+			"backups_gb_month":     15.00,  // ML model and data backups
+		},
+		"digital_banking": {
+			"instance_hours":       110.00, // Web and mobile backend servers
+			"storage_gb_month":     18.00,  // User data and transaction storage
+			"egress_gb":            12.00,  // High web traffic egress
+			"database_connections": 55.00,  // User database connections
+			"iops":                 30.00,  // User interaction IOPS
+			"backups_gb_month":     7.00,   // User data backups
+			"cpu_hours":            45.00,  // Web application CPU
+			"memory_gb_hours":      20.00,  // Session and cache memory
+		},
+		// Medium-revenue products with moderate direct costs
+		"merchant_onboarding": {
+			"instance_hours":       45.00,  // Onboarding workflow servers
+			"storage_gb_month":     8.00,   // Merchant data storage
+			"database_connections": 25.00,  // Merchant database access
+			"iops":                 15.00,  // Document processing IOPS
+			"backups_gb_month":     3.00,   // Merchant data backups
+			"cpu_hours":            20.00,  // Document processing CPU
+		},
+		"payment_gateway": {
+			"instance_hours":       85.00,  // Gateway API servers
+			"storage_gb_month":     12.00,  // Transaction logs and metadata
+			"egress_gb":            9.00,   // API response traffic
+			"database_connections": 40.00,  // Gateway database connections
+			"iops":                 35.00,  // High-frequency API IOPS
+			"backups_gb_month":     5.00,   // Transaction log backups
+			"cpu_hours":            35.00,  // API processing CPU
+		},
+		"loan_origination": {
+			"instance_hours":       65.00,  // Loan processing servers
+			"storage_gb_month":     15.00,  // Loan application data
+			"database_connections": 35.00,  // Loan database access
+			"iops":                 20.00,  // Loan processing IOPS
+			"backups_gb_month":     6.00,   // Loan data backups
+			"cpu_hours":            25.00,  // Underwriting CPU
+			"memory_gb_hours":      15.00,  // Credit scoring memory
+		},
+		"wealth_management": {
+			"instance_hours":       55.00,  // Portfolio management servers
+			"storage_gb_month":     10.00,  // Portfolio and market data
+			"database_connections": 30.00,  // Portfolio database access
+			"iops":                 18.00,  // Market data IOPS
+			"backups_gb_month":     4.00,   // Portfolio data backups
+			"cpu_hours":            22.00,  // Portfolio calculation CPU
+		},
+		// Lower-revenue products with basic direct costs
+		"mobile_app": {
+			"instance_hours":       35.00,  // Mobile backend servers
+			"storage_gb_month":     6.00,   // Mobile app data
+			"egress_gb":            8.00,   // Mobile API traffic
+			"iops":                 12.00,  // Mobile app IOPS
+			"backups_gb_month":     2.00,   // Mobile data backups
+			"cpu_hours":            15.00,  // Mobile API CPU
+		},
+		"customer_portal": {
+			"instance_hours":       30.00,  // Portal web servers
+			"storage_gb_month":     5.00,   // Portal data storage
+			"egress_gb":            6.00,   // Portal web traffic
+			"iops":                 10.00,  // Portal IOPS
+			"backups_gb_month":     2.00,   // Portal data backups
+			"cpu_hours":            12.00,  // Portal CPU
+		},
+		"notification_service": {
+			"instance_hours":       25.00,  // Notification servers
+			"storage_gb_month":     4.00,   // Notification templates and logs
+			"egress_gb":            3.00,   // Notification delivery traffic
+			"iops":                 8.00,   // Notification queue IOPS
+			"backups_gb_month":     1.50,   // Notification data backups
+			"cpu_hours":            10.00,  // Notification processing CPU
+		},
+		// Specialized products with unique cost patterns
+		"data_warehouse": {
+			"instance_hours":       250.00, // Large analytics infrastructure
+			"storage_gb_month":     100.00, // Massive data storage
+			"egress_gb":            15.00,  // Data export traffic
+			"iops":                 60.00,  // Data processing IOPS
+			"backups_gb_month":     35.00,  // Data warehouse backups
+			"cpu_hours":            150.00, // ETL and analytics CPU
+			"memory_gb_hours":      100.00, // In-memory analytics
+		},
+		"ml_platform": {
+			"instance_hours":       300.00, // GPU instances for training
+			"storage_gb_month":     80.00,  // Model and training data storage
+			"cpu_hours":            200.00, // ML training and inference CPU
+			"memory_gb_hours":      120.00, // ML memory requirements
+			"iops":                 40.00,  // Model data access IOPS
+			"backups_gb_month":     25.00,  // ML model backups
+			"egress_gb":            4.00,   // Model serving traffic
+		},
+		"business_intelligence": {
+			"instance_hours":       40.00,  // BI dashboard servers
+			"storage_gb_month":     8.00,   // BI data and reports
+			"database_connections": 20.00,  // BI database access
+			"iops":                 15.00,  // BI query IOPS
+			"backups_gb_month":     3.00,   // BI data backups
+			"cpu_hours":            18.00,  // BI processing CPU
+		},
+
+	// Application-level, non-infrastructure product costs
+	productAppLevelCosts := map[string]map[string]float64{
+		"card_issuing": {
+			"saas_subscriptions":      15000.00,
+			"third_party_api_costs":   12000.00,
+			"software_licenses":       8000.00,
+			"support_contracts":       6000.00,
+			"payment_processing_fees": 18000.00,
+		},
+		"payment_processing": {
+			"saas_subscriptions":    10000.00,
+			"third_party_api_costs": 14000.00,
+			"software_licenses":     7000.00,
+			"support_contracts":     5000.00,
+		},
+		"fraud_detection": {
+			"saas_subscriptions":    9000.00,
+			"third_party_api_costs": 11000.00,
+			"software_licenses":     7500.00,
+			"support_contracts":     5500.00,
+			"data_provider_costs":   12000.00,
+		},
+		"digital_banking": {
+			"saas_subscriptions":    13000.00,
+			"software_licenses":     9000.00,
+			"support_contracts":     6500.00,
+			"professional_services": 7000.00,
+		},
+		"analytics_platform": {
+			"saas_subscriptions":    8000.00,
+			"software_licenses":     6000.00,
+			"support_contracts":     4000.00,
+			"data_provider_costs":   15000.00,
+		},
+		"customer_insights": {
+			"saas_subscriptions":    7000.00,
+			"software_licenses":     5000.00,
+			"support_contracts":     3500.00,
+			"data_provider_costs":   9000.00,
+		},
+		"kyc_verification": {
+			"saas_subscriptions":    6000.00,
+			"third_party_api_costs": 8000.00,
+			"software_licenses":     4000.00,
+			"compliance_fees":       5000.00,
+		},
+		"aml_monitoring": {
+			"saas_subscriptions":    7000.00,
+			"third_party_api_costs": 9000.00,
+			"software_licenses":     4500.00,
+			"compliance_fees":       6000.00,
+		},
 	}
-	for _, product := range productNames {
-		if nodeName == product {
-			return decimal.Zero // Products have no direct infrastructure costs
+
+	// Check if this is a product with additional application-level costs
+	if appCosts, exists := productAppLevelCosts[nodeName]; exists {
+		if amount, hasDimension := appCosts[dimension]; hasDimension {
+			return decimal.NewFromFloat(amount)
+		}
+	}
+
+	// Check if this is a product with defined costs
+	if costs, exists := productCosts[nodeName]; exists {
+		if amount, hasDimension := costs[dimension]; hasDimension {
+			return decimal.NewFromFloat(amount)
+		}
+	}
+
+	// Enhanced baseline costs for remaining products
+	remainingProductCosts := map[string]map[string]float64{
+		"recurring_billing": {
+			"instance_hours":       20.00, // Billing processing servers
+			"storage_gb_month":     5.00,  // Billing data and invoices
+			"database_connections": 15.00, // Billing database access
+			"iops":                 12.00, // Billing processing IOPS
+			"backups_gb_month":     2.00,  // Billing data backups
+			"cpu_hours":            8.00,  // Billing calculation CPU
+		},
+		"dispute_management": {
+			"instance_hours":       15.00, // Dispute processing servers
+			"storage_gb_month":     4.00,  // Dispute case data
+			"database_connections": 10.00, // Dispute database access
+			"iops":                 8.00,  // Dispute processing IOPS
+			"backups_gb_month":     1.50,  // Dispute data backups
+			"cpu_hours":            6.00,  // Dispute analysis CPU
+		},
+		"kyc_verification": {
+			"instance_hours":       25.00, // KYC processing servers
+			"storage_gb_month":     6.00,  // Identity verification data
+			"database_connections": 18.00, // KYC database access
+			"iops":                 15.00, // Document processing IOPS
+			"backups_gb_month":     2.50,  // KYC data backups
+			"cpu_hours":            12.00, // Identity verification CPU
+		},
+		"aml_monitoring": {
+			"instance_hours":       30.00, // AML monitoring servers
+			"storage_gb_month":     8.00,  // Transaction monitoring data
+			"database_connections": 20.00, // AML database access
+			"iops":                 18.00, // Transaction analysis IOPS
+			"backups_gb_month":     3.00,  // AML data backups
+			"cpu_hours":            15.00, // AML analysis CPU
+		},
+		"audit_logging": {
+			"instance_hours":       18.00, // Audit log servers
+			"storage_gb_month":     12.00, // Extensive audit logs
+			"database_connections": 12.00, // Audit database access
+			"iops":                 10.00, // Log processing IOPS
+			"backups_gb_month":     4.00,  // Audit log backups
+			"cpu_hours":            7.00,  // Log processing CPU
+		},
+		"api_marketplace": {
+			"instance_hours":       22.00, // API marketplace servers
+			"storage_gb_month":     5.00,  // API documentation and metadata
+			"database_connections": 15.00, // API database access
+			"iops":                 12.00, // API management IOPS
+			"backups_gb_month":     2.00,  // API data backups
+			"cpu_hours":            9.00,  // API processing CPU
+		},
+		"webhook_service": {
+			"instance_hours":       16.00, // Webhook delivery servers
+			"storage_gb_month":     3.00,  // Webhook logs and queues
+			"database_connections": 8.00,  // Webhook database access
+			"iops":                 10.00, // Webhook delivery IOPS
+			"backups_gb_month":     1.00,  // Webhook data backups
+			"cpu_hours":            8.00,  // Webhook processing CPU
+		},
+		"partner_integrations": {
+			"instance_hours":       20.00, // Integration servers
+			"storage_gb_month":     4.00,  // Integration data and logs
+			"database_connections": 12.00, // Integration database access
+			"iops":                 8.00,  // Integration IOPS
+			"backups_gb_month":     1.50,  // Integration data backups
+			"cpu_hours":            10.00, // Integration processing CPU
+		},
+		"admin_console": {
+			"instance_hours":       12.00, // Admin interface servers
+			"storage_gb_month":     2.00,  // Admin data and configurations
+			"database_connections": 8.00,  // Admin database access
+			"iops":                 6.00,  // Admin interface IOPS
+			"backups_gb_month":     1.00,  // Admin data backups
+			"cpu_hours":            5.00,  // Admin processing CPU
+		},
+		"support_ticketing": {
+			"instance_hours":       14.00, // Support system servers
+			"storage_gb_month":     3.00,  // Ticket data and attachments
+			"database_connections": 10.00, // Support database access
+			"iops":                 7.00,  // Ticket processing IOPS
+			"backups_gb_month":     1.20,  // Support data backups
+			"cpu_hours":            6.00,  // Support processing CPU
+		},
+		"reporting_engine": {
+			"instance_hours":       18.00, // Reporting servers
+			"storage_gb_month":     6.00,  // Report data and templates
+			"database_connections": 15.00, // Reporting database access
+			"iops":                 12.00, // Report generation IOPS
+			"backups_gb_month":     2.50,  // Report data backups
+			"cpu_hours":            10.00, // Report processing CPU
+		},
+	}
+
+	// Check remaining products
+	if costs, exists := remainingProductCosts[nodeName]; exists {
+		if amount, hasDimension := costs[dimension]; hasDimension {
+			return decimal.NewFromFloat(amount)
 		}
 	}
 

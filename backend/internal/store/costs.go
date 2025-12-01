@@ -1003,6 +1003,31 @@ func (r *CostRepository) GetPlatformAndSharedTotalCostByDateRange(ctx context.Co
 	return total, nil
 }
 
+// GetTotalInfrastructureCostByDateRange retrieves the total infrastructure cost including platform and shared direct costs
+// This intentionally excludes product direct costs so that raw infrastructure reflects only
+// the services that are allocated into products.
+func (r *CostRepository) GetTotalInfrastructureCostByDateRange(ctx context.Context, startDate, endDate time.Time, currency string) (decimal.Decimal, error) {
+	query := `
+			SELECT COALESCE(SUM(c.amount), 0) as total
+			FROM node_costs_by_dimension c
+			JOIN cost_nodes n ON c.node_id = n.id
+			WHERE c.cost_date >= $1
+			  AND c.cost_date <= $2
+			  AND c.currency = $3
+			  AND (n.is_platform = true OR n.type = 'shared')
+			  AND n.archived_at IS NULL
+	`
+
+	row := r.db.QueryRow(ctx, query, startDate, endDate, currency)
+
+	var total decimal.Decimal
+	if err := row.Scan(&total); err != nil {
+		return decimal.Zero, fmt.Errorf("failed to get total infrastructure cost: %w", err)
+	}
+
+	return total, nil
+}
+
 
 // GetAllocatedCostsByNodeAndDateRange retrieves allocated costs for a node from allocation results
 // This uses the computed allocation results rather than raw input costs

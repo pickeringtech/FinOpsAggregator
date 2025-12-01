@@ -43,15 +43,15 @@ func (s *Service) GetProductHierarchy(ctx context.Context, req CostAttributionRe
 		totalAllocatedCost = totalAllocatedCost.Add(product.HolisticCosts.Total)
 	}
 
-	// Get platform and shared service costs (the "raw infrastructure cost" available for allocation)
+	// Get total infrastructure costs (platform + shared raw infrastructure only)
 	currency := req.Currency
 	if currency == "" {
 		currency = "USD"
 	}
 
-	rawTotalCosts, err := s.store.Costs.GetPlatformAndSharedTotalCostByDateRange(ctx, req.StartDate, req.EndDate, currency)
+	rawTotalCosts, err := s.store.Costs.GetTotalInfrastructureCostByDateRange(ctx, req.StartDate, req.EndDate, currency)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get platform and shared total costs: %w", err)
+		return nil, fmt.Errorf("failed to get total infrastructure costs: %w", err)
 	}
 
 	// Calculate unallocated costs as the gap between raw infra spend and allocated product totals

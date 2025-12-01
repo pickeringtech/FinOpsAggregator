@@ -111,6 +111,15 @@ func setDefaults(v *viper.Viper) {
 		"egress_gb",
 		"iops",
 		"backups_gb_month",
+		// Application-level / non-infrastructure product costs
+		"saas_subscriptions",
+		"third_party_api_costs",
+		"software_licenses",
+		"support_contracts",
+		"professional_services",
+		"compliance_fees",
+		"payment_processing_fees",
+		"data_provider_costs",
 	})
 
 	// Charts defaults
