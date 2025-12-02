@@ -79,6 +79,7 @@ func (v *Validator) ValidateForDate(ctx context.Context, date time.Time) (*Valid
 	v.validateDAGStructure(graph, result)
 	v.validateNodeReferences(ctx, graph, result)
 	v.validateEdgeConsistency(ctx, graph, result)
+	v.validateEdgeDirection(graph, result)
 	v.validateIsolatedNodes(graph, result)
 	v.validatePlatformNodes(graph, result)
 
@@ -216,11 +217,11 @@ func (v *Validator) validateIsolatedNodes(graph *Graph, result *ValidationResult
 // validatePlatformNodes validates platform node configurations
 func (v *Validator) validatePlatformNodes(graph *Graph, result *ValidationResult) {
 	platformNodes := 0
-	
+
 	for nodeID, node := range graph.nodes {
 		if node.IsPlatform {
 			platformNodes++
-			
+
 			// Platform nodes should typically be leaf nodes (no outgoing edges)
 			if len(graph.edges[nodeID]) > 0 {
 				result.Warnings = append(result.Warnings, ValidationWarning{
@@ -242,6 +243,75 @@ func (v *Validator) validatePlatformNodes(graph *Graph, result *ValidationResult
 			Message: "No platform nodes found - consider marking shared infrastructure as platform nodes",
 		})
 	}
+}
+
+// validateEdgeDirection validates that edges follow the correct cost source → cost receiver direction
+// Infrastructure nodes (resource, shared, platform, infrastructure) should be parents (cost sources)
+// Product nodes should be children (cost receivers) in Stage A allocation
+// Product→Product edges are allowed for Stage B roll-ups
+func (v *Validator) validateEdgeDirection(graph *Graph, result *ValidationResult) {
+	infraTypes := map[string]bool{
+		"resource":       true,
+		"shared":         true,
+		"platform":       true,
+		"infrastructure": true,
+		"service":        true,
+	}
+
+	for parentID, edges := range graph.edges {
+		parentNode := graph.nodes[parentID]
+		if parentNode == nil {
+			continue
+		}
+
+		for _, edge := range edges {
+			childNode := graph.nodes[edge.ChildID]
+			if childNode == nil {
+				continue
+			}
+
+			// Check for invalid edge directions:
+			// 1. Product → Infrastructure (wrong direction)
+			if parentNode.Type == "product" && infraTypes[childNode.Type] {
+				result.Valid = false
+				result.Errors = append(result.Errors, ValidationError{
+					Type:    "invalid_edge_direction",
+					Message: "Product node cannot allocate costs to infrastructure node - edge direction is inverted",
+					EdgeID:  &edge.ID,
+					Details: map[string]interface{}{
+						"parent_id":   parentID.String(),
+						"parent_name": parentNode.Name,
+						"parent_type": parentNode.Type,
+						"child_id":    edge.ChildID.String(),
+						"child_name":  childNode.Name,
+						"child_type":  childNode.Type,
+						"fix":         "Edge should be from infrastructure to product, not product to infrastructure",
+					},
+				})
+			}
+		}
+	}
+}
+
+// ValidateEdgeDirectionStrict performs strict validation of edge directions
+// Returns true if all edges follow the correct cost source → cost receiver pattern
+func (v *Validator) ValidateEdgeDirectionStrict(ctx context.Context, date time.Time) (bool, []ValidationError) {
+	graph, err := v.builder.BuildForDate(ctx, date)
+	if err != nil {
+		return false, []ValidationError{{
+			Type:    "graph_build_error",
+			Message: fmt.Sprintf("Failed to build graph: %v", err),
+		}}
+	}
+
+	result := &ValidationResult{
+		Valid:  true,
+		Errors: []ValidationError{},
+	}
+
+	v.validateEdgeDirection(graph, result)
+
+	return result.Valid, result.Errors
 }
 
 // ValidateCurrentGraph validates the graph for the current date

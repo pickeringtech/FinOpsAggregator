@@ -53,7 +53,10 @@ type CostSummary struct {
 	EndDate                   time.Time       `json:"end_date"`
 	NodeCount                 int             `json:"node_count"`
 	ProductCount              int             `json:"product_count"`
+	FinalCostCentreCount      int             `json:"final_cost_centre_count"` // count of product nodes with no outgoing product edges
 	PlatformNodeCount         int             `json:"platform_node_count"`
+	SanityCheckPassed         bool            `json:"sanity_check_passed"`          // true if product tree totals match allocated cost
+	SanityCheckWarnings       []string        `json:"sanity_check_warnings,omitempty"` // warnings if sanity checks fail
 }
 
 // IndividualNodeResponse represents detailed cost data for a single node
@@ -268,4 +271,60 @@ type CostRecommendation struct {
 	StartDate          time.Time       `json:"start_date"`
 	EndDate            time.Time       `json:"end_date"`
 	CreatedAt          time.Time       `json:"created_at"`
+}
+
+// AllocationReconciliationResponse provides debug information for allocation reconciliation
+type AllocationReconciliationResponse struct {
+	Period                    string                     `json:"period"`
+	StartDate                 time.Time                  `json:"start_date"`
+	EndDate                   time.Time                  `json:"end_date"`
+	Currency                  string                     `json:"currency"`
+	RawInfrastructureCost     decimal.Decimal            `json:"raw_infrastructure_cost"`
+	AllocatedProductCost      decimal.Decimal            `json:"allocated_product_cost"`
+	UnallocatedCost           decimal.Decimal            `json:"unallocated_cost"`
+	CoveragePercent           float64                    `json:"coverage_percent"`
+	ConservationDelta         decimal.Decimal            `json:"conservation_delta"`
+	ConservationValid         bool                       `json:"conservation_valid"`
+	FinalCostCentres          []FinalCostCentreDetail    `json:"final_cost_centres"`
+	InfrastructureNodes       []InfrastructureNodeDetail `json:"infrastructure_nodes"`
+	InvariantViolations       []InvariantViolation       `json:"invariant_violations"`
+	GraphStats                GraphStatistics            `json:"graph_stats"`
+}
+
+// FinalCostCentreDetail provides detail about a final cost centre
+type FinalCostCentreDetail struct {
+	ID           uuid.UUID       `json:"id"`
+	Name         string          `json:"name"`
+	HolisticCost decimal.Decimal `json:"holistic_cost"`
+	DirectCost   decimal.Decimal `json:"direct_cost"`
+	IndirectCost decimal.Decimal `json:"indirect_cost"`
+}
+
+// InfrastructureNodeDetail provides detail about an infrastructure node
+type InfrastructureNodeDetail struct {
+	ID         uuid.UUID       `json:"id"`
+	Name       string          `json:"name"`
+	Type       string          `json:"type"`
+	DirectCost decimal.Decimal `json:"direct_cost"`
+	IsPlatform bool            `json:"is_platform"`
+}
+
+// InvariantViolation describes a detected invariant violation
+type InvariantViolation struct {
+	Type        string `json:"type"`
+	Description string `json:"description"`
+	NodeID      string `json:"node_id,omitempty"`
+	Dimension   string `json:"dimension,omitempty"`
+	Expected    string `json:"expected,omitempty"`
+	Actual      string `json:"actual,omitempty"`
+}
+
+// GraphStatistics provides statistics about the allocation graph
+type GraphStatistics struct {
+	TotalNodes         int `json:"total_nodes"`
+	ProductNodes       int `json:"product_nodes"`
+	InfrastructureNodes int `json:"infrastructure_nodes"`
+	FinalCostCentres   int `json:"final_cost_centres"`
+	TotalEdges         int `json:"total_edges"`
+	MaxDepth           int `json:"max_depth"`
 }

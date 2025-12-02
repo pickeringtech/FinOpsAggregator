@@ -70,19 +70,8 @@ func TestGraph_BasicOperations(t *testing.T) {
 		ActiveTo:          nil,
 	}
 
-	edges := []models.DependencyEdge{edge}
-
-	// Create graph
-	g := &Graph{
-		nodes:    nodes,
-		edges:    make(map[uuid.UUID][]models.DependencyEdge),
-		incoming: make(map[uuid.UUID][]models.DependencyEdge),
-		date:     time.Now(),
-	}
-
-	// Add edges to graph structure
-	g.edges[edge.ParentID] = append(g.edges[edge.ParentID], edge)
-	g.incoming[edge.ChildID] = append(g.incoming[edge.ChildID], edge)
+	// Create graph using helper function
+	g := createGraphFromEdges(nodes, []models.DependencyEdge{edge})
 
 	t.Run("nodes access", func(t *testing.T) {
 		retrievedNodes := g.Nodes()
@@ -185,10 +174,12 @@ func TestGraph_TopologicalSort(t *testing.T) {
 }
 
 func TestGraph_Statistics(t *testing.T) {
-	// Create test graph
+	// Create test graph with deterministic node IDs
+	nodeIDs := make([]uuid.UUID, 5)
 	nodes := make(map[uuid.UUID]*models.CostNode)
 	for i := 0; i < 5; i++ {
 		id := uuid.New()
+		nodeIDs[i] = id
 		nodes[id] = &models.CostNode{
 			ID:   id,
 			Name: fmt.Sprintf("node%d", i),
@@ -196,10 +187,11 @@ func TestGraph_Statistics(t *testing.T) {
 		}
 	}
 
+	// Create edges: 0 -> 1 -> 2 -> 3, node 4 is isolated
 	edges := []models.DependencyEdge{
-		{ID: uuid.New(), ParentID: getNodeID(nodes, 0), ChildID: getNodeID(nodes, 1)},
-		{ID: uuid.New(), ParentID: getNodeID(nodes, 1), ChildID: getNodeID(nodes, 2)},
-		{ID: uuid.New(), ParentID: getNodeID(nodes, 2), ChildID: getNodeID(nodes, 3)},
+		{ID: uuid.New(), ParentID: nodeIDs[0], ChildID: nodeIDs[1]},
+		{ID: uuid.New(), ParentID: nodeIDs[1], ChildID: nodeIDs[2]},
+		{ID: uuid.New(), ParentID: nodeIDs[2], ChildID: nodeIDs[3]},
 	}
 
 	g := createGraphFromEdges(nodes, edges)
@@ -209,7 +201,7 @@ func TestGraph_Statistics(t *testing.T) {
 	assert.Equal(t, 3, stats.EdgeCount)
 	assert.Equal(t, 2, stats.RootCount)    // nodes 0 and 4 have no incoming edges
 	assert.Equal(t, 2, stats.LeafCount)    // nodes 3 and 4 have no outgoing edges
-	assert.Equal(t, 4, stats.MaxDepth)     // longest path is 4 nodes deep
+	assert.Equal(t, 4, stats.MaxDepth)     // longest path is 4 nodes deep (0->1->2->3)
 	assert.False(t, stats.HasCycles)
 }
 

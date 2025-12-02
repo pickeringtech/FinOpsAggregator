@@ -109,8 +109,18 @@ func (g *Graph) Edges(nodeID uuid.UUID) []models.DependencyEdge {
 	return g.edges[nodeID]
 }
 
+// GetOutgoingEdges returns all outgoing edges for a node (alias for Edges)
+func (g *Graph) GetOutgoingEdges(nodeID uuid.UUID) []models.DependencyEdge {
+	return g.edges[nodeID]
+}
+
 // IncomingEdges returns all incoming edges for a node
 func (g *Graph) IncomingEdges(nodeID uuid.UUID) []models.DependencyEdge {
+	return g.incoming[nodeID]
+}
+
+// GetIncomingEdges returns all incoming edges for a node (alias for IncomingEdges)
+func (g *Graph) GetIncomingEdges(nodeID uuid.UUID) []models.DependencyEdge {
 	return g.incoming[nodeID]
 }
 
@@ -142,6 +152,21 @@ func (g *Graph) ValidateDAG() error {
 
 	log.Info().Msg("DAG validation passed")
 	return nil
+}
+
+// HasCycle returns true if the graph contains a cycle
+func (g *Graph) HasCycle() bool {
+	visited := make(map[uuid.UUID]bool)
+	recStack := make(map[uuid.UUID]bool)
+
+	for nodeID := range g.nodes {
+		if !visited[nodeID] {
+			if g.hasCycleDFS(nodeID, visited, recStack) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // hasCycleDFS performs DFS to detect cycles
@@ -360,20 +385,74 @@ func (g *Graph) calculateHash() string {
 func (g *Graph) Stats() GraphStats {
 	roots := g.GetRoots()
 	leaves := g.GetLeaves()
-	
+
 	totalEdges := 0
 	for _, edges := range g.edges {
 		totalEdges += len(edges)
 	}
-	
+
 	return GraphStats{
 		NodeCount:  len(g.nodes),
 		EdgeCount:  totalEdges,
 		RootCount:  len(roots),
 		LeafCount:  len(leaves),
+		MaxDepth:   g.calculateMaxDepth(),
+		HasCycles:  g.HasCycle(),
 		Date:       g.date,
 		Hash:       g.hash,
 	}
+}
+
+// GetStatistics returns statistics about the graph (alias for Stats)
+func (g *Graph) GetStatistics() GraphStats {
+	return g.Stats()
+}
+
+// calculateMaxDepth calculates the maximum depth (longest path) in the graph
+func (g *Graph) calculateMaxDepth() int {
+	if len(g.nodes) == 0 {
+		return 0
+	}
+
+	// Use memoization for depth calculation
+	depths := make(map[uuid.UUID]int)
+	maxDepth := 0
+
+	var getDepth func(nodeID uuid.UUID) int
+	getDepth = func(nodeID uuid.UUID) int {
+		if depth, ok := depths[nodeID]; ok {
+			return depth
+		}
+
+		// Base case: leaf nodes have depth 1
+		edges := g.edges[nodeID]
+		if len(edges) == 0 {
+			depths[nodeID] = 1
+			return 1
+		}
+
+		// Recursive case: max depth of children + 1
+		maxChildDepth := 0
+		for _, edge := range edges {
+			childDepth := getDepth(edge.ChildID)
+			if childDepth > maxChildDepth {
+				maxChildDepth = childDepth
+			}
+		}
+
+		depths[nodeID] = maxChildDepth + 1
+		return depths[nodeID]
+	}
+
+	// Calculate depth starting from each root
+	for nodeID := range g.nodes {
+		depth := getDepth(nodeID)
+		if depth > maxDepth {
+			maxDepth = depth
+		}
+	}
+
+	return maxDepth
 }
 
 // GraphStats represents statistics about a graph
@@ -382,6 +461,107 @@ type GraphStats struct {
 	EdgeCount int       `json:"edge_count"`
 	RootCount int       `json:"root_count"`
 	LeafCount int       `json:"leaf_count"`
+	MaxDepth  int       `json:"max_depth"`
+	HasCycles bool      `json:"has_cycles"`
 	Date      time.Time `json:"date"`
 	Hash      string    `json:"hash"`
+}
+
+// GetFinalCostCentres returns product nodes that have no outgoing product→product edges
+// These are the "sink" products in the allocation graph where costs ultimately accumulate
+// A product is a final cost centre if:
+// 1. It is of type "product"
+// 2. It has no outgoing edges to other product nodes
+func (g *Graph) GetFinalCostCentres() []uuid.UUID {
+	var finalCostCentres []uuid.UUID
+
+	for nodeID, node := range g.nodes {
+		// Only consider product nodes
+		if node.Type != "product" {
+			continue
+		}
+
+		// Check if this product has any outgoing edges to other products
+		hasOutgoingProductEdge := false
+		for _, edge := range g.edges[nodeID] {
+			childNode := g.nodes[edge.ChildID]
+			if childNode != nil && childNode.Type == "product" {
+				hasOutgoingProductEdge = true
+				break
+			}
+		}
+
+		// If no outgoing product edges, this is a final cost centre
+		if !hasOutgoingProductEdge {
+			finalCostCentres = append(finalCostCentres, nodeID)
+		}
+	}
+
+	// Sort for deterministic output
+	sort.Slice(finalCostCentres, func(i, j int) bool {
+		return finalCostCentres[i].String() < finalCostCentres[j].String()
+	})
+
+	return finalCostCentres
+}
+
+// IsFinalCostCentre checks if a specific node is a final cost centre
+func (g *Graph) IsFinalCostCentre(nodeID uuid.UUID) bool {
+	node := g.nodes[nodeID]
+	if node == nil || node.Type != "product" {
+		return false
+	}
+
+	// Check for outgoing product edges
+	for _, edge := range g.edges[nodeID] {
+		childNode := g.nodes[edge.ChildID]
+		if childNode != nil && childNode.Type == "product" {
+			return false
+		}
+	}
+
+	return true
+}
+
+// GetProductNodes returns all product nodes in the graph
+func (g *Graph) GetProductNodes() []uuid.UUID {
+	var products []uuid.UUID
+
+	for nodeID, node := range g.nodes {
+		if node.Type == "product" {
+			products = append(products, nodeID)
+		}
+	}
+
+	// Sort for deterministic output
+	sort.Slice(products, func(i, j int) bool {
+		return products[i].String() < products[j].String()
+	})
+
+	return products
+}
+
+// GetInfrastructureNodes returns all infrastructure-like nodes (resource, shared, platform, infrastructure)
+func (g *Graph) GetInfrastructureNodes() []uuid.UUID {
+	infraTypes := map[string]bool{
+		"resource":       true,
+		"shared":         true,
+		"platform":       true,
+		"infrastructure": true,
+	}
+
+	var infraNodes []uuid.UUID
+
+	for nodeID, node := range g.nodes {
+		if infraTypes[node.Type] {
+			infraNodes = append(infraNodes, nodeID)
+		}
+	}
+
+	// Sort for deterministic output
+	sort.Slice(infraNodes, func(i, j int) bool {
+		return infraNodes[i].String() < infraNodes[j].String()
+	})
+
+	return infraNodes
 }

@@ -1003,7 +1003,8 @@ func (r *CostRepository) GetPlatformAndSharedTotalCostByDateRange(ctx context.Co
 	return total, nil
 }
 
-// GetTotalInfrastructureCostByDateRange retrieves the total infrastructure cost including platform and shared direct costs
+// GetTotalInfrastructureCostByDateRange retrieves the total infrastructure cost including
+// all infrastructure-like nodes: Resource, Shared Service, Platform Service, and Infrastructure.
 // This intentionally excludes product direct costs so that raw infrastructure reflects only
 // the services that are allocated into products.
 func (r *CostRepository) GetTotalInfrastructureCostByDateRange(ctx context.Context, startDate, endDate time.Time, currency string) (decimal.Decimal, error) {
@@ -1014,7 +1015,7 @@ func (r *CostRepository) GetTotalInfrastructureCostByDateRange(ctx context.Conte
 			WHERE c.cost_date >= $1
 			  AND c.cost_date <= $2
 			  AND c.currency = $3
-			  AND (n.is_platform = true OR n.type = 'shared')
+			  AND (n.type IN ('resource', 'shared', 'platform', 'infrastructure') OR n.is_platform = true)
 			  AND n.archived_at IS NULL
 	`
 

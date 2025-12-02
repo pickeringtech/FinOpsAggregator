@@ -59,13 +59,33 @@ type NodeCostByDimension struct {
 
 // NodeUsageByDimension represents usage metrics for a node on a specific date
 type NodeUsageByDimension struct {
-	NodeID    uuid.UUID       `json:"node_id" db:"node_id"`
-	UsageDate time.Time       `json:"usage_date" db:"usage_date"`
-	Metric    string          `json:"metric" db:"metric"`
-	Value     decimal.Decimal `json:"value" db:"value"`
-	Unit      string          `json:"unit" db:"unit"`
-	CreatedAt time.Time       `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time       `json:"updated_at" db:"updated_at"`
+	NodeID    uuid.UUID              `json:"node_id" db:"node_id"`
+	UsageDate time.Time              `json:"usage_date" db:"usage_date"`
+	Metric    string                 `json:"metric" db:"metric"`
+	Value     decimal.Decimal        `json:"value" db:"value"`
+	Unit      string                 `json:"unit" db:"unit"`
+	Labels    map[string]string      `json:"labels,omitempty" db:"labels"`     // Optional labels for filtering (e.g. customer_id, environment)
+	Source    string                 `json:"source,omitempty" db:"source"`     // Source of the metric (e.g. "dynatrace", "prometheus", "manual")
+	CreatedAt time.Time              `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time              `json:"updated_at" db:"updated_at"`
+}
+
+// UsageLabelFilter represents a filter for querying usage metrics by labels
+type UsageLabelFilter struct {
+	Key      string   `json:"key"`      // Label key to filter on (e.g. "customer_id")
+	Values   []string `json:"values"`   // Values to match (OR semantics)
+	Operator string   `json:"operator"` // "eq", "neq", "in", "not_in", "exists", "not_exists"
+}
+
+// UsageQueryOptions represents options for querying usage metrics
+type UsageQueryOptions struct {
+	NodeIDs      []uuid.UUID        `json:"node_ids,omitempty"`
+	Metrics      []string           `json:"metrics,omitempty"`
+	StartDate    time.Time          `json:"start_date"`
+	EndDate      time.Time          `json:"end_date"`
+	LabelFilters []UsageLabelFilter `json:"label_filters,omitempty"`
+	Source       string             `json:"source,omitempty"`
+	GroupByLabel string             `json:"group_by_label,omitempty"` // Group results by this label (e.g. "customer_id")
 }
 
 // ComputationRun represents a single allocation computation run
@@ -132,12 +152,28 @@ const (
 type AllocationStrategy string
 
 const (
-	StrategyProportionalOn   AllocationStrategy = "proportional_on"
-	StrategyEqual            AllocationStrategy = "equal"
-	StrategyFixedPercent     AllocationStrategy = "fixed_percent"
-	StrategyCappedProp       AllocationStrategy = "capped_proportional"
-	StrategyResidualToMax    AllocationStrategy = "residual_to_max"
+	StrategyProportionalOn         AllocationStrategy = "proportional_on"
+	StrategyEqual                  AllocationStrategy = "equal"
+	StrategyFixedPercent           AllocationStrategy = "fixed_percent"
+	StrategyCappedProp             AllocationStrategy = "capped_proportional"
+	StrategyResidualToMax          AllocationStrategy = "residual_to_max"
+	StrategyWeightedAverage        AllocationStrategy = "weighted_average"
+	StrategyHybridFixedProp        AllocationStrategy = "hybrid_fixed_proportional"
+	StrategyMinFloorProportional   AllocationStrategy = "min_floor_proportional"
+	StrategySegmentFilteredProp    AllocationStrategy = "segment_filtered_proportional"
 )
+
+// IsValidStrategy checks if a strategy string is a valid allocation strategy
+func IsValidStrategy(s string) bool {
+	switch AllocationStrategy(s) {
+	case StrategyProportionalOn, StrategyEqual, StrategyFixedPercent,
+		StrategyCappedProp, StrategyResidualToMax, StrategyWeightedAverage,
+		StrategyHybridFixedProp, StrategyMinFloorProportional, StrategySegmentFilteredProp:
+		return true
+	default:
+		return false
+	}
+}
 
 // Dimension represents common cost dimensions
 type Dimension string

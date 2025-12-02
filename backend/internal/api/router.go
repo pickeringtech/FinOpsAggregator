@@ -54,6 +54,12 @@ func SetupRouter(handler *Handler) *gin.Engine {
 		{
 			recommendations.GET("", handler.GetRecommendations)
 		}
+
+		// Debug/reconciliation endpoints
+		debug := v1.Group("/debug")
+		{
+			debug.GET("/reconciliation", handler.GetAllocationReconciliation)
+		}
 	}
 
 	return router

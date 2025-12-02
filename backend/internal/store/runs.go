@@ -577,3 +577,53 @@ func (r *RunRepository) GetContributionsByChildAndDateRange(ctx context.Context,
 
 	return results, nil
 }
+
+// GetAllocationsByNodeAndDateRange retrieves allocation results for a specific node within a date range
+func (r *RunRepository) GetAllocationsByNodeAndDateRange(ctx context.Context, nodeID uuid.UUID, startDate, endDate time.Time, dimensions []string) ([]models.AllocationResultByDimension, error) {
+	query := r.QueryBuilder().
+		Select("run_id", "node_id", "allocation_date", "dimension", "direct_amount", "indirect_amount", "total_amount", "created_at", "updated_at").
+		From("allocation_results_by_dimension").
+		Where(squirrel.Eq{"node_id": nodeID}).
+		Where(squirrel.GtOrEq{"allocation_date": startDate}).
+		Where(squirrel.LtOrEq{"allocation_date": endDate})
+
+	if len(dimensions) > 0 {
+		query = query.Where(squirrel.Eq{"dimension": dimensions})
+	}
+
+	query = query.OrderBy("allocation_date, dimension")
+
+	rows, err := r.QueryRows(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get allocations by node and date range: %w", err)
+	}
+	defer rows.Close()
+
+	var results []models.AllocationResultByDimension
+	for rows.Next() {
+		var result models.AllocationResultByDimension
+
+		err := rows.Scan(
+			&result.RunID,
+			&result.NodeID,
+			&result.AllocationDate,
+			&result.Dimension,
+			&result.DirectAmount,
+			&result.IndirectAmount,
+			&result.TotalAmount,
+			&result.CreatedAt,
+			&result.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan allocation result: %w", err)
+		}
+
+		results = append(results, result)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating allocation results: %w", err)
+	}
+
+	return results, nil
+}

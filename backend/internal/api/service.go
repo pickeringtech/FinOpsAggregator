@@ -8,8 +8,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/pickeringtech/FinOpsAggregator/internal/analysis"
 	"github.com/pickeringtech/FinOpsAggregator/internal/analyzer"
+	"github.com/pickeringtech/FinOpsAggregator/internal/graph"
 	"github.com/pickeringtech/FinOpsAggregator/internal/models"
 	"github.com/pickeringtech/FinOpsAggregator/internal/store"
+	"github.com/rs/zerolog/log"
 	"github.com/shopspring/decimal"
 )
 
@@ -18,6 +20,7 @@ type Service struct {
 	store                  *store.Store
 	analyzer               *analysis.FinOpsAnalyzer
 	recommendationAnalyzer *analyzer.RecommendationAnalyzer
+	graphBuilder           *graph.GraphBuilder
 }
 
 // NewService creates a new API service
@@ -26,6 +29,7 @@ func NewService(store *store.Store) *Service {
 		store:                  store,
 		analyzer:               analysis.NewFinOpsAnalyzer(store),
 		recommendationAnalyzer: analyzer.NewRecommendationAnalyzer(store),
+		graphBuilder:           graph.NewGraphBuilder(store),
 	}
 }
 
@@ -37,10 +41,27 @@ func (s *Service) GetProductHierarchy(ctx context.Context, req CostAttributionRe
 		return nil, fmt.Errorf("failed to build product tree: %w", err)
 	}
 
-	// Calculate total allocated costs (sum of product holistic costs)
+	// Build graph to identify final cost centres
+	// Use the end date of the request period for graph structure
+	g, err := s.graphBuilder.BuildForDate(ctx, req.EndDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build graph for final cost centre detection: %w", err)
+	}
+
+	// Get final cost centres (product nodes with no outgoing product→product edges)
+	finalCostCentreIDs := g.GetFinalCostCentres()
+	finalCostCentreSet := make(map[uuid.UUID]bool)
+	for _, id := range finalCostCentreIDs {
+		finalCostCentreSet[id] = true
+	}
+
+	// Calculate total allocated costs as sum of final cost centre holistic costs only
+	// This prevents double-counting when products roll up to other products
 	totalAllocatedCost := decimal.Zero
 	for _, product := range products {
-		totalAllocatedCost = totalAllocatedCost.Add(product.HolisticCosts.Total)
+		if finalCostCentreSet[product.ID] {
+			totalAllocatedCost = totalAllocatedCost.Add(product.HolisticCosts.Total)
+		}
 	}
 
 	// Get total infrastructure costs (platform + shared raw infrastructure only)
@@ -55,7 +76,12 @@ func (s *Service) GetProductHierarchy(ctx context.Context, req CostAttributionRe
 	}
 
 	// Calculate unallocated costs as the gap between raw infra spend and allocated product totals
+	// Unallocated = Raw Infrastructure Cost - Allocated Product Cost
 	unallocatedCost := rawTotalCosts.Sub(totalAllocatedCost)
+	if unallocatedCost.LessThan(decimal.Zero) {
+		// Clamp to zero - negative unallocated indicates data inconsistency
+		unallocatedCost = decimal.Zero
+	}
 
 	// Get platform and shared nodes for unallocated breakdown
 	unallocatedNode, err := s.buildUnallocatedNode(ctx, req, unallocatedCost)
@@ -65,6 +91,7 @@ func (s *Service) GetProductHierarchy(ctx context.Context, req CostAttributionRe
 
 	// Track product count before adding unallocated node
 	productCount := len(products)
+	finalCostCentreCount := len(finalCostCentreIDs)
 
 	// Add unallocated node to products list if there are unallocated costs
 	if unallocatedCost.GreaterThan(decimal.Zero) {
@@ -74,8 +101,8 @@ func (s *Service) GetProductHierarchy(ctx context.Context, req CostAttributionRe
 	// Total cost shown in summary is sum of all product holistic costs (including unallocated)
 	totalCostForSummary := totalAllocatedCost.Add(unallocatedCost)
 
-	// Derive allocation coverage percentage based only on costs allocated to actual products (excluding the unallocated bucket);
-	// guard against divide-by-zero on the raw total.
+	// Derive allocation coverage percentage based only on costs allocated to final cost centres
+	// Coverage = Allocated Product Cost / Raw Infrastructure Cost
 	coveragePercent := 0.0
 	if !rawTotalCosts.IsZero() {
 		// Clamp to [0, 100]
@@ -89,6 +116,15 @@ func (s *Service) GetProductHierarchy(ctx context.Context, req CostAttributionRe
 		coveragePercent = ratio * 100
 	}
 
+	// Perform sanity checks on the product tree totals
+	sanityCheckPassed, sanityWarnings := s.performProductTreeSanityChecks(
+		products,
+		totalAllocatedCost,
+		rawTotalCosts,
+		unallocatedCost,
+		finalCostCentreSet,
+	)
+
 	summary := CostSummary{
 		TotalCost:                 totalCostForSummary,
 		RawTotalCost:              rawTotalCosts,
@@ -97,7 +133,10 @@ func (s *Service) GetProductHierarchy(ctx context.Context, req CostAttributionRe
 		Period:                    fmt.Sprintf("%s to %s", req.StartDate.Format("2006-01-02"), req.EndDate.Format("2006-01-02")),
 		StartDate:                 req.StartDate,
 		EndDate:                   req.EndDate,
-		ProductCount:              productCount, // Exclude unallocated node from count
+		ProductCount:              productCount,
+		FinalCostCentreCount:      finalCostCentreCount,
+		SanityCheckPassed:         sanityCheckPassed,
+		SanityCheckWarnings:       sanityWarnings,
 	}
 
 	return &ProductHierarchyResponse{
@@ -1291,4 +1330,280 @@ func (s *Service) getNodeAllocatedToProducts(ctx context.Context, nodeID uuid.UU
 	}
 
 	return total, nil
+}
+
+// GetAllocationReconciliation provides debug information for allocation reconciliation
+// This endpoint helps diagnose allocation issues by showing:
+// - Raw infrastructure cost vs allocated product cost
+// - Final cost centre breakdown
+// - Infrastructure node breakdown
+// - Invariant violations
+func (s *Service) GetAllocationReconciliation(ctx context.Context, req CostAttributionRequest) (*AllocationReconciliationResponse, error) {
+	// Build graph for the date range
+	g, err := s.graphBuilder.BuildForDate(ctx, req.StartDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build graph: %w", err)
+	}
+
+	// Get raw infrastructure cost
+	rawInfraCost, err := s.store.Costs.GetTotalInfrastructureCostByDateRange(ctx, req.StartDate, req.EndDate, req.Currency)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get raw infrastructure cost: %w", err)
+	}
+
+	// Get final cost centres
+	finalCostCentreIDs := g.GetFinalCostCentres()
+	finalCostCentreSet := make(map[uuid.UUID]bool)
+	for _, id := range finalCostCentreIDs {
+		finalCostCentreSet[id] = true
+	}
+
+	// Calculate allocated product cost (sum of final cost centre holistic costs)
+	allocatedProductCost := decimal.Zero
+	var finalCostCentres []FinalCostCentreDetail
+
+	for _, nodeID := range finalCostCentreIDs {
+		node, exists := g.Nodes()[nodeID]
+		if !exists {
+			continue
+		}
+
+		// Get allocation results for this node
+		allocations, err := s.store.Runs.GetAllocationsByNodeAndDateRange(ctx, nodeID, req.StartDate, req.EndDate, req.Dimensions)
+		if err != nil {
+			continue
+		}
+
+		var directCost, indirectCost decimal.Decimal
+		for _, alloc := range allocations {
+			directCost = directCost.Add(alloc.DirectAmount)
+			indirectCost = indirectCost.Add(alloc.IndirectAmount)
+		}
+		holisticCost := directCost.Add(indirectCost)
+		allocatedProductCost = allocatedProductCost.Add(holisticCost)
+
+		finalCostCentres = append(finalCostCentres, FinalCostCentreDetail{
+			ID:           nodeID,
+			Name:         node.Name,
+			HolisticCost: holisticCost,
+			DirectCost:   directCost,
+			IndirectCost: indirectCost,
+		})
+	}
+
+	// Get infrastructure nodes
+	var infraNodes []InfrastructureNodeDetail
+	infraNodeIDs := g.GetInfrastructureNodes()
+	for _, nodeID := range infraNodeIDs {
+		node, exists := g.Nodes()[nodeID]
+		if !exists {
+			continue
+		}
+
+		// Get direct costs for this node
+		costs, err := s.store.Costs.GetByNodeAndDateRange(ctx, nodeID, req.StartDate, req.EndDate, req.Dimensions)
+		if err != nil {
+			continue
+		}
+
+		var directCost decimal.Decimal
+		for _, cost := range costs {
+			directCost = directCost.Add(cost.Amount)
+		}
+
+		infraNodes = append(infraNodes, InfrastructureNodeDetail{
+			ID:         nodeID,
+			Name:       node.Name,
+			Type:       node.Type,
+			DirectCost: directCost,
+			IsPlatform: node.IsPlatform,
+		})
+	}
+
+	// Calculate unallocated cost
+	unallocatedCost := rawInfraCost.Sub(allocatedProductCost)
+	if unallocatedCost.LessThan(decimal.Zero) {
+		unallocatedCost = decimal.Zero
+	}
+
+	// Calculate coverage
+	coveragePercent := 0.0
+	if !rawInfraCost.IsZero() {
+		ratio, _ := allocatedProductCost.Div(rawInfraCost).Float64()
+		if ratio < 0 {
+			ratio = 0
+		}
+		if ratio > 1 {
+			ratio = 1
+		}
+		coveragePercent = ratio * 100
+	}
+
+	// Check conservation invariant
+	conservationDelta := rawInfraCost.Sub(allocatedProductCost.Add(unallocatedCost))
+	conservationValid := conservationDelta.Abs().LessThan(decimal.NewFromFloat(0.01))
+
+	// Check for invariant violations
+	var violations []InvariantViolation
+
+	// Check if allocated > raw (amplification)
+	if allocatedProductCost.GreaterThan(rawInfraCost) {
+		violations = append(violations, InvariantViolation{
+			Type:        "amplification",
+			Description: "Allocated product cost exceeds raw infrastructure cost",
+			Expected:    rawInfraCost.StringFixed(2),
+			Actual:      allocatedProductCost.StringFixed(2),
+		})
+	}
+
+	// Check conservation
+	if !conservationValid {
+		violations = append(violations, InvariantViolation{
+			Type:        "conservation",
+			Description: "Conservation invariant violated: Raw != Allocated + Unallocated",
+			Expected:    rawInfraCost.StringFixed(2),
+			Actual:      allocatedProductCost.Add(unallocatedCost).StringFixed(2),
+		})
+	}
+
+	// Build graph statistics
+	stats := g.Stats()
+	graphStats := GraphStatistics{
+		TotalNodes:          stats.NodeCount,
+		ProductNodes:        len(g.GetProductNodes()),
+		InfrastructureNodes: len(infraNodeIDs),
+		FinalCostCentres:    len(finalCostCentreIDs),
+		TotalEdges:          stats.EdgeCount,
+		MaxDepth:            stats.MaxDepth,
+	}
+
+	return &AllocationReconciliationResponse{
+		Period:                fmt.Sprintf("%s to %s", req.StartDate.Format("2006-01-02"), req.EndDate.Format("2006-01-02")),
+		StartDate:            req.StartDate,
+		EndDate:              req.EndDate,
+		Currency:             req.Currency,
+		RawInfrastructureCost: rawInfraCost,
+		AllocatedProductCost:  allocatedProductCost,
+		UnallocatedCost:       unallocatedCost,
+		CoveragePercent:       coveragePercent,
+		ConservationDelta:     conservationDelta,
+		ConservationValid:     conservationValid,
+		FinalCostCentres:      finalCostCentres,
+		InfrastructureNodes:   infraNodes,
+		InvariantViolations:   violations,
+		GraphStats:            graphStats,
+	}, nil
+}
+
+// performProductTreeSanityChecks validates that product tree totals are consistent
+// with the calculated allocated product cost. Returns true if all checks pass,
+// along with any warning messages.
+func (s *Service) performProductTreeSanityChecks(
+	products []ProductNode,
+	allocatedProductCost decimal.Decimal,
+	rawInfraCost decimal.Decimal,
+	unallocatedCost decimal.Decimal,
+	finalCostCentreSet map[uuid.UUID]bool,
+) (bool, []string) {
+	var warnings []string
+	allPassed := true
+
+	// Tolerance threshold: 1% of raw infrastructure cost or $0.01, whichever is larger
+	tolerance := rawInfraCost.Mul(decimal.NewFromFloat(0.01))
+	minTolerance := decimal.NewFromFloat(0.01)
+	if tolerance.LessThan(minTolerance) {
+		tolerance = minTolerance
+	}
+
+	// Check 1: Sum of final cost centre holistic costs should equal allocated product cost
+	finalCostCentreSum := decimal.Zero
+	for _, product := range products {
+		if finalCostCentreSet[product.ID] {
+			finalCostCentreSum = finalCostCentreSum.Add(product.HolisticCosts.Total)
+		}
+	}
+
+	diff := finalCostCentreSum.Sub(allocatedProductCost).Abs()
+	if diff.GreaterThan(tolerance) {
+		allPassed = false
+		warnings = append(warnings, fmt.Sprintf(
+			"Final cost centre sum (%s) differs from allocated product cost (%s) by %s (tolerance: %s)",
+			finalCostCentreSum.StringFixed(2),
+			allocatedProductCost.StringFixed(2),
+			diff.StringFixed(2),
+			tolerance.StringFixed(2),
+		))
+		log.Warn().
+			Str("final_cost_centre_sum", finalCostCentreSum.StringFixed(2)).
+			Str("allocated_product_cost", allocatedProductCost.StringFixed(2)).
+			Str("difference", diff.StringFixed(2)).
+			Str("tolerance", tolerance.StringFixed(2)).
+			Msg("SANITY CHECK FAILED: Final cost centre sum differs from allocated product cost")
+	}
+
+	// Check 2: Allocated + Unallocated should equal Raw Infrastructure Cost (conservation)
+	totalCost := allocatedProductCost.Add(unallocatedCost)
+	conservationDiff := totalCost.Sub(rawInfraCost).Abs()
+	if conservationDiff.GreaterThan(tolerance) {
+		allPassed = false
+		warnings = append(warnings, fmt.Sprintf(
+			"Conservation violated: Allocated (%s) + Unallocated (%s) = %s differs from Raw Infra (%s) by %s",
+			allocatedProductCost.StringFixed(2),
+			unallocatedCost.StringFixed(2),
+			totalCost.StringFixed(2),
+			rawInfraCost.StringFixed(2),
+			conservationDiff.StringFixed(2),
+		))
+		log.Warn().
+			Str("allocated", allocatedProductCost.StringFixed(2)).
+			Str("unallocated", unallocatedCost.StringFixed(2)).
+			Str("total", totalCost.StringFixed(2)).
+			Str("raw_infra", rawInfraCost.StringFixed(2)).
+			Str("difference", conservationDiff.StringFixed(2)).
+			Msg("SANITY CHECK FAILED: Conservation invariant violated")
+	}
+
+	// Check 3: Allocated product cost should not exceed raw infrastructure cost (no amplification)
+	if allocatedProductCost.GreaterThan(rawInfraCost.Add(tolerance)) {
+		allPassed = false
+		amplification := allocatedProductCost.Sub(rawInfraCost)
+		warnings = append(warnings, fmt.Sprintf(
+			"Amplification detected: Allocated product cost (%s) exceeds raw infrastructure cost (%s) by %s",
+			allocatedProductCost.StringFixed(2),
+			rawInfraCost.StringFixed(2),
+			amplification.StringFixed(2),
+		))
+		log.Warn().
+			Str("allocated", allocatedProductCost.StringFixed(2)).
+			Str("raw_infra", rawInfraCost.StringFixed(2)).
+			Str("amplification", amplification.StringFixed(2)).
+			Msg("SANITY CHECK FAILED: Cost amplification detected")
+	}
+
+	// Check 4: No product should have negative holistic cost
+	for _, product := range products {
+		if product.HolisticCosts.Total.LessThan(decimal.Zero) {
+			allPassed = false
+			warnings = append(warnings, fmt.Sprintf(
+				"Product '%s' has negative holistic cost: %s",
+				product.Name,
+				product.HolisticCosts.Total.StringFixed(2),
+			))
+			log.Warn().
+				Str("product_id", product.ID.String()).
+				Str("product_name", product.Name).
+				Str("holistic_cost", product.HolisticCosts.Total.StringFixed(2)).
+				Msg("SANITY CHECK FAILED: Negative holistic cost detected")
+		}
+	}
+
+	if allPassed {
+		log.Debug().
+			Str("allocated_product_cost", allocatedProductCost.StringFixed(2)).
+			Str("raw_infra_cost", rawInfraCost.StringFixed(2)).
+			Int("final_cost_centres", len(finalCostCentreSet)).
+			Msg("Product tree sanity checks passed")
+	}
+
+	return allPassed, warnings
 }

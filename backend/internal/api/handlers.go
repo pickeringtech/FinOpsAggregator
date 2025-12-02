@@ -378,6 +378,24 @@ func LoggingMiddleware() gin.HandlerFunc {
 	})
 }
 
+// GetAllocationReconciliation handles requests for allocation reconciliation/debug data
+func (h *Handler) GetAllocationReconciliation(c *gin.Context) {
+	req, err := h.parseCostAttributionRequest(c)
+	if err != nil {
+		h.handleError(c, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+
+	response, err := h.service.GetAllocationReconciliation(c.Request.Context(), *req)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get allocation reconciliation")
+		h.handleError(c, http.StatusInternalServerError, "internal_error", "Failed to retrieve reconciliation data")
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 // RecoveryMiddleware handles panics
 func RecoveryMiddleware() gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
