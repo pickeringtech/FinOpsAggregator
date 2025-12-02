@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/utils"
 import { Box, Server, Share2, Folder, ArrowRight } from "lucide-react"
+import { MetricsTimeSeriesChart } from "@/components/metrics-time-series-chart"
 
 interface NodeDetailPanelProps {
   nodeData: IndividualNodeResponse
@@ -186,6 +187,9 @@ export function NodeDetailPanel({ nodeData }: NodeDetailPanelProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Metrics Over Time Chart */}
+      <MetricsTimeSeriesChart nodeId={node.id} nodeName={node.name} />
     </div>
   )
 }

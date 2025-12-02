@@ -240,3 +240,77 @@ export interface DimensionAggregation {
   node_count: number
 }
 
+// Infrastructure Hierarchy Types (mirrors Product Hierarchy for infra nodes)
+export interface InfraAllocationTarget {
+  id: string
+  name: string
+  type: string
+  amount: string
+  currency: string
+  strategy: string
+  percent: number
+}
+
+export interface InfrastructureNode {
+  id: string
+  name: string
+  type: string // platform, shared, resource, infrastructure
+  is_platform: boolean
+  direct_costs: CostBreakdown
+  allocated_costs: CostBreakdown
+  unallocated_cost: string
+  allocation_pct: number
+  allocated_to: InfraAllocationTarget[]
+  children?: InfrastructureNode[]
+  metadata?: {
+    description?: string
+    [key: string]: unknown
+  }
+}
+
+export interface InfraSummary {
+  total_direct_cost: string
+  total_allocated_cost: string
+  total_unallocated_cost: string
+  allocation_pct: number
+  currency: string
+  period: string
+  start_date: string
+  end_date: string
+  platform_count: number
+  shared_count: number
+  resource_count: number
+  total_node_count: number
+}
+
+export interface InfrastructureHierarchyResponse {
+  infrastructure: InfrastructureNode[]
+  summary: InfraSummary
+}
+
+// Node Metrics Time Series Types
+export interface DailyCostDataPoint {
+  date: string
+  total_cost: string
+  dimensions: Record<string, string>
+}
+
+export interface DailyUsageDataPoint {
+  date: string
+  metrics: Record<string, string>
+}
+
+export interface NodeMetricsTimeSeriesResponse {
+  node_id: string
+  node_name: string
+  node_type: string
+  period: string
+  start_date: string
+  end_date: string
+  currency: string
+  cost_series: DailyCostDataPoint[]
+  usage_series: DailyUsageDataPoint[]
+  dimensions: string[]
+  metrics: string[]
+}
+

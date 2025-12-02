@@ -1713,3 +1713,290 @@ func (s *Service) GetDashboardSummary(ctx context.Context, req CostAttributionRe
 		EndDate:                   req.EndDate,
 	}, nil
 }
+
+// GetInfrastructureHierarchy retrieves the infrastructure hierarchy with cost and allocation data
+// This shows platform, shared, and resource nodes with their direct costs and how much has been allocated to products
+func (s *Service) GetInfrastructureHierarchy(ctx context.Context, req CostAttributionRequest) (*InfrastructureHierarchyResponse, error) {
+	currency := req.Currency
+	if currency == "" {
+		currency = "USD"
+	}
+
+	// Get all infrastructure-type nodes
+	platformNodes, err := s.store.Nodes.List(ctx, store.NodeFilters{IsPlatform: &[]bool{true}[0]})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get platform nodes: %w", err)
+	}
+
+	sharedNodes, err := s.store.Nodes.List(ctx, store.NodeFilters{Type: string(models.NodeTypeShared)})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get shared nodes: %w", err)
+	}
+
+	resourceNodes, err := s.store.Nodes.List(ctx, store.NodeFilters{Type: string(models.NodeTypeResource)})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get resource nodes: %w", err)
+	}
+
+	// Build infrastructure nodes with cost data
+	var infraNodes []InfrastructureNode
+	totalDirectCost := decimal.Zero
+	totalAllocatedCost := decimal.Zero
+
+	// Process platform nodes
+	for _, node := range platformNodes {
+		infraNode, err := s.buildInfrastructureNode(ctx, node, req)
+		if err != nil {
+			log.Warn().Err(err).Str("node", node.Name).Msg("Failed to build infrastructure node")
+			continue
+		}
+		infraNodes = append(infraNodes, *infraNode)
+		totalDirectCost = totalDirectCost.Add(infraNode.DirectCosts.Total)
+		totalAllocatedCost = totalAllocatedCost.Add(infraNode.AllocatedCosts.Total)
+	}
+
+	// Process shared nodes (avoid duplicates with platform)
+	platformIDs := make(map[uuid.UUID]bool)
+	for _, n := range platformNodes {
+		platformIDs[n.ID] = true
+	}
+	for _, node := range sharedNodes {
+		if platformIDs[node.ID] {
+			continue // Already processed as platform
+		}
+		infraNode, err := s.buildInfrastructureNode(ctx, node, req)
+		if err != nil {
+			log.Warn().Err(err).Str("node", node.Name).Msg("Failed to build infrastructure node")
+			continue
+		}
+		infraNodes = append(infraNodes, *infraNode)
+		totalDirectCost = totalDirectCost.Add(infraNode.DirectCosts.Total)
+		totalAllocatedCost = totalAllocatedCost.Add(infraNode.AllocatedCosts.Total)
+	}
+
+	// Process resource nodes
+	for _, node := range resourceNodes {
+		if platformIDs[node.ID] {
+			continue
+		}
+		infraNode, err := s.buildInfrastructureNode(ctx, node, req)
+		if err != nil {
+			log.Warn().Err(err).Str("node", node.Name).Msg("Failed to build infrastructure node")
+			continue
+		}
+		infraNodes = append(infraNodes, *infraNode)
+		totalDirectCost = totalDirectCost.Add(infraNode.DirectCosts.Total)
+		totalAllocatedCost = totalAllocatedCost.Add(infraNode.AllocatedCosts.Total)
+	}
+
+	// Calculate summary
+	totalUnallocatedCost := totalDirectCost.Sub(totalAllocatedCost)
+	if totalUnallocatedCost.LessThan(decimal.Zero) {
+		totalUnallocatedCost = decimal.Zero
+	}
+
+	var allocationPct float64
+	if !totalDirectCost.IsZero() {
+		allocationPct, _ = totalAllocatedCost.Div(totalDirectCost).Mul(decimal.NewFromInt(100)).Float64()
+	}
+
+	return &InfrastructureHierarchyResponse{
+		Infrastructure: infraNodes,
+		Summary: InfraSummary{
+			TotalDirectCost:      totalDirectCost,
+			TotalAllocatedCost:   totalAllocatedCost,
+			TotalUnallocatedCost: totalUnallocatedCost,
+			AllocationPct:        allocationPct,
+			Currency:             currency,
+			Period:               fmt.Sprintf("%s to %s", req.StartDate.Format("2006-01-02"), req.EndDate.Format("2006-01-02")),
+			StartDate:            req.StartDate,
+			EndDate:              req.EndDate,
+			PlatformCount:        len(platformNodes),
+			SharedCount:          len(sharedNodes),
+			ResourceCount:        len(resourceNodes),
+			TotalNodeCount:       len(infraNodes),
+		},
+	}, nil
+}
+
+// buildInfrastructureNode builds a single infrastructure node with cost and allocation data
+func (s *Service) buildInfrastructureNode(ctx context.Context, node models.CostNode, req CostAttributionRequest) (*InfrastructureNode, error) {
+	// Get direct costs from node_costs_by_dimension
+	directCosts, err := s.store.Costs.GetByNodeAndDateRange(ctx, node.ID, req.StartDate, req.EndDate, req.Dimensions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get direct costs: %w", err)
+	}
+	directBreakdown := s.buildCostBreakdown(directCosts, req)
+
+	// Get allocations FROM this node TO products
+	allocations, err := s.store.Costs.GetAllocationsFromNode(ctx, node.ID, req.StartDate, req.EndDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get allocations: %w", err)
+	}
+
+	// Build allocated costs breakdown and allocation targets
+	allocatedTotal := decimal.Zero
+	allocatedDimensions := make(map[string]decimal.Decimal)
+	targetMap := make(map[uuid.UUID]*InfraAllocationTarget)
+
+	for _, alloc := range allocations {
+		allocatedTotal = allocatedTotal.Add(alloc.Amount)
+		if _, ok := allocatedDimensions[alloc.Dimension]; !ok {
+			allocatedDimensions[alloc.Dimension] = decimal.Zero
+		}
+		allocatedDimensions[alloc.Dimension] = allocatedDimensions[alloc.Dimension].Add(alloc.Amount)
+
+		// Build allocation target
+		if target, ok := targetMap[alloc.ChildID]; ok {
+			target.Amount = target.Amount.Add(alloc.Amount)
+		} else {
+			// Get target node info
+			targetNode, err := s.store.Nodes.GetByID(ctx, alloc.ChildID)
+			if err != nil {
+				continue
+			}
+			targetMap[alloc.ChildID] = &InfraAllocationTarget{
+				ID:       targetNode.ID,
+				Name:     targetNode.Name,
+				Type:     targetNode.Type,
+				Amount:   alloc.Amount,
+				Currency: req.Currency,
+				Strategy: alloc.Strategy,
+			}
+		}
+	}
+
+	// Convert target map to slice and calculate percentages
+	var allocatedTo []InfraAllocationTarget
+	for _, target := range targetMap {
+		if !directBreakdown.Total.IsZero() {
+			target.Percent, _ = target.Amount.Div(directBreakdown.Total).Mul(decimal.NewFromInt(100)).Float64()
+		}
+		allocatedTo = append(allocatedTo, *target)
+	}
+
+	// Calculate unallocated cost
+	unallocatedCost := directBreakdown.Total.Sub(allocatedTotal)
+	if unallocatedCost.LessThan(decimal.Zero) {
+		unallocatedCost = decimal.Zero
+	}
+
+	var allocationPct float64
+	if !directBreakdown.Total.IsZero() {
+		allocationPct, _ = allocatedTotal.Div(directBreakdown.Total).Mul(decimal.NewFromInt(100)).Float64()
+	}
+
+	return &InfrastructureNode{
+		ID:         node.ID,
+		Name:       node.Name,
+		Type:       node.Type,
+		IsPlatform: node.IsPlatform,
+		DirectCosts: *directBreakdown,
+		AllocatedCosts: CostBreakdown{
+			Total:      allocatedTotal,
+			Currency:   req.Currency,
+			Dimensions: allocatedDimensions,
+		},
+		UnallocatedCost: unallocatedCost,
+		AllocationPct:   allocationPct,
+		AllocatedTo:     allocatedTo,
+		Metadata:        node.Metadata,
+	}, nil
+}
+
+// GetNodeMetricsTimeSeries retrieves cost and usage metrics over time for a specific node
+func (s *Service) GetNodeMetricsTimeSeries(ctx context.Context, nodeID uuid.UUID, req CostAttributionRequest) (*NodeMetricsTimeSeriesResponse, error) {
+	currency := req.Currency
+	if currency == "" {
+		currency = "USD"
+	}
+
+	// Get node info
+	node, err := s.store.Nodes.GetByID(ctx, nodeID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get node: %w", err)
+	}
+
+	// Get daily costs
+	costs, err := s.store.Costs.GetByNodeAndDateRange(ctx, nodeID, req.StartDate, req.EndDate, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get costs: %w", err)
+	}
+
+	// Get daily usage (nil metrics means all metrics)
+	usage, err := s.store.Usage.GetByNodeAndDateRange(ctx, nodeID, req.StartDate, req.EndDate, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get usage: %w", err)
+	}
+
+	// Build cost series grouped by date
+	costByDate := make(map[string]*DailyCostDataPoint)
+	dimensionSet := make(map[string]bool)
+	for _, c := range costs {
+		dateKey := c.CostDate.Format("2006-01-02")
+		if _, ok := costByDate[dateKey]; !ok {
+			costByDate[dateKey] = &DailyCostDataPoint{
+				Date:       c.CostDate,
+				TotalCost:  decimal.Zero,
+				Dimensions: make(map[string]decimal.Decimal),
+			}
+		}
+		costByDate[dateKey].TotalCost = costByDate[dateKey].TotalCost.Add(c.Amount)
+		if _, ok := costByDate[dateKey].Dimensions[c.Dimension]; !ok {
+			costByDate[dateKey].Dimensions[c.Dimension] = decimal.Zero
+		}
+		costByDate[dateKey].Dimensions[c.Dimension] = costByDate[dateKey].Dimensions[c.Dimension].Add(c.Amount)
+		dimensionSet[c.Dimension] = true
+	}
+
+	// Convert to sorted slice
+	var costSeries []DailyCostDataPoint
+	for _, dp := range costByDate {
+		costSeries = append(costSeries, *dp)
+	}
+
+	// Build usage series grouped by date
+	usageByDate := make(map[string]*DailyUsageDataPoint)
+	metricSet := make(map[string]bool)
+	for _, u := range usage {
+		dateKey := u.UsageDate.Format("2006-01-02")
+		if _, ok := usageByDate[dateKey]; !ok {
+			usageByDate[dateKey] = &DailyUsageDataPoint{
+				Date:    u.UsageDate,
+				Metrics: make(map[string]decimal.Decimal),
+			}
+		}
+		usageByDate[dateKey].Metrics[u.Metric] = u.Value
+		metricSet[u.Metric] = true
+	}
+
+	// Convert to sorted slice
+	var usageSeries []DailyUsageDataPoint
+	for _, dp := range usageByDate {
+		usageSeries = append(usageSeries, *dp)
+	}
+
+	// Extract dimension and metric names
+	var dimensions []string
+	for d := range dimensionSet {
+		dimensions = append(dimensions, d)
+	}
+	var metrics []string
+	for m := range metricSet {
+		metrics = append(metrics, m)
+	}
+
+	return &NodeMetricsTimeSeriesResponse{
+		NodeID:      node.ID,
+		NodeName:    node.Name,
+		NodeType:    node.Type,
+		Period:      fmt.Sprintf("%s to %s", req.StartDate.Format("2006-01-02"), req.EndDate.Format("2006-01-02")),
+		StartDate:   req.StartDate,
+		EndDate:     req.EndDate,
+		Currency:    currency,
+		CostSeries:  costSeries,
+		UsageSeries: usageSeries,
+		Dimensions:  dimensions,
+		Metrics:     metrics,
+	}, nil
+}

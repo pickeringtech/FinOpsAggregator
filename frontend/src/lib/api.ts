@@ -6,6 +6,8 @@ import type {
   NodeListResponse,
   CostsByTypeResponse,
   CostsByDimensionResponse,
+  InfrastructureHierarchyResponse,
+  NodeMetricsTimeSeriesResponse,
 } from "@/types/api"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
@@ -197,7 +199,7 @@ export const api = {
         start_date: params.start_date,
         end_date: params.end_date,
       })
-      
+
       if (params.dimensions?.length) {
         params.dimensions.forEach(dim => searchParams.append("dimensions", dim))
       }
@@ -210,6 +212,46 @@ export const api = {
 
       return fetchApi<PlatformServicesResponse>(
         `/api/v1/platform/services?${searchParams.toString()}`
+      )
+    },
+  },
+
+  infrastructure: {
+    getHierarchy: (params: QueryParams) => {
+      const searchParams = new URLSearchParams({
+        start_date: params.start_date,
+        end_date: params.end_date,
+      })
+
+      if (params.dimensions?.length) {
+        params.dimensions.forEach(dim => searchParams.append("dimensions", dim))
+      }
+      if (params.include_trend !== undefined) {
+        searchParams.append("include_trend", String(params.include_trend))
+      }
+      if (params.currency) {
+        searchParams.append("currency", params.currency)
+      }
+
+      return fetchApi<InfrastructureHierarchyResponse>(
+        `/api/v1/infrastructure/hierarchy?${searchParams.toString()}`
+      )
+    },
+  },
+
+  metrics: {
+    getTimeSeries: (nodeId: string, params: QueryParams) => {
+      const searchParams = new URLSearchParams({
+        start_date: params.start_date,
+        end_date: params.end_date,
+      })
+
+      if (params.currency) {
+        searchParams.append("currency", params.currency)
+      }
+
+      return fetchApi<NodeMetricsTimeSeriesResponse>(
+        `/api/v1/nodes/${nodeId}/metrics/timeseries?${searchParams.toString()}`
       )
     },
   },

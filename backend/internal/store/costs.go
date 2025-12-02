@@ -1103,3 +1103,70 @@ func (r *CostRepository) GetAllocatedCostsByNodeAndDateRange(ctx context.Context
 	return results, nil
 }
 
+// AllocationFromNode represents an allocation from a parent node to a child node
+type AllocationFromNode struct {
+	ParentID  uuid.UUID
+	ChildID   uuid.UUID
+	Amount    decimal.Decimal
+	Dimension string
+	Strategy  string
+	Date      time.Time
+}
+
+// GetAllocationsFromNode retrieves all allocations FROM a specific node TO its children
+// This shows how much cost has been allocated from this infrastructure node to products
+func (r *CostRepository) GetAllocationsFromNode(ctx context.Context, nodeID uuid.UUID, startDate, endDate time.Time) ([]AllocationFromNode, error) {
+	query := `
+		WITH latest_run AS (
+			SELECT id
+			FROM computation_runs
+			WHERE window_start <= $2 AND window_end >= $3
+			  AND status = 'completed'
+			ORDER BY created_at DESC
+			LIMIT 1
+		)
+		SELECT
+			c.parent_id,
+			c.child_id,
+			c.contributed_amount,
+			c.dimension,
+			COALESCE(e.default_strategy, 'unknown') as strategy,
+			c.contribution_date
+		FROM contribution_results_by_dimension c
+		JOIN latest_run lr ON c.run_id = lr.id
+		LEFT JOIN dependency_edges e ON e.parent_id = c.parent_id AND e.child_id = c.child_id
+		WHERE c.parent_id = $1
+		  AND c.contribution_date >= $2
+		  AND c.contribution_date <= $3
+		ORDER BY c.contribution_date, c.child_id, c.dimension
+	`
+
+	rows, err := r.db.Query(ctx, query, nodeID, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get allocations from node: %w", err)
+	}
+	defer rows.Close()
+
+	var allocations []AllocationFromNode
+	for rows.Next() {
+		var alloc AllocationFromNode
+		err := rows.Scan(
+			&alloc.ParentID,
+			&alloc.ChildID,
+			&alloc.Amount,
+			&alloc.Dimension,
+			&alloc.Strategy,
+			&alloc.Date,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan allocation: %w", err)
+		}
+		allocations = append(allocations, alloc)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating allocations: %w", err)
+	}
+
+	return allocations, nil
+}

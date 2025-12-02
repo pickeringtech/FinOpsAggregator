@@ -104,11 +104,11 @@ export default function ProductsPage() {
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          <strong>Allocated Product Cost</strong> ({formatCurrency(hierarchyData?.summary.total_cost || "0", hierarchyData?.summary.currency)}) is the sum of all product holistic costs, including the <strong>Unallocated Platform &amp; Shared Costs</strong> bucket.
+          <strong>Holistic Product Cost</strong> ({formatCurrency(hierarchyData?.summary.total_cost || "0", hierarchyData?.summary.currency)}) is the sum of direct + indirect costs for all final cost centres (products with no child products).
           <br />
-          <strong>Raw Infrastructure Cost</strong> is the total pre-allocation spend for the same date range (all nodes in the graph).
+          <strong>Source Infrastructure Cost</strong> is the total direct cost from infrastructure nodes before allocation.
           <br />
-          Allocation coverage shows what percentage of raw infrastructure spend has been allocated into products.
+          Allocation coverage shows what percentage of source infrastructure has been attributed to products.
         </AlertDescription>
       </Alert>
 
@@ -116,7 +116,7 @@ export default function ProductsPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex items-center justify-between pb-3">
-            <CardTitle className="text-sm font-medium">Allocated Product Cost</CardTitle>
+            <CardTitle className="text-sm font-medium">Holistic Product Cost</CardTitle>
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
@@ -125,29 +125,32 @@ export default function ProductsPage() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>How are these totals calculated?</DialogTitle>
+                  <DialogTitle>Understanding Cost Terminology</DialogTitle>
                   <DialogDescription asChild>
                     <div className="space-y-3 text-sm">
                       <p>
-                        <strong>Allocated Product Cost</strong> is the sum of holistic costs for all products in the tree, plus a synthetic
-                        <em>Unallocated Platform &amp; Shared Costs</em> node which represents platform/shared spend that has not yet been
-                        allocated to any specific product.
+                        <strong>Direct Cost</strong> is the cost that originates on a node before any allocation occurs.
+                        For infrastructure nodes, this is the cloud spend. For products, this is any direct charges.
                       </p>
                       <p>
-                        <strong>Raw Infrastructure Cost</strong> comes directly from ingested billing data (the <code>node_costs_by_dimension</code> table)
-                        for the same date range. This is the total underlying spend before any allocation.
+                        <strong>Indirect Cost</strong> is the cost received via allocation from parent nodes
+                        (infrastructure, platform, shared services).
                       </p>
                       <p>
-                        The <strong>allocation coverage %</strong> tells you how much of that raw spend is currently represented in
-                        product totals. If coverage is less than 100%, it usually means either:
+                        <strong>Holistic Cost</strong> = Direct Cost + Indirect Cost. This is the total cost
+                        attributed to a node after allocation.
                       </p>
-                      <ul className="list-disc pl-6 space-y-1">
-                        <li>you have only run allocation for part of the selected period, or</li>
-                        <li>some infrastructure nodes are not yet connected into the allocation graph.</li>
-                      </ul>
+                      <p>
+                        <strong>Final Cost Centres</strong> are product nodes with no child products - the &quot;leaves&quot;
+                        of the product tree. Summing their holistic costs gives the total product cost without double-counting.
+                      </p>
+                      <p>
+                        <strong>Source Infrastructure</strong> is the total direct cost from all infrastructure nodes
+                        (platform, shared, resource) before allocation.
+                      </p>
                       <p className="text-muted-foreground">
-                        On the Platform &amp; Shared Services page you see raw platform/shared spend. On this Products page you see
-                        how much of that (plus other infra) has actually been attributed to products.
+                        The allocation coverage % shows how much of source infrastructure has been attributed to products.
+                        Less than 100% indicates unallocated costs that need attention.
                       </p>
                     </div>
                   </DialogDescription>
@@ -160,19 +163,19 @@ export default function ProductsPage() {
               {formatCurrency(hierarchyData?.summary.total_cost || "0", hierarchyData?.summary.currency)}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Includes Unallocated Platform &amp; Shared bucket
+              Sum of final cost centre holistic costs
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Raw Infrastructure Cost</CardTitle>
+            <CardTitle className="text-sm font-medium">Source Infrastructure</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatCurrency(hierarchyData?.summary.raw_total_cost || "0", hierarchyData?.summary.currency)}
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">Pre-allocation infra spend for this date range</p>
+            <p className="mt-1 text-xs text-muted-foreground">Direct cost from infrastructure nodes</p>
           </CardContent>
         </Card>
         <Card>
@@ -183,15 +186,16 @@ export default function ProductsPage() {
             <div className="text-2xl font-bold">
               {hierarchyData ? `${hierarchyData.summary.allocation_coverage_percent.toFixed(1)}%` : "0.0%"}
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">Allocated vs raw infrastructure cost</p>
+            <p className="mt-1 text-xs text-muted-foreground">% of source infra allocated to products</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Products</CardTitle>
+            <CardTitle className="text-sm font-medium">Final Cost Centres</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{hierarchyData?.summary.product_count || 0}</div>
+            <p className="mt-1 text-xs text-muted-foreground">Products with no child products</p>
           </CardContent>
         </Card>
         <Card>

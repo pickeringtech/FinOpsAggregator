@@ -232,6 +232,49 @@ func (h *Handler) GetDashboardSummary(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// GetInfrastructureHierarchy handles requests for the infrastructure hierarchy view
+func (h *Handler) GetInfrastructureHierarchy(c *gin.Context) {
+	req, err := h.parseCostAttributionRequest(c)
+	if err != nil {
+		h.handleError(c, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+
+	response, err := h.service.GetInfrastructureHierarchy(c.Request.Context(), *req)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get infrastructure hierarchy")
+		h.handleError(c, http.StatusInternalServerError, "internal_error", "Failed to retrieve infrastructure hierarchy")
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetNodeMetricsTimeSeries handles requests for node metrics over time
+func (h *Handler) GetNodeMetricsTimeSeries(c *gin.Context) {
+	nodeIDStr := c.Param("nodeId")
+	nodeID, err := uuid.Parse(nodeIDStr)
+	if err != nil {
+		h.handleError(c, http.StatusBadRequest, "invalid_node_id", "Invalid node ID format")
+		return
+	}
+
+	req, err := h.parseCostAttributionRequest(c)
+	if err != nil {
+		h.handleError(c, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+
+	response, err := h.service.GetNodeMetricsTimeSeries(c.Request.Context(), nodeID, *req)
+	if err != nil {
+		log.Error().Err(err).Str("node_id", nodeIDStr).Msg("Failed to get node metrics time series")
+		h.handleError(c, http.StatusInternalServerError, "internal_error", "Failed to retrieve node metrics")
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 // parseCostAttributionRequest parses common request parameters
 func (h *Handler) parseCostAttributionRequest(c *gin.Context) (*CostAttributionRequest, error) {
 	req := &CostAttributionRequest{}

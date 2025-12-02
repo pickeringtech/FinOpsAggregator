@@ -195,17 +195,17 @@ export default function Dashboard() {
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <CostCard
-          title="Total Product Cost"
+          title="Holistic Product Cost"
           amount={data?.summary?.total_cost || "0"}
           currency={data?.summary?.currency || "USD"}
           subtitle={`From ${data?.summary?.final_cost_centre_count || 0} final cost centres`}
           icon={<DollarSign className="h-4 w-4" />}
         />
         <CostCard
-          title="Raw Infrastructure"
+          title="Source Infrastructure"
           amount={data?.summary?.raw_infrastructure_cost || "0"}
           currency={data?.summary?.currency || "USD"}
-          subtitle={`${data?.summary?.allocation_coverage_percent?.toFixed(1) || 0}% allocated`}
+          subtitle={`${data?.summary?.allocation_coverage_percent?.toFixed(1) || 0}% allocated to products`}
           icon={<Server className="h-4 w-4" />}
         />
         <CostCard
@@ -216,9 +216,9 @@ export default function Dashboard() {
           showCurrency={false}
         />
         <CostCard
-          title="Platform & Shared"
-          amount={(data?.summary?.platform_count + data?.summary?.shared_count)?.toString() || "0"}
-          subtitle={`${data?.summary?.platform_count || 0} platform, ${data?.summary?.shared_count || 0} shared`}
+          title="Infrastructure Nodes"
+          amount={(data?.summary?.platform_count + data?.summary?.shared_count + data?.summary?.resource_count)?.toString() || "0"}
+          subtitle={`${data?.summary?.platform_count || 0} platform, ${data?.summary?.shared_count || 0} shared, ${data?.summary?.resource_count || 0} resource`}
           icon={<TrendingUp className="h-4 w-4" />}
           showCurrency={false}
         />

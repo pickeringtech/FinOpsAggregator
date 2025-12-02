@@ -33,6 +33,7 @@ func SetupRouter(handler *Handler) *gin.Engine {
 		nodes := v1.Group("/nodes")
 		{
 			nodes.GET("/:nodeId", handler.GetIndividualNode)
+			nodes.GET("/:nodeId/metrics/timeseries", handler.GetNodeMetricsTimeSeries)
 			nodes.GET("", handler.ListNodes) // New: flat list of all nodes
 		}
 
@@ -50,6 +51,12 @@ func SetupRouter(handler *Handler) *gin.Engine {
 		platform := v1.Group("/platform")
 		{
 			platform.GET("/services", handler.GetPlatformServices)
+		}
+
+		// Infrastructure hierarchy endpoint (mirrors product hierarchy for infra nodes)
+		infrastructure := v1.Group("/infrastructure")
+		{
+			infrastructure.GET("/hierarchy", handler.GetInfrastructureHierarchy)
 		}
 
 		// Cost optimization recommendations

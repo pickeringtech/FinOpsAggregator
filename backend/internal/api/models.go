@@ -13,6 +13,83 @@ type ProductHierarchyResponse struct {
 	Summary  CostSummary   `json:"summary"`
 }
 
+// InfrastructureHierarchyResponse represents the infrastructure hierarchy tree with cost data
+// This mirrors ProductHierarchyResponse but for platform/shared/resource nodes
+type InfrastructureHierarchyResponse struct {
+	Infrastructure []InfrastructureNode `json:"infrastructure"`
+	Summary        InfraSummary         `json:"summary"`
+}
+
+// InfrastructureNode represents a node in the infrastructure hierarchy
+type InfrastructureNode struct {
+	ID              uuid.UUID               `json:"id"`
+	Name            string                  `json:"name"`
+	Type            string                  `json:"type"` // platform, shared, resource, infrastructure
+	IsPlatform      bool                    `json:"is_platform"`
+	DirectCosts     CostBreakdown           `json:"direct_costs"`      // Cost originating on this node
+	AllocatedCosts  CostBreakdown           `json:"allocated_costs"`   // Cost allocated OUT to products
+	UnallocatedCost decimal.Decimal         `json:"unallocated_cost"`  // Direct - Allocated (what's left)
+	AllocationPct   float64                 `json:"allocation_pct"`    // % of direct cost that's been allocated
+	AllocatedTo     []InfraAllocationTarget `json:"allocated_to"`      // Products this node allocates to
+	Children        []InfrastructureNode    `json:"children,omitempty"`
+	Metadata        map[string]interface{}  `json:"metadata,omitempty"`
+}
+
+// InfraAllocationTarget represents a product that receives allocation from an infrastructure node
+type InfraAllocationTarget struct {
+	ID       uuid.UUID       `json:"id"`
+	Name     string          `json:"name"`
+	Type     string          `json:"type"`
+	Amount   decimal.Decimal `json:"amount"`
+	Currency string          `json:"currency"`
+	Strategy string          `json:"strategy"`
+	Percent  float64         `json:"percent"` // % of parent's cost allocated to this target
+}
+
+// InfraSummary provides summary for infrastructure hierarchy
+type InfraSummary struct {
+	TotalDirectCost      decimal.Decimal `json:"total_direct_cost"`      // Sum of all infra direct costs
+	TotalAllocatedCost   decimal.Decimal `json:"total_allocated_cost"`   // Sum of all costs allocated to products
+	TotalUnallocatedCost decimal.Decimal `json:"total_unallocated_cost"` // Direct - Allocated
+	AllocationPct        float64         `json:"allocation_pct"`         // Overall allocation percentage
+	Currency             string          `json:"currency"`
+	Period               string          `json:"period"`
+	StartDate            time.Time       `json:"start_date"`
+	EndDate              time.Time       `json:"end_date"`
+	PlatformCount        int             `json:"platform_count"`
+	SharedCount          int             `json:"shared_count"`
+	ResourceCount        int             `json:"resource_count"`
+	TotalNodeCount       int             `json:"total_node_count"`
+}
+
+// NodeMetricsTimeSeriesResponse represents cost and usage metrics over time for a node
+type NodeMetricsTimeSeriesResponse struct {
+	NodeID     uuid.UUID              `json:"node_id"`
+	NodeName   string                 `json:"node_name"`
+	NodeType   string                 `json:"node_type"`
+	Period     string                 `json:"period"`
+	StartDate  time.Time              `json:"start_date"`
+	EndDate    time.Time              `json:"end_date"`
+	Currency   string                 `json:"currency"`
+	CostSeries []DailyCostDataPoint   `json:"cost_series"`
+	UsageSeries []DailyUsageDataPoint `json:"usage_series"`
+	Dimensions []string               `json:"dimensions"` // Available cost dimensions
+	Metrics    []string               `json:"metrics"`    // Available usage metrics
+}
+
+// DailyCostDataPoint represents cost data for a single day with dimension breakdown
+type DailyCostDataPoint struct {
+	Date       time.Time                  `json:"date"`
+	TotalCost  decimal.Decimal            `json:"total_cost"`
+	Dimensions map[string]decimal.Decimal `json:"dimensions"`
+}
+
+// DailyUsageDataPoint represents usage metrics for a single day
+type DailyUsageDataPoint struct {
+	Date    time.Time                  `json:"date"`
+	Metrics map[string]decimal.Decimal `json:"metrics"` // metric_name -> value
+}
+
 // ProductNode represents a product in the hierarchy with its cost data
 type ProductNode struct {
 	ID                uuid.UUID         `json:"id"`
