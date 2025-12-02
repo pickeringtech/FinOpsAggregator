@@ -39,9 +39,12 @@ func SetupRouter(handler *Handler) *gin.Engine {
 		// Cost aggregation endpoints
 		costs := v1.Group("/costs")
 		{
-			costs.GET("/by-type", handler.GetCostsByType)       // New: aggregate by node type
-			costs.GET("/by-dimension", handler.GetCostsByDimension) // New: aggregate by any dimension
+			costs.GET("/by-type", handler.GetCostsByType)       // Aggregate by node type
+			costs.GET("/by-dimension", handler.GetCostsByDimension) // Aggregate by any dimension
 		}
+
+		// Dashboard summary endpoint (uses final cost centres for correct totals)
+		v1.GET("/dashboard/summary", handler.GetDashboardSummary)
 
 		// Platform and shared services endpoints
 		platform := v1.Group("/platform")

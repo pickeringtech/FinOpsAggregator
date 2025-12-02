@@ -324,9 +324,12 @@ func (s *Service) GetCostsByType(ctx context.Context, req CostAttributionRequest
 	for i, ct := range costsByType {
 		totalCost = totalCost.Add(ct.TotalCost)
 		aggregations[i] = TypeAggregation{
-			Type:      ct.Type,
-			TotalCost: ct.TotalCost,
-			NodeCount: ct.NodeCount,
+			Type:           ct.Type,
+			DirectCost:     ct.DirectCost,
+			IndirectCost:   ct.IndirectCost,
+			TotalCost:      ct.TotalCost,
+			NodeCount:      ct.NodeCount,
+			PercentOfTotal: ct.PercentOfTotal,
 		}
 	}
 
@@ -1606,4 +1609,107 @@ func (s *Service) performProductTreeSanityChecks(
 	}
 
 	return allPassed, warnings
+}
+
+// GetDashboardSummary returns the correct totals for the dashboard
+// This uses final cost centres to calculate the true "Total Product Cost" without double-counting
+func (s *Service) GetDashboardSummary(ctx context.Context, req CostAttributionRequest) (*DashboardSummaryResponse, error) {
+	currency := req.Currency
+	if currency == "" {
+		currency = "USD"
+	}
+
+	// Build graph to identify final cost centres
+	g, err := s.graphBuilder.BuildForDate(ctx, req.EndDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build graph for final cost centre detection: %w", err)
+	}
+
+	// Get final cost centres (product nodes with no outgoing product edges)
+	finalCostCentreIDs := g.GetFinalCostCentres()
+	finalCostCentreSet := make(map[uuid.UUID]bool)
+	for _, id := range finalCostCentreIDs {
+		finalCostCentreSet[id] = true
+	}
+
+	// Get all products with their holistic costs using the existing buildProductTree method
+	products, err := s.buildProductTree(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get products with holistic costs: %w", err)
+	}
+
+	// Calculate total product cost from final cost centres only
+	totalProductCost := decimal.Zero
+	for _, product := range products {
+		if finalCostCentreSet[product.ID] {
+			totalProductCost = totalProductCost.Add(product.HolisticCosts.Total)
+		}
+	}
+
+	// Get raw infrastructure cost
+	rawInfraCost, err := s.store.Costs.GetTotalInfrastructureCostByDateRange(ctx, req.StartDate, req.EndDate, currency)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get raw infrastructure cost: %w", err)
+	}
+
+	// Calculate unallocated cost and coverage
+	unallocatedCost := rawInfraCost.Sub(totalProductCost)
+	if unallocatedCost.LessThan(decimal.Zero) {
+		unallocatedCost = decimal.Zero
+	}
+
+	var coveragePercent float64
+	if !rawInfraCost.IsZero() {
+		coveragePercent, _ = totalProductCost.Div(rawInfraCost).Mul(decimal.NewFromInt(100)).Float64()
+		if coveragePercent > 100 {
+			coveragePercent = 100
+		}
+	}
+
+	// Get costs by type for breakdown
+	costsByType, err := s.store.Costs.GetCostsByType(ctx, req.StartDate, req.EndDate, currency)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get costs by type: %w", err)
+	}
+
+	// Convert to API response format
+	typeAggregations := make([]TypeAggregation, 0, len(costsByType))
+	var productCount, platformCount, sharedCount, resourceCount int
+	for _, ct := range costsByType {
+		typeAggregations = append(typeAggregations, TypeAggregation{
+			Type:           ct.Type,
+			DirectCost:     ct.DirectCost,
+			IndirectCost:   ct.IndirectCost,
+			TotalCost:      ct.TotalCost,
+			NodeCount:      ct.NodeCount,
+			PercentOfTotal: ct.PercentOfTotal,
+		})
+		switch ct.Type {
+		case "product":
+			productCount = ct.NodeCount
+		case "platform":
+			platformCount = ct.NodeCount
+		case "shared":
+			sharedCount = ct.NodeCount
+		case "resource", "infrastructure":
+			resourceCount += ct.NodeCount
+		}
+	}
+
+	return &DashboardSummaryResponse{
+		TotalProductCost:          totalProductCost,
+		RawInfrastructureCost:     rawInfraCost,
+		AllocationCoveragePercent: coveragePercent,
+		UnallocatedCost:           unallocatedCost,
+		CostsByType:               typeAggregations,
+		ProductCount:              productCount,
+		FinalCostCentreCount:      len(finalCostCentreIDs),
+		PlatformCount:             platformCount,
+		SharedCount:               sharedCount,
+		ResourceCount:             resourceCount,
+		Currency:                  currency,
+		Period:                    fmt.Sprintf("%s to %s", req.StartDate.Format("2006-01-02"), req.EndDate.Format("2006-01-02")),
+		StartDate:                 req.StartDate,
+		EndDate:                   req.EndDate,
+	}, nil
 }

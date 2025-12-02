@@ -214,6 +214,24 @@ func (h *Handler) GetRecommendations(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// GetDashboardSummary handles requests for the dashboard summary with correct totals
+func (h *Handler) GetDashboardSummary(c *gin.Context) {
+	req, err := h.parseCostAttributionRequest(c)
+	if err != nil {
+		h.handleError(c, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+
+	response, err := h.service.GetDashboardSummary(c.Request.Context(), *req)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get dashboard summary")
+		h.handleError(c, http.StatusInternalServerError, "internal_error", "Failed to retrieve dashboard summary")
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 // parseCostAttributionRequest parses common request parameters
 func (h *Handler) parseCostAttributionRequest(c *gin.Context) (*CostAttributionRequest, error) {
 	req := &CostAttributionRequest{}

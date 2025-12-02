@@ -1,0 +1,52 @@
+lineItem/UsageStartDate,lineItem/UsageEndDate,lineItem/ProductCode,lineItem/UsageType,lineItem/Operation,lineItem/ResourceId,lineItem/UnblendedCost,lineItem/BlendedCost,lineItem/UsageAmount,product/ProductName,product/region,resourceTags/user:Name,resourceTags/user:Product,resourceTags/user:Service,resourceTags/user:CostCenter
+2024-01-01T00:00:00Z,2024-01-01T01:00:00Z,AmazonEC2,USW2-BoxUsage:t3.medium,RunInstances,i-0abc123def456789a,0.0416,0.0416,1,Amazon Elastic Compute Cloud,us-west-2,web-server-1,web_app,compute,engineering
+2024-01-01T00:00:00Z,2024-01-01T01:00:00Z,AmazonEC2,USW2-BoxUsage:t3.medium,RunInstances,i-0abc123def456789b,0.0416,0.0416,1,Amazon Elastic Compute Cloud,us-west-2,web-server-2,web_app,compute,engineering
+2024-01-01T00:00:00Z,2024-01-01T01:00:00Z,AmazonEC2,USW2-BoxUsage:t3.large,RunInstances,i-0abc123def456789c,0.0832,0.0832,1,Amazon Elastic Compute Cloud,us-west-2,api-server-1,api_service,compute,engineering
+2024-01-01T00:00:00Z,2024-01-01T01:00:00Z,AmazonRDS,USW2-InstanceUsage:db.t3.medium,CreateDBInstance,db-instance-1,0.068,0.068,1,Amazon Relational Database Service,us-west-2,main-database,web_app,database,engineering
+2024-01-01T00:00:00Z,2024-01-01T01:00:00Z,AmazonRDS,USW2-RDS:GP2-Storage,CreateDBInstance,db-instance-1,0.115,0.115,100,Amazon Relational Database Service,us-west-2,main-database,web_app,database,engineering
+2024-01-01T00:00:00Z,2024-01-01T01:00:00Z,AmazonS3,USW2-Requests-Tier1,PutObject,bucket-assets,0.005,0.005,1000,Amazon Simple Storage Service,us-west-2,assets-bucket,web_app,storage,engineering
+2024-01-01T00:00:00Z,2024-01-01T01:00:00Z,AmazonS3,USW2-TimedStorage-ByteHrs,StandardStorage,bucket-assets,0.023,0.023,1000000000,Amazon Simple Storage Service,us-west-2,assets-bucket,web_app,storage,engineering
+2024-01-01T00:00:00Z,2024-01-01T01:00:00Z,AmazonCloudWatch,USW2-CW:Requests,GetMetricData,,0.01,0.01,1000,Amazon CloudWatch,us-west-2,,platform_pool,monitoring,platform
+2024-01-01T00:00:00Z,2024-01-01T01:00:00Z,AmazonEKS,USW2-AmazonEKS-Hours:perCluster,CreateCluster,eks-cluster-1,0.10,0.10,1,Amazon Elastic Kubernetes Service,us-west-2,main-cluster,platform_pool,kubernetes,platform
+2024-01-01T00:00:00Z,2024-01-01T01:00:00Z,AWSDataTransfer,USW2-DataTransfer-Out-Bytes,DataTransfer,,0.09,0.09,1000000000,AWS Data Transfer,us-west-2,,,network,shared
+2024-01-02T00:00:00Z,2024-01-02T01:00:00Z,AmazonEC2,USW2-BoxUsage:t3.medium,RunInstances,i-0abc123def456789a,0.0416,0.0416,1,Amazon Elastic Compute Cloud,us-west-2,web-server-1,web_app,compute,engineering
+2024-01-02T00:00:00Z,2024-01-02T01:00:00Z,AmazonEC2,USW2-BoxUsage:t3.medium,RunInstances,i-0abc123def456789b,0.0416,0.0416,1,Amazon Elastic Compute Cloud,us-west-2,web-server-2,web_app,compute,engineering
+2024-01-02T00:00:00Z,2024-01-02T01:00:00Z,AmazonEC2,USW2-BoxUsage:t3.large,RunInstances,i-0abc123def456789c,0.0832,0.0832,1,Amazon Elastic Compute Cloud,us-west-2,api-server-1,api_service,compute,engineering
+2024-01-02T00:00:00Z,2024-01-02T01:00:00Z,AmazonRDS,USW2-InstanceUsage:db.t3.medium,CreateDBInstance,db-instance-1,0.068,0.068,1,Amazon Relational Database Service,us-west-2,main-database,web_app,database,engineering
+2024-01-02T00:00:00Z,2024-01-02T01:00:00Z,AmazonRDS,USW2-RDS:GP2-Storage,CreateDBInstance,db-instance-1,0.115,0.115,100,Amazon Relational Database Service,us-west-2,main-database,web_app,database,engineering
+2024-01-02T00:00:00Z,2024-01-02T01:00:00Z,AmazonS3,USW2-Requests-Tier1,PutObject,bucket-assets,0.006,0.006,1200,Amazon Simple Storage Service,us-west-2,assets-bucket,web_app,storage,engineering
+2024-01-02T00:00:00Z,2024-01-02T01:00:00Z,AmazonS3,USW2-TimedStorage-ByteHrs,StandardStorage,bucket-assets,0.024,0.024,1050000000,Amazon Simple Storage Service,us-west-2,assets-bucket,web_app,storage,engineering
+2024-01-02T00:00:00Z,2024-01-02T01:00:00Z,AmazonCloudWatch,USW2-CW:Requests,GetMetricData,,0.012,0.012,1200,Amazon CloudWatch,us-west-2,,platform_pool,monitoring,platform
+2024-01-02T00:00:00Z,2024-01-02T01:00:00Z,AmazonEKS,USW2-AmazonEKS-Hours:perCluster,CreateCluster,eks-cluster-1,0.10,0.10,1,Amazon Elastic Kubernetes Service,us-west-2,main-cluster,platform_pool,kubernetes,platform
+2024-01-02T00:00:00Z,2024-01-02T01:00:00Z,AWSDataTransfer,USW2-DataTransfer-Out-Bytes,DataTransfer,,0.095,0.095,1050000000,AWS Data Transfer,us-west-2,,,network,shared
+2024-01-03T00:00:00Z,2024-01-03T01:00:00Z,AmazonEC2,USW2-BoxUsage:t3.medium,RunInstances,i-0abc123def456789a,0.0416,0.0416,1,Amazon Elastic Compute Cloud,us-west-2,web-server-1,web_app,compute,engineering
+2024-01-03T00:00:00Z,2024-01-03T01:00:00Z,AmazonEC2,USW2-BoxUsage:t3.medium,RunInstances,i-0abc123def456789b,0.0416,0.0416,1,Amazon Elastic Compute Cloud,us-west-2,web-server-2,web_app,compute,engineering
+2024-01-03T00:00:00Z,2024-01-03T01:00:00Z,AmazonEC2,USW2-BoxUsage:t3.large,RunInstances,i-0abc123def456789c,0.0832,0.0832,1,Amazon Elastic Compute Cloud,us-west-2,api-server-1,api_service,compute,engineering
+2024-01-03T00:00:00Z,2024-01-03T01:00:00Z,AmazonRDS,USW2-InstanceUsage:db.t3.medium,CreateDBInstance,db-instance-1,0.068,0.068,1,Amazon Relational Database Service,us-west-2,main-database,web_app,database,engineering
+2024-01-03T00:00:00Z,2024-01-03T01:00:00Z,AmazonRDS,USW2-RDS:GP2-Storage,CreateDBInstance,db-instance-1,0.115,0.115,100,Amazon Relational Database Service,us-west-2,main-database,web_app,database,engineering
+2024-01-03T00:00:00Z,2024-01-03T01:00:00Z,AmazonS3,USW2-Requests-Tier1,PutObject,bucket-assets,0.007,0.007,1400,Amazon Simple Storage Service,us-west-2,assets-bucket,web_app,storage,engineering
+2024-01-03T00:00:00Z,2024-01-03T01:00:00Z,AmazonS3,USW2-TimedStorage-ByteHrs,StandardStorage,bucket-assets,0.025,0.025,1100000000,Amazon Simple Storage Service,us-west-2,assets-bucket,web_app,storage,engineering
+2024-01-03T00:00:00Z,2024-01-03T01:00:00Z,AmazonCloudWatch,USW2-CW:Requests,GetMetricData,,0.011,0.011,1100,Amazon CloudWatch,us-west-2,,platform_pool,monitoring,platform
+2024-01-03T00:00:00Z,2024-01-03T01:00:00Z,AmazonEKS,USW2-AmazonEKS-Hours:perCluster,CreateCluster,eks-cluster-1,0.10,0.10,1,Amazon Elastic Kubernetes Service,us-west-2,main-cluster,platform_pool,kubernetes,platform
+2024-01-03T00:00:00Z,2024-01-03T01:00:00Z,AWSDataTransfer,USW2-DataTransfer-Out-Bytes,DataTransfer,,0.088,0.088,980000000,AWS Data Transfer,us-west-2,,,network,shared
+2024-01-04T00:00:00Z,2024-01-04T01:00:00Z,AmazonEC2,USW2-BoxUsage:t3.medium,RunInstances,i-0abc123def456789a,0.0416,0.0416,1,Amazon Elastic Compute Cloud,us-west-2,web-server-1,web_app,compute,engineering
+2024-01-04T00:00:00Z,2024-01-04T01:00:00Z,AmazonEC2,USW2-BoxUsage:t3.medium,RunInstances,i-0abc123def456789b,0.0416,0.0416,1,Amazon Elastic Compute Cloud,us-west-2,web-server-2,web_app,compute,engineering
+2024-01-04T00:00:00Z,2024-01-04T01:00:00Z,AmazonEC2,USW2-BoxUsage:t3.large,RunInstances,i-0abc123def456789c,0.0832,0.0832,1,Amazon Elastic Compute Cloud,us-west-2,api-server-1,api_service,compute,engineering
+2024-01-04T00:00:00Z,2024-01-04T01:00:00Z,AmazonRDS,USW2-InstanceUsage:db.t3.medium,CreateDBInstance,db-instance-1,0.068,0.068,1,Amazon Relational Database Service,us-west-2,main-database,web_app,database,engineering
+2024-01-04T00:00:00Z,2024-01-04T01:00:00Z,AmazonRDS,USW2-RDS:GP2-Storage,CreateDBInstance,db-instance-1,0.115,0.115,100,Amazon Relational Database Service,us-west-2,main-database,web_app,database,engineering
+2024-01-04T00:00:00Z,2024-01-04T01:00:00Z,AmazonS3,USW2-Requests-Tier1,PutObject,bucket-assets,0.008,0.008,1600,Amazon Simple Storage Service,us-west-2,assets-bucket,web_app,storage,engineering
+2024-01-04T00:00:00Z,2024-01-04T01:00:00Z,AmazonS3,USW2-TimedStorage-ByteHrs,StandardStorage,bucket-assets,0.026,0.026,1150000000,Amazon Simple Storage Service,us-west-2,assets-bucket,web_app,storage,engineering
+2024-01-04T00:00:00Z,2024-01-04T01:00:00Z,AmazonCloudWatch,USW2-CW:Requests,GetMetricData,,0.013,0.013,1300,Amazon CloudWatch,us-west-2,,platform_pool,monitoring,platform
+2024-01-04T00:00:00Z,2024-01-04T01:00:00Z,AmazonEKS,USW2-AmazonEKS-Hours:perCluster,CreateCluster,eks-cluster-1,0.10,0.10,1,Amazon Elastic Kubernetes Service,us-west-2,main-cluster,platform_pool,kubernetes,platform
+2024-01-04T00:00:00Z,2024-01-04T01:00:00Z,AWSDataTransfer,USW2-DataTransfer-Out-Bytes,DataTransfer,,0.092,0.092,1020000000,AWS Data Transfer,us-west-2,,,network,shared
+2024-01-05T00:00:00Z,2024-01-05T01:00:00Z,AmazonEC2,USW2-BoxUsage:t3.medium,RunInstances,i-0abc123def456789a,0.0416,0.0416,1,Amazon Elastic Compute Cloud,us-west-2,web-server-1,web_app,compute,engineering
+2024-01-05T00:00:00Z,2024-01-05T01:00:00Z,AmazonEC2,USW2-BoxUsage:t3.medium,RunInstances,i-0abc123def456789b,0.0416,0.0416,1,Amazon Elastic Compute Cloud,us-west-2,web-server-2,web_app,compute,engineering
+2024-01-05T00:00:00Z,2024-01-05T01:00:00Z,AmazonEC2,USW2-BoxUsage:t3.large,RunInstances,i-0abc123def456789c,0.0832,0.0832,1,Amazon Elastic Compute Cloud,us-west-2,api-server-1,api_service,compute,engineering
+2024-01-05T00:00:00Z,2024-01-05T01:00:00Z,AmazonRDS,USW2-InstanceUsage:db.t3.medium,CreateDBInstance,db-instance-1,0.068,0.068,1,Amazon Relational Database Service,us-west-2,main-database,web_app,database,engineering
+2024-01-05T00:00:00Z,2024-01-05T01:00:00Z,AmazonRDS,USW2-RDS:GP2-Storage,CreateDBInstance,db-instance-1,0.115,0.115,100,Amazon Relational Database Service,us-west-2,main-database,web_app,database,engineering
+2024-01-05T00:00:00Z,2024-01-05T01:00:00Z,AmazonS3,USW2-Requests-Tier1,PutObject,bucket-assets,0.009,0.009,1800,Amazon Simple Storage Service,us-west-2,assets-bucket,web_app,storage,engineering
+2024-01-05T00:00:00Z,2024-01-05T01:00:00Z,AmazonS3,USW2-TimedStorage-ByteHrs,StandardStorage,bucket-assets,0.027,0.027,1200000000,Amazon Simple Storage Service,us-west-2,assets-bucket,web_app,storage,engineering
+2024-01-05T00:00:00Z,2024-01-05T01:00:00Z,AmazonCloudWatch,USW2-CW:Requests,GetMetricData,,0.014,0.014,1400,Amazon CloudWatch,us-west-2,,platform_pool,monitoring,platform
+2024-01-05T00:00:00Z,2024-01-05T01:00:00Z,AmazonEKS,USW2-AmazonEKS-Hours:perCluster,CreateCluster,eks-cluster-1,0.10,0.10,1,Amazon Elastic Kubernetes Service,us-west-2,main-cluster,platform_pool,kubernetes,platform
+2024-01-05T00:00:00Z,2024-01-05T01:00:00Z,AWSDataTransfer,USW2-DataTransfer-Out-Bytes,DataTransfer,,0.097,0.097,1080000000,AWS Data Transfer,us-west-2,,,network,shared
+

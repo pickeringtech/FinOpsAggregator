@@ -49,12 +49,34 @@ interface DashboardSummary {
   }>
   summary: {
     total_cost: string
+    raw_infrastructure_cost: string
+    allocation_coverage_percent: number
+    unallocated_cost: string
     currency: string
     product_count: number
+    final_cost_centre_count: number
     platform_count: number
     resource_count: number
     shared_count: number
   }
+}
+
+// Dashboard summary response from the new endpoint
+interface DashboardSummaryResponse {
+  total_product_cost: string
+  raw_infrastructure_cost: string
+  allocation_coverage_percent: number
+  unallocated_cost: string
+  costs_by_type: TypeAggregation[]
+  product_count: number
+  final_cost_centre_count: number
+  platform_count: number
+  shared_count: number
+  resource_count: number
+  currency: string
+  period: string
+  start_date: string
+  end_date: string
 }
 
 export default function Dashboard() {
@@ -82,33 +104,35 @@ export default function Dashboard() {
     `${backendUrl}/api/v1/nodes?start_date=${startDate}&end_date=${endDate}&currency=USD&type=shared`,
     fetcher
   )
-  const { data: costsByTypeData } = useSWR(
-    `${backendUrl}/api/v1/costs/by-type?start_date=${startDate}&end_date=${endDate}&currency=USD`,
+  // Use the new dashboard summary endpoint for correct totals (uses final cost centres)
+  const { data: dashboardSummaryData } = useSWR<DashboardSummaryResponse>(
+    `${backendUrl}/api/v1/dashboard/summary?start_date=${startDate}&end_date=${endDate}&currency=USD`,
     fetcher
   )
 
   // Compose dashboard data from individual responses
-  const data: DashboardSummary | undefined = productsData && costsByTypeData ? {
+  const data: DashboardSummary | undefined = productsData && dashboardSummaryData ? {
     top_products: productsData.nodes || [],
     platform_nodes: platformData?.nodes || [],
     resource_nodes: resourceData?.nodes || [],
     shared_nodes: sharedData?.nodes || [],
-    cost_by_type: costsByTypeData.aggregations || [],
+    cost_by_type: dashboardSummaryData.costs_by_type || [],
     summary: {
-      total_cost: costsByTypeData.total_cost || "0",
-      currency: costsByTypeData.currency || "USD",
-      product_count:
-        costsByTypeData.aggregations?.find((a: TypeAggregation) => a.type === "product")?.node_count || 0,
-      platform_count:
-        costsByTypeData.aggregations?.find((a: TypeAggregation) => a.type === "platform")?.node_count || 0,
-      resource_count:
-        costsByTypeData.aggregations?.find((a: TypeAggregation) => a.type === "resource")?.node_count || 0,
-      shared_count:
-        costsByTypeData.aggregations?.find((a: TypeAggregation) => a.type === "shared")?.node_count || 0,
+      // Use total_product_cost from final cost centres (correct, no double-counting)
+      total_cost: dashboardSummaryData.total_product_cost || "0",
+      raw_infrastructure_cost: dashboardSummaryData.raw_infrastructure_cost || "0",
+      allocation_coverage_percent: dashboardSummaryData.allocation_coverage_percent || 0,
+      unallocated_cost: dashboardSummaryData.unallocated_cost || "0",
+      currency: dashboardSummaryData.currency || "USD",
+      product_count: dashboardSummaryData.product_count || 0,
+      final_cost_centre_count: dashboardSummaryData.final_cost_centre_count || 0,
+      platform_count: dashboardSummaryData.platform_count || 0,
+      resource_count: dashboardSummaryData.resource_count || 0,
+      shared_count: dashboardSummaryData.shared_count || 0,
     },
   } : undefined
 
-  const isLoading = !productsData || !costsByTypeData
+  const isLoading = !productsData || !dashboardSummaryData
   const error: Error | null = null
 
   // Fetch recommendations
@@ -174,8 +198,15 @@ export default function Dashboard() {
           title="Total Product Cost"
           amount={data?.summary?.total_cost || "0"}
           currency={data?.summary?.currency || "USD"}
-          subtitle="Sum of all product holistic costs"
+          subtitle={`From ${data?.summary?.final_cost_centre_count || 0} final cost centres`}
           icon={<DollarSign className="h-4 w-4" />}
+        />
+        <CostCard
+          title="Raw Infrastructure"
+          amount={data?.summary?.raw_infrastructure_cost || "0"}
+          currency={data?.summary?.currency || "USD"}
+          subtitle={`${data?.summary?.allocation_coverage_percent?.toFixed(1) || 0}% allocated`}
+          icon={<Server className="h-4 w-4" />}
         />
         <CostCard
           title="Products"
@@ -185,16 +216,9 @@ export default function Dashboard() {
           showCurrency={false}
         />
         <CostCard
-          title="Platform Services"
-          amount={data?.summary?.platform_count?.toString() || "0"}
-          subtitle="Platform nodes"
-          icon={<Server className="h-4 w-4" />}
-          showCurrency={false}
-        />
-        <CostCard
-          title="Resources"
-          amount={data?.summary?.resource_count?.toString() || "0"}
-          subtitle="Resource nodes"
+          title="Platform & Shared"
+          amount={(data?.summary?.platform_count + data?.summary?.shared_count)?.toString() || "0"}
+          subtitle={`${data?.summary?.platform_count || 0} platform, ${data?.summary?.shared_count || 0} shared`}
           icon={<TrendingUp className="h-4 w-4" />}
           showCurrency={false}
         />

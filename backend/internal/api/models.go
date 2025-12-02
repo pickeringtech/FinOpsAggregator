@@ -210,9 +210,12 @@ type CostsByTypeResponse struct {
 
 // TypeAggregation represents cost aggregated by a single type
 type TypeAggregation struct {
-	Type      string          `json:"type"`
-	TotalCost decimal.Decimal `json:"total_cost"`
-	NodeCount int             `json:"node_count"`
+	Type           string          `json:"type"`
+	DirectCost     decimal.Decimal `json:"direct_cost"`
+	IndirectCost   decimal.Decimal `json:"indirect_cost"`
+	TotalCost      decimal.Decimal `json:"total_cost"`
+	NodeCount      int             `json:"node_count"`
+	PercentOfTotal float64         `json:"percent_of_total"`
 }
 
 // CostsByDimensionResponse represents costs aggregated by a custom dimension
@@ -327,4 +330,38 @@ type GraphStatistics struct {
 	FinalCostCentres   int `json:"final_cost_centres"`
 	TotalEdges         int `json:"total_edges"`
 	MaxDepth           int `json:"max_depth"`
+}
+
+// DashboardSummaryResponse provides the correct totals for the dashboard
+// This uses final cost centres (product nodes with no outgoing product edges)
+// to calculate the true "Total Product Cost" without double-counting
+type DashboardSummaryResponse struct {
+	// TotalProductCost is the sum of holistic costs for final cost centres only
+	// This is the correct total that should be displayed on the dashboard
+	TotalProductCost decimal.Decimal `json:"total_product_cost"`
+
+	// RawInfrastructureCost is the total pre-allocation spend from infrastructure nodes
+	RawInfrastructureCost decimal.Decimal `json:"raw_infrastructure_cost"`
+
+	// AllocationCoveragePercent shows what % of raw infra cost is allocated to products
+	AllocationCoveragePercent float64 `json:"allocation_coverage_percent"`
+
+	// UnallocatedCost is the gap between raw infra and allocated product costs
+	UnallocatedCost decimal.Decimal `json:"unallocated_cost"`
+
+	// CostsByType provides breakdown by node type (for pie charts, etc.)
+	CostsByType []TypeAggregation `json:"costs_by_type"`
+
+	// Counts
+	ProductCount         int `json:"product_count"`
+	FinalCostCentreCount int `json:"final_cost_centre_count"`
+	PlatformCount        int `json:"platform_count"`
+	SharedCount          int `json:"shared_count"`
+	ResourceCount        int `json:"resource_count"`
+
+	// Metadata
+	Currency  string    `json:"currency"`
+	Period    string    `json:"period"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
 }

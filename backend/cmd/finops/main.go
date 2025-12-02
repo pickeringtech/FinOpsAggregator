@@ -12,6 +12,7 @@ import (
 	"github.com/pickeringtech/FinOpsAggregator/internal/config"
 	"github.com/pickeringtech/FinOpsAggregator/internal/demo"
 	"github.com/pickeringtech/FinOpsAggregator/internal/graph"
+	"github.com/pickeringtech/FinOpsAggregator/internal/ingestion"
 	"github.com/pickeringtech/FinOpsAggregator/internal/logging"
 	"github.com/pickeringtech/FinOpsAggregator/internal/store"
 	"github.com/pickeringtech/FinOpsAggregator/internal/tui"
@@ -164,18 +165,105 @@ var demoCmd = &cobra.Command{
 	Short: "Demo data and examples",
 }
 
+var importCostsCmd = &cobra.Command{
+	Use:   "costs [file]",
+	Short: "Import cost data from AWS CUR CSV file",
+	Long: `Import cost data from an AWS Cost and Usage Report (CUR) CSV file.
+
+The CSV file should contain standard AWS CUR columns including:
+  - lineItem/UsageStartDate
+  - lineItem/UnblendedCost
+  - lineItem/ProductCode
+  - resourceTags/user:Product (optional, for mapping to products)
+  - resourceTags/user:Service (optional, for mapping to services)
+
+Use --allocate to automatically run cost allocation after import.
+Use --create-nodes to automatically create missing nodes from AWS product codes.`,
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		filePath := args[0]
+		allocateAfter, _ := cmd.Flags().GetBool("allocate")
+		createNodes, _ := cmd.Flags().GetBool("create-nodes")
+		from, _ := cmd.Flags().GetString("from")
+		to, _ := cmd.Flags().GetString("to")
+
+		// Create progress channel for reporting
+		progressChan := make(chan ingestion.IngestionProgress, 100)
+		defer close(progressChan)
+
+		// Start progress reporter goroutine
+		done := make(chan struct{})
+		go func() {
+			for progress := range progressChan {
+				if progress.Error != nil {
+					fmt.Printf("  ERROR: %v\n", progress.Error)
+				} else if progress.Message != "" {
+					fmt.Printf("  %s\n", progress.Message)
+				}
+			}
+			close(done)
+		}()
+
+		fmt.Printf("Importing AWS CUR costs from %s\n", filePath)
+		fmt.Println("----------------------------------------")
+
+		// Create ingester
+		ingester := ingestion.NewAWSCURIngester(st, &ingestion.AWSCURConfig{
+			BatchSize:          1000,
+			CreateMissingNodes: createNodes,
+			ProgressChan:       progressChan,
+		})
+
+		// Run ingestion
+		ctx := cmd.Context()
+		result, err := ingester.IngestFile(ctx, filePath)
+		if err != nil {
+			return fmt.Errorf("ingestion failed: %w", err)
+		}
+
+		// Wait for progress reporter to finish
+		<-done
+
+		fmt.Println("----------------------------------------")
+		fmt.Printf("Ingestion completed!\n")
+		fmt.Printf("  Records processed: %d\n", result.RecordsProcessed)
+		fmt.Printf("  Records inserted:  %d\n", result.RecordsInserted)
+		fmt.Printf("  Records skipped:   %d\n", result.RecordsSkipped)
+		fmt.Printf("  Duration:          %v\n", result.Duration)
+
+		if len(result.Errors) > 0 {
+			fmt.Printf("  Errors (%d):\n", len(result.Errors))
+			for i, e := range result.Errors {
+				if i >= 5 {
+					fmt.Printf("    ... and %d more errors\n", len(result.Errors)-5)
+					break
+				}
+				fmt.Printf("    - %s\n", e)
+			}
+		}
+
+		// Run allocation if requested
+		if allocateAfter {
+			fmt.Println()
+			fmt.Println("Running allocation...")
+			if err := runAllocation(ctx, st, from, to); err != nil {
+				return fmt.Errorf("allocation failed: %w", err)
+			}
+		}
+
+		return nil
+	},
+}
+
 func init() {
+	// Import costs command flags
+	importCostsCmd.Flags().Bool("allocate", false, "Run cost allocation after import")
+	importCostsCmd.Flags().Bool("create-nodes", false, "Create missing nodes from AWS product codes")
+	importCostsCmd.Flags().String("from", time.Now().AddDate(0, 0, -30).Format("2006-01-02"), "Start date for allocation (YYYY-MM-DD)")
+	importCostsCmd.Flags().String("to", time.Now().Format("2006-01-02"), "End date for allocation (YYYY-MM-DD)")
+
 	// Import subcommands
-	importCmd.AddCommand(&cobra.Command{
-		Use:   "costs [file]",
-		Short: "Import cost data from CSV",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("Importing costs from %s\n", args[0])
-			// TODO: Implement cost import
-			return nil
-		},
-	})
+	importCmd.AddCommand(importCostsCmd)
 
 	importCmd.AddCommand(&cobra.Command{
 		Use:   "usage [file]",

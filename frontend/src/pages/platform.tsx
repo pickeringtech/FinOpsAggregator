@@ -76,12 +76,13 @@ export default function PlatformPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Platform Cost</CardTitle>
+            <CardTitle className="text-sm font-medium">Raw Platform & Shared Cost</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatCurrency(platformData?.summary.total_cost || "0", platformData?.summary.currency)}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">Pre-allocation direct costs</p>
           </CardContent>
         </Card>
         <Card>

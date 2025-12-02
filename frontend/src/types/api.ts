@@ -220,8 +220,11 @@ export interface RecommendationsResponse {
 
 export interface TypeAggregation {
   type: string
+  direct_cost: string
+  indirect_cost: string
   total_cost: string
   node_count: number
+  percent_of_total: number
 }
 
 export interface CostsByDimensionResponse {

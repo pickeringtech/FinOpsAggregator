@@ -451,10 +451,13 @@ type NodeWithCost struct {
 
 // CostByType represents cost aggregated by node type
 type CostByType struct {
-	Type      string          `json:"type"`
-	TotalCost decimal.Decimal `json:"total_cost"`
-	NodeCount int             `json:"node_count"`
-	Currency  string          `json:"currency"`
+	Type           string          `json:"type"`
+	DirectCost     decimal.Decimal `json:"direct_cost"`
+	IndirectCost   decimal.Decimal `json:"indirect_cost"`
+	TotalCost      decimal.Decimal `json:"total_cost"`
+	NodeCount      int             `json:"node_count"`
+	Currency       string          `json:"currency"`
+	PercentOfTotal float64         `json:"percent_of_total"`
 }
 
 // CostByDimension represents cost aggregated by a custom dimension
@@ -562,6 +565,8 @@ func (r *CostRepository) GetCostsByType(ctx context.Context, startDate, endDate 
 		type_costs AS (
 			SELECT
 				n.type,
+				SUM(a.direct_amount) as direct_cost,
+				SUM(a.indirect_amount) as indirect_cost,
 				SUM(a.total_amount) as total_cost,
 				COUNT(DISTINCT n.id) as node_count,
 				$3 as currency
@@ -571,10 +576,20 @@ func (r *CostRepository) GetCostsByType(ctx context.Context, startDate, endDate 
 			WHERE a.allocation_date >= $1
 			  AND a.allocation_date <= $2
 			GROUP BY n.type
+		),
+		grand_total AS (
+			SELECT SUM(total_cost) as total FROM type_costs
 		)
-		SELECT type, total_cost, node_count, currency
-		FROM type_costs
-		ORDER BY total_cost DESC
+		SELECT
+			tc.type,
+			tc.direct_cost,
+			tc.indirect_cost,
+			tc.total_cost,
+			tc.node_count,
+			tc.currency,
+			CASE WHEN gt.total > 0 THEN (tc.total_cost / gt.total * 100)::float8 ELSE 0 END as percent_of_total
+		FROM type_costs tc, grand_total gt
+		ORDER BY tc.total_cost DESC
 	`
 
 	rows, err := r.db.Query(ctx, query, startDate, endDate, currency)
@@ -588,9 +603,12 @@ func (r *CostRepository) GetCostsByType(ctx context.Context, startDate, endDate 
 		var costByType CostByType
 		err := rows.Scan(
 			&costByType.Type,
+			&costByType.DirectCost,
+			&costByType.IndirectCost,
 			&costByType.TotalCost,
 			&costByType.NodeCount,
 			&costByType.Currency,
+			&costByType.PercentOfTotal,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan cost by type: %w", err)
