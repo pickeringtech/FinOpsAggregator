@@ -17,6 +17,7 @@ type Config struct {
 	Jobs     JobsConfig     `mapstructure:"jobs"`
 	Logging  LoggingConfig  `mapstructure:"logging"`
 	API      APIConfig      `mapstructure:"api"`
+	Lambda   LambdaConfig   `mapstructure:"lambda"`
 }
 
 // PostgresConfig holds database configuration
@@ -59,6 +60,18 @@ type APIConfig struct {
 	ReadTimeout  time.Duration `mapstructure:"read_timeout"`
 	WriteTimeout time.Duration `mapstructure:"write_timeout"`
 	IdleTimeout  time.Duration `mapstructure:"idle_timeout"`
+}
+
+// LambdaConfig holds AWS Lambda-specific settings
+type LambdaConfig struct {
+	// Handler specifies which Lambda handler to use (import_awscur, import_dynatrace, export, allocate)
+	Handler string `mapstructure:"handler"`
+	// ImportBucket is the S3 bucket for data imports
+	ImportBucket string `mapstructure:"import_bucket"`
+	// ExportBucket is the S3 bucket for data exports
+	ExportBucket string `mapstructure:"export_bucket"`
+	// CreateMissingNodes controls whether to auto-create nodes during import
+	CreateMissingNodes bool `mapstructure:"create_missing_nodes"`
 }
 
 // Load loads configuration from file and environment variables
@@ -143,4 +156,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("api.read_timeout", "30s")
 	v.SetDefault("api.write_timeout", "30s")
 	v.SetDefault("api.idle_timeout", "120s")
+
+	// Lambda defaults
+	v.SetDefault("lambda.handler", "")
+	v.SetDefault("lambda.import_bucket", "")
+	v.SetDefault("lambda.export_bucket", "")
+	v.SetDefault("lambda.create_missing_nodes", false)
 }

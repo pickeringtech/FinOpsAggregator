@@ -78,11 +78,10 @@ export default function PlatformPage() {
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          <strong>Direct Cost</strong> is the cost originating on each infrastructure node before allocation.
-          <br />
-          <strong>Allocated Cost</strong> shows how much has been attributed to products.
-          <br />
-          <strong>Unallocated Cost</strong> represents costs not yet attributed to any product (data quality issue to address).
+          <strong>Direct Cost</strong> is the cost originating on each infrastructure node before allocation.{" "}
+          <strong>Allocated Cost</strong> shows how much has been attributed to products through the allocation graph.{" "}
+          <strong>Unallocated Cost</strong> is the remainder - costs that haven&apos;t flowed to products yet.
+          This may be intentional (base platform costs) or indicate missing allocation configuration.
         </AlertDescription>
       </Alert>
 
@@ -157,14 +156,49 @@ export default function PlatformPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Allocation Coverage</CardTitle>
+          <CardHeader className="flex items-center justify-between pb-3">
+            <CardTitle className="text-sm font-medium">% Attributed to Products</CardTitle>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
+                  <HelpCircle className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Understanding Attribution Percentage</DialogTitle>
+                  <DialogDescription asChild>
+                    <div className="space-y-3 text-sm">
+                      <p>
+                        This shows what percentage of infrastructure costs have been attributed to products.
+                      </p>
+                      <p>
+                        <strong>Note:</strong> Not all infrastructure costs need to be 100% attributed.
+                        Some base platform costs may intentionally remain unallocated as they represent
+                        foundational infrastructure that supports all products equally.
+                      </p>
+                      <p>
+                        A low percentage may indicate:
+                      </p>
+                      <ul className="list-disc pl-6 space-y-1">
+                        <li>Missing allocation edges in the graph</li>
+                        <li>Allocation not yet run for this period</li>
+                        <li>Cost dimensions not included in allocation</li>
+                      </ul>
+                    </div>
+                  </DialogDescription>
+                </DialogHeader>
+              </DialogContent>
+            </Dialog>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {hierarchyData ? `${hierarchyData.summary.allocation_pct.toFixed(1)}%` : "0.0%"}
             </div>
             <Progress value={hierarchyData?.summary.allocation_pct || 0} className="h-2 mt-2" />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Of direct cost attributed to products
+            </p>
           </CardContent>
         </Card>
       </div>

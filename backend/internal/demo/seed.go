@@ -568,19 +568,33 @@ func (s *Seeder) SeedCostData(ctx context.Context) error {
 	}
 
 	// Generate costs with multiple granularities and variations
+	// IMPORTANT: We aggregate costs by base dimension per day to ensure allocation works correctly.
+	// The allocation engine processes base dimensions (e.g., "instance_hours"), not suffixed ones.
 	log.Info().Msg("Generating comprehensive cost dataset...")
 
 	totalRecords := 0
 	batchSize := 10000 // Process in batches to avoid memory issues
 
+	// Aggregate costs by (node, date, dimension) to avoid primary key conflicts
+	// and ensure allocation works with base dimensions
+	type costKey struct {
+		nodeID    uuid.UUID
+		date      time.Time
+		dimension string
+	}
+	aggregatedCosts := make(map[costKey]decimal.Decimal)
+
 	for _, node := range nodes {
-		log.Info().Str("node", node.Name).Msg("Processing node")
+		log.Debug().Str("node", node.Name).Msg("Processing node")
 
 		// Generate multiple service instances per node for more realistic data
 		serviceCount := s.getServiceCountForNode(node.Name)
 
 		for serviceIdx := 0; serviceIdx < serviceCount; serviceIdx++ {
 			for date := startDate; !date.After(endDate); date = date.AddDate(0, 0, 1) {
+				// Normalize date to start of day for aggregation
+				dateOnly := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+
 				for _, dim := range dimensions {
 					// Generate multiple records per day for high-frequency dimensions
 					recordsPerDay := s.getRecordsPerDay(dim)
@@ -591,43 +605,44 @@ func (s *Seeder) SeedCostData(ctx context.Context) error {
 							continue // Skip zero costs
 						}
 
-						// Add time variation for sub-daily records
-						recordTime := date.Add(time.Duration(recordIdx) * time.Hour * 24 / time.Duration(recordsPerDay))
-
-						// Make dimension unique by including service and record identifiers
-						uniqueDimension := dim
-						if serviceCount > 1 || recordsPerDay > 1 {
-							uniqueDimension = fmt.Sprintf("%s_s%d_r%d", dim, serviceIdx, recordIdx)
+						// Aggregate by base dimension (no suffixes) to ensure allocation works
+						key := costKey{
+							nodeID:    node.ID,
+							date:      dateOnly,
+							dimension: dim, // Use base dimension, not suffixed
 						}
-
-						costs = append(costs, models.NodeCostByDimension{
-							NodeID:    node.ID,
-							CostDate:  recordTime,
-							Dimension: uniqueDimension,
-							Amount:    amount,
-							Currency:  "USD",
-							Metadata: map[string]interface{}{
-								"generated":      true,
-								"base_dimension": dim,
-								"service_index":  serviceIdx,
-								"record_index":   recordIdx,
-								"granularity":    s.getGranularity(dim),
-							},
-						})
-
-						totalRecords++
-
-						// Batch insert to avoid memory issues
-						if len(costs) >= batchSize {
-							if err := s.store.Costs.BulkUpsert(ctx, costs); err != nil {
-								return fmt.Errorf("failed to bulk insert costs batch: %w", err)
-							}
-							log.Info().Int("records_inserted", len(costs)).Int("total_so_far", totalRecords).Msg("Batch inserted")
-							costs = costs[:0] // Reset slice
-						}
+						aggregatedCosts[key] = aggregatedCosts[key].Add(amount)
 					}
 				}
 			}
+		}
+	}
+
+	// Convert aggregated costs to slice for bulk insert
+	log.Info().Int("unique_cost_records", len(aggregatedCosts)).Msg("Aggregated costs by base dimension")
+
+	for key, amount := range aggregatedCosts {
+		costs = append(costs, models.NodeCostByDimension{
+			NodeID:    key.nodeID,
+			CostDate:  key.date,
+			Dimension: key.dimension,
+			Amount:    amount,
+			Currency:  "USD",
+			Metadata: map[string]interface{}{
+				"generated":  true,
+				"aggregated": true,
+			},
+		})
+
+		totalRecords++
+
+		// Batch insert to avoid memory issues
+		if len(costs) >= batchSize {
+			if err := s.store.Costs.BulkUpsert(ctx, costs); err != nil {
+				return fmt.Errorf("failed to bulk insert costs batch: %w", err)
+			}
+			log.Info().Int("records_inserted", len(costs)).Int("total_so_far", totalRecords).Msg("Batch inserted")
+			costs = costs[:0] // Reset slice
 		}
 	}
 

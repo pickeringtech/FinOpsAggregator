@@ -41,3 +41,15 @@ jobs:
 
 logging:
   level: info
+
+# AWS Lambda configuration (for serverless deployment)
+# These settings are typically set via environment variables in Lambda
+lambda:
+  # Handler type: import_awscur, import_dynatrace, export, allocate
+  handler: ""
+  # S3 bucket for data imports (set via FINOPS_LAMBDA_IMPORT_BUCKET)
+  import_bucket: ""
+  # S3 bucket for data exports (set via FINOPS_LAMBDA_EXPORT_BUCKET)
+  export_bucket: ""
+  # Auto-create missing nodes during import
+  create_missing_nodes: false

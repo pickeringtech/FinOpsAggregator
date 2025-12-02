@@ -1,0 +1,47 @@
+# Dockerfile for Lambda local development
+# Builds the Lambda binary and provides a container for testing
+
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the Lambda binary
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags lambda.norpc -o /bootstrap ./cmd/lambda
+
+# Runtime image
+FROM alpine:3.19
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apk add --no-cache ca-certificates curl jq bash
+
+# Copy the Lambda binary
+COPY --from=builder /bootstrap /app/bootstrap
+
+# Create testdata directory (test data will be mounted via volume)
+RUN mkdir -p /testdata
+
+# Make binary executable
+RUN chmod +x /app/bootstrap
+
+# Set environment variables
+ENV AWS_LAMBDA_FUNCTION_NAME=finops-lambda
+ENV AWS_LAMBDA_FUNCTION_MEMORY_SIZE=512
+ENV AWS_LAMBDA_FUNCTION_VERSION=\$LATEST
+ENV AWS_LAMBDA_LOG_GROUP_NAME=/aws/lambda/finops-lambda
+ENV AWS_LAMBDA_LOG_STREAM_NAME=local
+
+# Default command (can be overridden)
+ENTRYPOINT ["/app/bootstrap"]
+

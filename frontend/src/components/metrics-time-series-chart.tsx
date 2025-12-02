@@ -96,7 +96,7 @@ export function MetricsTimeSeriesChart({ nodeId, nodeName }: MetricsTimeSeriesCh
     )
   }
 
-  if (!data || (data.cost_series.length === 0 && data.usage_series.length === 0)) {
+  if (!data || ((data.cost_series?.length ?? 0) === 0 && (data.usage_series?.length ?? 0) === 0)) {
     return (
       <Card>
         <CardHeader>

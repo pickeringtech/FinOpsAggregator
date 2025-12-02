@@ -1,0 +1,247 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FinOps Aggregator - Cost Attribution and Analysis Platform
+
+Globals:
+  Function:
+    Timeout: 300
+    MemorySize: 512
+    Runtime: provided.al2023
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        FINOPS_POSTGRES_DSN: !Ref PostgresDSN
+        FINOPS_STORAGE_URL: !Sub "s3://${ExportBucket}?region=${AWS::Region}"
+        FINOPS_STORAGE_PREFIX: "exports"
+        FINOPS_LOGGING_LEVEL: "info"
+
+Parameters:
+  PostgresDSN:
+    Type: String
+    Description: PostgreSQL connection string
+    NoEcho: true
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Deployment environment
+
+Resources:
+  # S3 Bucket for data imports and exports
+  ImportBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "finops-import-${Environment}-${AWS::AccountId}"
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: aws-cur/
+                  - Name: suffix
+                    Value: .csv
+            Function: !GetAtt ImportAWSCURFunction.Arn
+          - Event: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: dynatrace/
+                  - Name: suffix
+                    Value: .json
+            Function: !GetAtt ImportDynatraceFunction.Arn
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldImports
+            Status: Enabled
+            ExpirationInDays: 90
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: FinOpsAggregator
+
+  ExportBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "finops-export-${Environment}-${AWS::AccountId}"
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldExports
+            Status: Enabled
+            ExpirationInDays: 365
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: FinOpsAggregator
+
+  # Lambda Functions
+  ImportAWSCURFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      FunctionName: !Sub "finops-import-awscur-${Environment}"
+      CodeUri: .
+      Handler: bootstrap
+      Description: Import AWS Cost and Usage Report data from S3
+      Environment:
+        Variables:
+          FINOPS_IMPORT_SOURCE: "aws_cur"
+          FINOPS_IMPORT_CREATE_NODES: "true"
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref ImportBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:GetObjectVersion
+              Resource: !Sub "arn:aws:s3:::${ImportBucket}/*"
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref ImportBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: aws-cur/
+                  - Name: suffix
+                    Value: .csv
+      Tags:
+        Environment: !Ref Environment
+        Application: FinOpsAggregator
+
+  ImportDynatraceFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      FunctionName: !Sub "finops-import-dynatrace-${Environment}"
+      CodeUri: .
+      Handler: bootstrap
+      Description: Import Dynatrace metrics data from S3
+      Environment:
+        Variables:
+          FINOPS_IMPORT_SOURCE: "dynatrace"
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref ImportBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:GetObjectVersion
+              Resource: !Sub "arn:aws:s3:::${ImportBucket}/*"
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref ImportBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: dynatrace/
+                  - Name: suffix
+                    Value: .json
+      Tags:
+        Environment: !Ref Environment
+        Application: FinOpsAggregator
+
+  ExportFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      FunctionName: !Sub "finops-export-${Environment}"
+      CodeUri: .
+      Handler: bootstrap
+      Description: Export allocation results and charts to S3
+      Policies:
+        - S3WritePolicy:
+            BucketName: !Ref ExportBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+                - s3:PutObjectAcl
+              Resource: !Sub "arn:aws:s3:::${ExportBucket}/*"
+      Tags:
+        Environment: !Ref Environment
+        Application: FinOpsAggregator
+
+  AllocateFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      FunctionName: !Sub "finops-allocate-${Environment}"
+      CodeUri: .
+      Handler: bootstrap
+      Description: Run cost allocation computations
+      Timeout: 900
+      MemorySize: 1024
+      Tags:
+        Environment: !Ref Environment
+        Application: FinOpsAggregator
+
+  # Lambda Permissions for S3 triggers
+  ImportAWSCURFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ImportAWSCURFunction
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !GetAtt ImportBucket.Arn
+
+  ImportDynatraceFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ImportDynatraceFunction
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !GetAtt ImportBucket.Arn
+
+Outputs:
+  ImportBucketName:
+    Description: S3 bucket for data imports
+    Value: !Ref ImportBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-ImportBucket"
+
+  ExportBucketName:
+    Description: S3 bucket for data exports
+    Value: !Ref ExportBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-ExportBucket"
+
+  ImportAWSCURFunctionArn:
+    Description: ARN of the AWS CUR import Lambda function
+    Value: !GetAtt ImportAWSCURFunction.Arn
+
+  ImportDynatraceFunctionArn:
+    Description: ARN of the Dynatrace import Lambda function
+    Value: !GetAtt ImportDynatraceFunction.Arn
+
+  ExportFunctionArn:
+    Description: ARN of the export Lambda function
+    Value: !GetAtt ExportFunction.Arn
+
+  AllocateFunctionArn:
+    Description: ARN of the allocation Lambda function
+    Value: !GetAtt AllocateFunction.Arn
+

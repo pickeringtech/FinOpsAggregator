@@ -2,7 +2,7 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:14-alpine
-    container_name: finops-postgres-dev
+    container_name: finops-postgres
     environment:
       POSTGRES_USER: finops
       POSTGRES_PASSWORD: finops
@@ -10,7 +10,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
       - ./backend/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U finops"]
@@ -19,6 +19,45 @@ services:
       retries: 5
     networks:
       - finops-network
+
+  # LocalStack for S3 emulation (used for exports and lambda testing)
+  localstack:
+    image: localstack/localstack:latest
+    container_name: finops-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - DEBUG=0
+      - AWS_DEFAULT_REGION=eu-west-1
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - ./backend/scripts/localstack-init.sh:/etc/localstack/init/ready.d/init-aws.sh:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - finops-network
+
+  # Database migration runner
+  migrate:
+    image: migrate/migrate:latest
+    container_name: finops-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend/migrations:/migrations:ro
+    command: [
+      "-path", "/migrations",
+      "-database", "postgresql://finops:finops@postgres:5432/finops?sslmode=disable",
+      "up"
+    ]
+    networks:
+      - finops-network
+    restart: "no"
 
   # Backend API with hot reload and remote debugging
   backend:
@@ -29,14 +68,23 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      localstack:
+        condition: service_healthy
     environment:
       # Database connection
       FINOPS_POSTGRES_DSN: postgresql://finops:finops@postgres:5432/finops?sslmode=disable
+      # Storage - use LocalStack S3
+      FINOPS_STORAGE_URL: s3://finops-exports?endpoint=http://localstack:4566&disableSSL=true&s3ForcePathStyle=true
+      FINOPS_STORAGE_PREFIX: exports
+      # AWS credentials for LocalStack
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: eu-west-1
+      AWS_ENDPOINT_URL: http://localstack:4566
       # Logging
       FINOPS_LOGGING_LEVEL: debug
       # Go debugging
       CGO_ENABLED: 0
-      # Delve debugger port
       DELVE_PORT: 2345
     ports:
       - "8080:8080"   # API port
@@ -102,26 +150,10 @@ services:
       - finops-network
     restart: unless-stopped
 
-  # Database migration runner
-  migrate:
-    image: migrate/migrate:latest
-    container_name: finops-migrate-dev
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - ./backend/migrations:/migrations:ro
-    command: [
-      "-path", "/migrations",
-      "-database", "postgresql://finops:finops@postgres:5432/finops?sslmode=disable",
-      "up"
-    ]
-    networks:
-      - finops-network
-    restart: "no"
-
 volumes:
-  postgres_dev_data:
+  postgres_data:
+    driver: local
+  localstack_data:
     driver: local
   go_mod_cache:
     driver: local

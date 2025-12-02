@@ -1,13 +1,20 @@
-.PHONY: build run test clean deps migrate-up migrate-down docker-build docker-run
+.PHONY: build run test clean deps migrate-up migrate-down docker-build docker-run \
+	lambda-build sam-build sam-local sam-deploy sam-validate \
+	lambda-up lambda-down lambda-logs lambda-shell lambda-import lambda-allocate lambda-export
 
 # Variables
 BINARY_NAME=finops
+LAMBDA_BINARY=bootstrap
 DOCKER_IMAGE=finops-aggregator
 POSTGRES_URL=postgresql://finops:finops@localhost:5432/finops?sslmode=disable
 
 # Build the application
 build:
 	go build -o bin/$(BINARY_NAME) ./cmd/finops
+
+# Build Lambda binary
+lambda-build:
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -tags lambda.norpc -o $(LAMBDA_BINARY) ./cmd/lambda
 
 # Run the application
 run: build
@@ -130,6 +137,66 @@ docker-build:
 docker-run:
 	docker run --rm -it $(DOCKER_IMAGE)
 
+# AWS SAM commands
+sam-build: lambda-build
+	sam build
+
+sam-validate:
+	sam validate --lint
+
+sam-local:
+	./scripts/sam-local.sh $(FUNCTION) $(EVENT)
+
+sam-local-import:
+	./scripts/sam-local.sh ImportAWSCURFunction events/s3-put.json
+
+sam-local-allocate:
+	./scripts/sam-local.sh AllocateFunction events/allocate.json
+
+sam-local-export:
+	./scripts/sam-local.sh ExportFunction events/export.json
+
+sam-deploy:
+	./scripts/sam-deploy.sh $(ENV)
+
+sam-deploy-dev:
+	./scripts/sam-deploy.sh dev
+
+sam-deploy-staging:
+	./scripts/sam-deploy.sh staging
+
+sam-deploy-prod:
+	./scripts/sam-deploy.sh prod
+
+# Docker Compose Lambda development (with LocalStack)
+lambda-up:
+	docker compose -f docker-compose.lambda.yml up -d
+	@echo "Waiting for services to be ready..."
+	@sleep 5
+	@echo "Services started. Use 'make lambda-import' to test importing data."
+
+lambda-down:
+	docker compose -f docker-compose.lambda.yml down
+
+lambda-logs:
+	docker compose -f docker-compose.lambda.yml logs -f
+
+lambda-shell:
+	./scripts/lambda-invoke.sh shell
+
+lambda-import:
+	./scripts/lambda-invoke.sh import-awscur testdata/sample_aws_cur.csv
+
+lambda-allocate:
+	./scripts/lambda-invoke.sh allocate
+
+lambda-export:
+	./scripts/lambda-invoke.sh export chart_graph png
+
+lambda-list-s3:
+	./scripts/lambda-invoke.sh list-s3 finops-imports
+	./scripts/lambda-invoke.sh list-s3 finops-exports
+
 # Linting and formatting
 fmt:
 	go fmt ./...
@@ -184,4 +251,28 @@ help:
 	@echo "  vet            - Run go vet"
 	@echo "  lint           - Run linting and formatting"
 	@echo "  install-tools  - Install development tools"
+	@echo ""
+	@echo "AWS SAM commands:"
+	@echo "  lambda-build   - Build Lambda binary"
+	@echo "  sam-build      - Build SAM application"
+	@echo "  sam-validate   - Validate SAM template"
+	@echo "  sam-local      - Invoke Lambda locally (FUNCTION=name EVENT=file)"
+	@echo "  sam-local-import   - Test import Lambda locally"
+	@echo "  sam-local-allocate - Test allocate Lambda locally"
+	@echo "  sam-local-export   - Test export Lambda locally"
+	@echo "  sam-deploy     - Deploy to AWS (ENV=dev|staging|prod)"
+	@echo "  sam-deploy-dev - Deploy to dev environment"
+	@echo "  sam-deploy-staging - Deploy to staging environment"
+	@echo "  sam-deploy-prod - Deploy to production environment"
+	@echo ""
+	@echo "Docker Compose Lambda (with LocalStack):"
+	@echo "  lambda-up      - Start Lambda dev environment (Postgres + LocalStack)"
+	@echo "  lambda-down    - Stop Lambda dev environment"
+	@echo "  lambda-logs    - Follow Lambda container logs"
+	@echo "  lambda-shell   - Open shell in Lambda container"
+	@echo "  lambda-import  - Test importing sample AWS CUR data"
+	@echo "  lambda-allocate - Test running cost allocation"
+	@echo "  lambda-export  - Test exporting charts"
+	@echo "  lambda-list-s3 - List S3 bucket contents"
+	@echo ""
 	@echo "  help           - Show this help message"
