@@ -24,3 +24,6 @@ postgres_dev_data/
 tmp/
 temp/
 
+# CSV exports
+exports/
+

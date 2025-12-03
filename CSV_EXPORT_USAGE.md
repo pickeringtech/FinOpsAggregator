@@ -2,6 +2,22 @@
 
 This document describes how to use the CSV export functionality that has been added to the FinOps Aggregator.
 
+## Quick Start
+
+### Export Scripts (Recommended)
+
+**For regular use (fast, small files):**
+```bash
+./export-csv-summary.sh
+```
+
+**For detailed analysis (large files with individual records):**
+```bash
+./export-csv-data.sh
+```
+
+Both scripts export to the `exports/` directory which is git-ignored.
+
 ## Overview
 
 The CSV export functionality allows you to export various types of financial and cost data from the FinOps system in CSV format. This is useful for:
