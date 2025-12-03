@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pickeringtech/FinOpsAggregator/internal/allocate"
+	"github.com/pickeringtech/FinOpsAggregator/internal/api"
 	"github.com/pickeringtech/FinOpsAggregator/internal/charts"
 	"github.com/pickeringtech/FinOpsAggregator/internal/config"
 	"github.com/pickeringtech/FinOpsAggregator/internal/demo"
@@ -496,17 +497,24 @@ func init() {
 
 	exportCmd.AddCommand(chartCmd)
 
-	exportCmd.AddCommand(&cobra.Command{
+	csvCmd := &cobra.Command{
 		Use:   "csv",
 		Short: "Export data to CSV",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			out, _ := cmd.Flags().GetString("out")
-			labels, _ := cmd.Flags().GetString("labels")
-			fmt.Printf("Exporting CSV to %s with labels %s\n", out, labels)
-			// TODO: Implement CSV export
-			return nil
+			return runCSVExport(cmd, args)
 		},
-	})
+	}
+
+	// Add flags for CSV export
+	csvCmd.Flags().String("type", "products", "Export type: products, nodes, costs_by_type, recommendations")
+	csvCmd.Flags().String("node-type", "", "Node type filter (for nodes export)")
+	csvCmd.Flags().String("node-id", "", "Node ID filter (for recommendations export)")
+	csvCmd.Flags().String("start-date", "", "Start date (YYYY-MM-DD)")
+	csvCmd.Flags().String("end-date", "", "End date (YYYY-MM-DD)")
+	csvCmd.Flags().String("currency", "USD", "Currency")
+	csvCmd.Flags().String("out", "", "Output file (default: stdout)")
+
+	exportCmd.AddCommand(csvCmd)
 
 	// Demo subcommands
 	demoCmd.AddCommand(&cobra.Command{
@@ -571,4 +579,100 @@ func init() {
 	synthCmd.Flags().Int("edges", 3000, "Number of edges")
 	synthCmd.Flags().Int("days", 30, "Number of days")
 	synthCmd.Flags().Int("dimensions", 6, "Number of dimensions")
+}
+
+// runCSVExport handles CSV export command
+func runCSVExport(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	// Parse flags
+	exportType, _ := cmd.Flags().GetString("type")
+	nodeType, _ := cmd.Flags().GetString("node-type")
+	nodeIDStr, _ := cmd.Flags().GetString("node-id")
+	startDateStr, _ := cmd.Flags().GetString("start-date")
+	endDateStr, _ := cmd.Flags().GetString("end-date")
+	currency, _ := cmd.Flags().GetString("currency")
+	outputFile, _ := cmd.Flags().GetString("out")
+
+	// Parse dates
+	var startDate, endDate time.Time
+	var err error
+
+	if startDateStr == "" {
+		startDate = time.Now().AddDate(0, 0, -30) // Default to 30 days ago
+	} else {
+		startDate, err = time.Parse("2006-01-02", startDateStr)
+		if err != nil {
+			return fmt.Errorf("invalid start date format: %w", err)
+		}
+	}
+
+	if endDateStr == "" {
+		endDate = time.Now() // Default to today
+	} else {
+		endDate, err = time.Parse("2006-01-02", endDateStr)
+		if err != nil {
+			return fmt.Errorf("invalid end date format: %w", err)
+		}
+	}
+
+	// Parse node ID if provided
+	var nodeID *uuid.UUID
+	if nodeIDStr != "" {
+		parsed, err := uuid.Parse(nodeIDStr)
+		if err != nil {
+			return fmt.Errorf("invalid node ID format: %w", err)
+		}
+		nodeID = &parsed
+	}
+
+	// Create API service
+	service := api.NewService(st)
+
+	// Create cost attribution request
+	req := api.CostAttributionRequest{
+		StartDate: startDate,
+		EndDate:   endDate,
+		Currency:  currency,
+	}
+
+	// Determine output writer
+	var writer *os.File
+	if outputFile == "" {
+		writer = os.Stdout
+	} else {
+		writer, err = os.Create(outputFile)
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %w", err)
+		}
+		defer writer.Close()
+	}
+
+	// Export based on type
+	switch exportType {
+	case "products":
+		err = service.ExportProductsToCSV(ctx, req, writer)
+	case "nodes":
+		err = service.ExportNodesToCSV(ctx, req, nodeType, writer)
+	case "costs_by_type":
+		err = service.ExportCostsByTypeToCSV(ctx, req, writer)
+	case "recommendations":
+		err = service.ExportRecommendationsToCSV(ctx, req, nodeID, writer)
+	case "detailed_costs":
+		err = service.ExportDetailedCostsToCSV(ctx, req, nodeType, writer)
+	case "raw_costs":
+		err = service.ExportRawCostsToCSV(ctx, req, nodeType, writer)
+	default:
+		return fmt.Errorf("unsupported export type: %s. Supported types: products, nodes, costs_by_type, recommendations, detailed_costs, raw_costs", exportType)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to export CSV: %w", err)
+	}
+
+	if outputFile != "" {
+		fmt.Printf("CSV exported to %s\n", outputFile)
+	}
+
+	return nil
 }

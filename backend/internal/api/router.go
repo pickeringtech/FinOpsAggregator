@@ -70,6 +70,12 @@ func SetupRouter(handler *Handler) *gin.Engine {
 		{
 			debug.GET("/reconciliation", handler.GetAllocationReconciliation)
 		}
+
+		// Export endpoints
+		export := v1.Group("/export")
+		{
+			export.GET("/csv", handler.ExportCSV)
+		}
 	}
 
 	return router

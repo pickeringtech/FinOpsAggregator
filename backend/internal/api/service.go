@@ -2,7 +2,11 @@ package api
 
 import (
 	"context"
+	"encoding/csv"
+	"encoding/json"
 	"fmt"
+	"io"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -1999,4 +2003,267 @@ func (s *Service) GetNodeMetricsTimeSeries(ctx context.Context, nodeID uuid.UUID
 		Dimensions:  dimensions,
 		Metrics:     metrics,
 	}, nil
+}
+
+// CSV Export Methods
+
+// ExportProductsToCSV exports products with costs to CSV format
+func (s *Service) ExportProductsToCSV(ctx context.Context, req CostAttributionRequest, writer io.Writer) error {
+	// Get products data
+	products, err := s.store.Costs.ListNodesWithCosts(ctx, req.StartDate, req.EndDate, req.Currency, "product", 0, 0)
+	if err != nil {
+		return fmt.Errorf("failed to list products: %w", err)
+	}
+
+	csvWriter := csv.NewWriter(writer)
+	defer csvWriter.Flush()
+
+	// Write header
+	header := []string{"ID", "Name", "Type", "Total Cost", "Currency", "Period Start", "Period End"}
+	if err := csvWriter.Write(header); err != nil {
+		return fmt.Errorf("failed to write CSV header: %w", err)
+	}
+
+	// Write data rows
+	for _, product := range products {
+		row := []string{
+			product.ID.String(),
+			product.Name,
+			product.Type,
+			product.TotalCost.StringFixed(2),
+			product.Currency,
+			req.StartDate.Format("2006-01-02"),
+			req.EndDate.Format("2006-01-02"),
+		}
+		if err := csvWriter.Write(row); err != nil {
+			return fmt.Errorf("failed to write CSV row: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// ExportNodesToCSV exports all nodes with costs to CSV format
+func (s *Service) ExportNodesToCSV(ctx context.Context, req CostAttributionRequest, nodeType string, writer io.Writer) error {
+	// Get nodes data
+	nodes, err := s.store.Costs.ListNodesWithCosts(ctx, req.StartDate, req.EndDate, req.Currency, nodeType, 0, 0)
+	if err != nil {
+		return fmt.Errorf("failed to list nodes: %w", err)
+	}
+
+	csvWriter := csv.NewWriter(writer)
+	defer csvWriter.Flush()
+
+	// Write header
+	header := []string{"ID", "Name", "Type", "Total Cost", "Currency", "Period Start", "Period End"}
+	if err := csvWriter.Write(header); err != nil {
+		return fmt.Errorf("failed to write CSV header: %w", err)
+	}
+
+	// Write data rows
+	for _, node := range nodes {
+		row := []string{
+			node.ID.String(),
+			node.Name,
+			node.Type,
+			node.TotalCost.StringFixed(2),
+			node.Currency,
+			req.StartDate.Format("2006-01-02"),
+			req.EndDate.Format("2006-01-02"),
+		}
+		if err := csvWriter.Write(row); err != nil {
+			return fmt.Errorf("failed to write CSV row: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// ExportCostsByTypeToCSV exports costs aggregated by type to CSV format
+func (s *Service) ExportCostsByTypeToCSV(ctx context.Context, req CostAttributionRequest, writer io.Writer) error {
+	// Get costs by type data
+	costsByType, err := s.store.Costs.GetCostsByType(ctx, req.StartDate, req.EndDate, req.Currency)
+	if err != nil {
+		return fmt.Errorf("failed to get costs by type: %w", err)
+	}
+
+	csvWriter := csv.NewWriter(writer)
+	defer csvWriter.Flush()
+
+	// Write header
+	header := []string{"Type", "Direct Cost", "Indirect Cost", "Total Cost", "Node Count", "Percent of Total", "Currency", "Period Start", "Period End"}
+	if err := csvWriter.Write(header); err != nil {
+		return fmt.Errorf("failed to write CSV header: %w", err)
+	}
+
+	// Write data rows
+	for _, ct := range costsByType {
+		row := []string{
+			ct.Type,
+			ct.DirectCost.StringFixed(2),
+			ct.IndirectCost.StringFixed(2),
+			ct.TotalCost.StringFixed(2),
+			strconv.Itoa(ct.NodeCount),
+			strconv.FormatFloat(ct.PercentOfTotal, 'f', 2, 64),
+			req.Currency,
+			req.StartDate.Format("2006-01-02"),
+			req.EndDate.Format("2006-01-02"),
+		}
+		if err := csvWriter.Write(row); err != nil {
+			return fmt.Errorf("failed to write CSV row: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// ExportRecommendationsToCSV exports cost optimization recommendations to CSV format
+func (s *Service) ExportRecommendationsToCSV(ctx context.Context, req CostAttributionRequest, nodeID *uuid.UUID, writer io.Writer) error {
+	// Get recommendations data
+	var recommendations []models.CostRecommendation
+	var err error
+
+	if nodeID != nil {
+		recommendations, err = s.recommendationAnalyzer.AnalyzeNode(ctx, *nodeID, req.StartDate, req.EndDate)
+	} else {
+		recommendations, err = s.recommendationAnalyzer.AnalyzeAllNodes(ctx, req.StartDate, req.EndDate)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to analyze recommendations: %w", err)
+	}
+
+	csvWriter := csv.NewWriter(writer)
+	defer csvWriter.Flush()
+
+	// Write header
+	header := []string{
+		"ID", "Node ID", "Node Name", "Node Type", "Type", "Severity", "Title", "Description",
+		"Current Cost", "Potential Savings", "Currency", "Metric", "Current Value", "Peak Value",
+		"Average Value", "Utilization Percent", "Recommended Action", "Analysis Period",
+		"Start Date", "End Date", "Created At",
+	}
+	if err := csvWriter.Write(header); err != nil {
+		return fmt.Errorf("failed to write CSV header: %w", err)
+	}
+
+	// Write data rows
+	for _, rec := range recommendations {
+		row := []string{
+			rec.ID.String(),
+			rec.NodeID.String(),
+			rec.NodeName,
+			rec.NodeType,
+			string(rec.Type),
+			string(rec.Severity),
+			rec.Title,
+			rec.Description,
+			rec.CurrentCost.StringFixed(2),
+			rec.PotentialSavings.StringFixed(2),
+			rec.Currency,
+			rec.Metric,
+			rec.CurrentValue.StringFixed(2),
+			rec.PeakValue.StringFixed(2),
+			rec.AverageValue.StringFixed(2),
+			rec.UtilizationPercent.StringFixed(2),
+			rec.RecommendedAction,
+			rec.AnalysisPeriod,
+			rec.StartDate.Format("2006-01-02"),
+			rec.EndDate.Format("2006-01-02"),
+			rec.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
+		if err := csvWriter.Write(row); err != nil {
+			return fmt.Errorf("failed to write CSV row: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// ExportDetailedCostsToCSV exports detailed cost records (not aggregated) to CSV format
+func (s *Service) ExportDetailedCostsToCSV(ctx context.Context, req CostAttributionRequest, nodeType string, writer io.Writer) error {
+	// Get detailed cost data from allocation results
+	costs, err := s.store.Costs.GetDetailedCostRecords(ctx, req.StartDate, req.EndDate, req.Currency, nodeType)
+	if err != nil {
+		return fmt.Errorf("failed to get detailed cost records: %w", err)
+	}
+
+	csvWriter := csv.NewWriter(writer)
+	defer csvWriter.Flush()
+
+	// Write header
+	header := []string{
+		"Node ID", "Node Name", "Node Type", "Date", "Dimension",
+		"Direct Cost", "Indirect Cost", "Total Cost", "Currency",
+	}
+	if err := csvWriter.Write(header); err != nil {
+		return fmt.Errorf("failed to write CSV header: %w", err)
+	}
+
+	// Write data rows
+	for _, cost := range costs {
+		row := []string{
+			cost.NodeID.String(),
+			cost.NodeName,
+			cost.NodeType,
+			cost.Date.Format("2006-01-02"),
+			cost.Dimension,
+			cost.DirectCost.StringFixed(2),
+			cost.IndirectCost.StringFixed(2),
+			cost.TotalCost.StringFixed(2),
+			cost.Currency,
+		}
+		if err := csvWriter.Write(row); err != nil {
+			return fmt.Errorf("failed to write CSV row: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// ExportRawCostsToCSV exports raw ingested cost data (pre-allocation) to CSV format
+func (s *Service) ExportRawCostsToCSV(ctx context.Context, req CostAttributionRequest, nodeType string, writer io.Writer) error {
+	// Get raw cost data from node_costs_by_dimension
+	costs, err := s.store.Costs.GetRawCostRecords(ctx, req.StartDate, req.EndDate, req.Currency, nodeType)
+	if err != nil {
+		return fmt.Errorf("failed to get raw cost records: %w", err)
+	}
+
+	csvWriter := csv.NewWriter(writer)
+	defer csvWriter.Flush()
+
+	// Write header
+	header := []string{
+		"Node ID", "Node Name", "Node Type", "Date", "Dimension",
+		"Amount", "Currency", "Metadata",
+	}
+	if err := csvWriter.Write(header); err != nil {
+		return fmt.Errorf("failed to write CSV header: %w", err)
+	}
+
+	// Write data rows
+	for _, cost := range costs {
+		metadataStr := ""
+		if cost.Metadata != nil {
+			if metadataBytes, err := json.Marshal(cost.Metadata); err == nil {
+				metadataStr = string(metadataBytes)
+			}
+		}
+
+		row := []string{
+			cost.NodeID.String(),
+			cost.NodeName,
+			cost.NodeType,
+			cost.Date.Format("2006-01-02"),
+			cost.Dimension,
+			cost.Amount.StringFixed(2),
+			cost.Currency,
+			metadataStr,
+		}
+		if err := csvWriter.Write(row); err != nil {
+			return fmt.Errorf("failed to write CSV row: %w", err)
+		}
+	}
+
+	return nil
 }

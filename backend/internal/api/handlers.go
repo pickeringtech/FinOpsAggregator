@@ -1,6 +1,8 @@
 package api
 
 import (
+	"bytes"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -473,4 +475,76 @@ func RecoveryMiddleware() gin.HandlerFunc {
 
 		c.JSON(http.StatusInternalServerError, response)
 	})
+}
+
+// ExportCSV handles CSV export requests
+func (h *Handler) ExportCSV(c *gin.Context) {
+	req, err := h.parseCostAttributionRequest(c)
+	if err != nil {
+		h.handleError(c, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+
+	// Get export type from query parameter
+	exportType := c.Query("type")
+	if exportType == "" {
+		h.handleError(c, http.StatusBadRequest, "invalid_request", "export type is required")
+		return
+	}
+
+	// Create buffer to write CSV data
+	var buf bytes.Buffer
+
+	// Generate filename
+	filename := fmt.Sprintf("%s_%s_to_%s.csv",
+		exportType,
+		req.StartDate.Format("2006-01-02"),
+		req.EndDate.Format("2006-01-02"))
+
+	// Export based on type
+	switch exportType {
+	case "products":
+		err = h.service.ExportProductsToCSV(c.Request.Context(), *req, &buf)
+	case "nodes":
+		nodeType := c.Query("node_type")
+		err = h.service.ExportNodesToCSV(c.Request.Context(), *req, nodeType, &buf)
+	case "costs_by_type":
+		err = h.service.ExportCostsByTypeToCSV(c.Request.Context(), *req, &buf)
+	case "recommendations":
+		// Optional node_id filter
+		nodeIDStr := c.Query("node_id")
+		var nodeID *uuid.UUID
+		if nodeIDStr != "" {
+			parsed, err := uuid.Parse(nodeIDStr)
+			if err != nil {
+				h.handleError(c, http.StatusBadRequest, "invalid_request", "invalid node_id format")
+				return
+			}
+			nodeID = &parsed
+		}
+		err = h.service.ExportRecommendationsToCSV(c.Request.Context(), *req, nodeID, &buf)
+	case "detailed_costs":
+		nodeType := c.Query("node_type")
+		err = h.service.ExportDetailedCostsToCSV(c.Request.Context(), *req, nodeType, &buf)
+	case "raw_costs":
+		nodeType := c.Query("node_type")
+		err = h.service.ExportRawCostsToCSV(c.Request.Context(), *req, nodeType, &buf)
+	default:
+		h.handleError(c, http.StatusBadRequest, "invalid_request", "unsupported export type. Supported: products, nodes, costs_by_type, recommendations, detailed_costs, raw_costs")
+		return
+	}
+
+	if err != nil {
+		log.Error().Err(err).Str("export_type", exportType).Msg("Failed to export CSV")
+		h.handleError(c, http.StatusInternalServerError, "internal_error", "Failed to generate CSV export")
+		return
+	}
+
+	// Set headers for CSV download
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+	c.Header("Content-Length", strconv.Itoa(buf.Len()))
+
+	// Write CSV data
+	c.Data(http.StatusOK, "text/csv", buf.Bytes())
 }

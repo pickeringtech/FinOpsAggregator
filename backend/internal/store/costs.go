@@ -1113,6 +1113,31 @@ type AllocationFromNode struct {
 	Date      time.Time
 }
 
+// DetailedCostRecord represents a detailed cost record with node information
+type DetailedCostRecord struct {
+	NodeID       uuid.UUID       `json:"node_id"`
+	NodeName     string          `json:"node_name"`
+	NodeType     string          `json:"node_type"`
+	Date         time.Time       `json:"date"`
+	Dimension    string          `json:"dimension"`
+	DirectCost   decimal.Decimal `json:"direct_cost"`
+	IndirectCost decimal.Decimal `json:"indirect_cost"`
+	TotalCost    decimal.Decimal `json:"total_cost"`
+	Currency     string          `json:"currency"`
+}
+
+// RawCostRecord represents a raw ingested cost record with node information
+type RawCostRecord struct {
+	NodeID    uuid.UUID              `json:"node_id"`
+	NodeName  string                 `json:"node_name"`
+	NodeType  string                 `json:"node_type"`
+	Date      time.Time              `json:"date"`
+	Dimension string                 `json:"dimension"`
+	Amount    decimal.Decimal        `json:"amount"`
+	Currency  string                 `json:"currency"`
+	Metadata  map[string]interface{} `json:"metadata"`
+}
+
 // GetAllocationsFromNode retrieves all allocations FROM a specific node TO its children
 // This shows how much cost has been allocated from this infrastructure node to products
 func (r *CostRepository) GetAllocationsFromNode(ctx context.Context, nodeID uuid.UUID, startDate, endDate time.Time) ([]AllocationFromNode, error) {
@@ -1169,4 +1194,152 @@ func (r *CostRepository) GetAllocationsFromNode(ctx context.Context, nodeID uuid
 	}
 
 	return allocations, nil
+}
+
+// GetDetailedCostRecords retrieves detailed cost records (not aggregated) with node information
+func (r *CostRepository) GetDetailedCostRecords(ctx context.Context, startDate, endDate time.Time, currency string, nodeType string) ([]DetailedCostRecord, error) {
+	// Query to get detailed allocation results with node information
+	queryBuilder := `
+		WITH latest_run AS (
+			SELECT id
+			FROM computation_runs
+			WHERE window_start <= $2 AND window_end >= $1
+			  AND status = 'completed'
+			ORDER BY created_at DESC
+			LIMIT 1
+		)
+		SELECT
+			n.id,
+			n.name,
+			n.type,
+			a.allocation_date,
+			a.dimension,
+			a.direct_amount,
+			a.indirect_amount,
+			a.total_amount,
+			$3 as currency
+		FROM cost_nodes n
+		JOIN allocation_results_by_dimension a ON n.id = a.node_id
+		JOIN latest_run lr ON a.run_id = lr.id
+		WHERE a.allocation_date >= $1
+		  AND a.allocation_date <= $2`
+
+	args := []interface{}{startDate, endDate, currency}
+	argIndex := 4
+
+	if nodeType != "" {
+		queryBuilder += fmt.Sprintf(" AND n.type = $%d", argIndex)
+		args = append(args, nodeType)
+		argIndex++
+	}
+
+	queryBuilder += `
+		ORDER BY n.name, a.allocation_date, a.dimension`
+
+	rows, err := r.db.Query(ctx, queryBuilder, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get detailed cost records: %w", err)
+	}
+	defer rows.Close()
+
+	var records []DetailedCostRecord
+	for rows.Next() {
+		var record DetailedCostRecord
+		err := rows.Scan(
+			&record.NodeID,
+			&record.NodeName,
+			&record.NodeType,
+			&record.Date,
+			&record.Dimension,
+			&record.DirectCost,
+			&record.IndirectCost,
+			&record.TotalCost,
+			&record.Currency,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan detailed cost record: %w", err)
+		}
+		records = append(records, record)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating detailed cost records: %w", err)
+	}
+
+	return records, nil
+}
+
+// GetRawCostRecords retrieves raw ingested cost records with node information
+func (r *CostRepository) GetRawCostRecords(ctx context.Context, startDate, endDate time.Time, currency string, nodeType string) ([]RawCostRecord, error) {
+	// Query to get raw cost data from node_costs_by_dimension with node information
+	queryBuilder := `
+		SELECT
+			n.id,
+			n.name,
+			n.type,
+			c.cost_date,
+			c.dimension,
+			c.amount,
+			c.currency,
+			c.metadata
+		FROM cost_nodes n
+		JOIN node_costs_by_dimension c ON n.id = c.node_id
+		WHERE c.cost_date >= $1
+		  AND c.cost_date <= $2
+		  AND c.currency = $3`
+
+	args := []interface{}{startDate, endDate, currency}
+	argIndex := 4
+
+	if nodeType != "" {
+		queryBuilder += fmt.Sprintf(" AND n.type = $%d", argIndex)
+		args = append(args, nodeType)
+		argIndex++
+	}
+
+	queryBuilder += `
+		ORDER BY n.name, c.cost_date, c.dimension`
+
+	rows, err := r.db.Query(ctx, queryBuilder, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get raw cost records: %w", err)
+	}
+	defer rows.Close()
+
+	var records []RawCostRecord
+	for rows.Next() {
+		var record RawCostRecord
+		var metadataJSON []byte
+		err := rows.Scan(
+			&record.NodeID,
+			&record.NodeName,
+			&record.NodeType,
+			&record.Date,
+			&record.Dimension,
+			&record.Amount,
+			&record.Currency,
+			&metadataJSON,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan raw cost record: %w", err)
+		}
+
+		// Parse metadata JSON
+		if len(metadataJSON) > 0 {
+			if err := json.Unmarshal(metadataJSON, &record.Metadata); err != nil {
+				// If metadata parsing fails, set to empty map
+				record.Metadata = make(map[string]interface{})
+			}
+		} else {
+			record.Metadata = make(map[string]interface{})
+		}
+
+		records = append(records, record)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating raw cost records: %w", err)
+	}
+
+	return records, nil
 }

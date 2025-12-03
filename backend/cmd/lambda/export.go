@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/pickeringtech/FinOpsAggregator/internal/api"
 	"github.com/pickeringtech/FinOpsAggregator/internal/charts"
 	"github.com/pickeringtech/FinOpsAggregator/internal/storage"
 	"github.com/rs/zerolog/log"
@@ -32,6 +33,11 @@ type ExportRequest struct {
 
 	// For waterfall charts
 	RunID string `json:"run_id,omitempty"`
+
+	// For CSV exports
+	CSVType  string `json:"csv_type,omitempty"`  // products, nodes, costs_by_type, recommendations
+	NodeType string `json:"node_type,omitempty"` // Node type filter (for nodes export)
+	Currency string `json:"currency,omitempty"`  // Currency (default: USD)
 
 	// Output configuration
 	OutputKey string `json:"output_key,omitempty"` // Custom output key/filename
@@ -71,6 +77,8 @@ func handleExport(ctx context.Context, request ExportRequest) (LambdaResponse, e
 		response, err = exportTrendChart(ctx, request, blobStorage)
 	case "chart_waterfall":
 		response, err = exportWaterfallChart(ctx, request, blobStorage)
+	case "csv":
+		response, err = exportCSV(ctx, request, blobStorage)
 	default:
 		return newErrorResponse(400, fmt.Errorf("unknown export type: %s", request.Type)), nil
 	}
@@ -275,5 +283,107 @@ func parseDateOrDefault(dateStr string, defaultDate time.Time) time.Time {
 		return defaultDate
 	}
 	return date
+}
+
+// exportCSV exports data to CSV format.
+func exportCSV(ctx context.Context, request ExportRequest, blobStorage *storage.BlobStorage) (ExportResponse, error) {
+	// Parse dates
+	var startDate, endDate time.Time
+	var err error
+
+	if request.StartDate == "" {
+		startDate = time.Now().AddDate(0, 0, -30) // Default to 30 days ago
+	} else {
+		startDate, err = time.Parse("2006-01-02", request.StartDate)
+		if err != nil {
+			return ExportResponse{}, fmt.Errorf("invalid start_date: %w", err)
+		}
+	}
+
+	if request.EndDate == "" {
+		endDate = time.Now() // Default to today
+	} else {
+		endDate, err = time.Parse("2006-01-02", request.EndDate)
+		if err != nil {
+			return ExportResponse{}, fmt.Errorf("invalid end_date: %w", err)
+		}
+	}
+
+	// Set default currency
+	currency := request.Currency
+	if currency == "" {
+		currency = "USD"
+	}
+
+	// Set default CSV type
+	csvType := request.CSVType
+	if csvType == "" {
+		csvType = "products"
+	}
+
+	// Generate output key
+	outputKey := request.OutputKey
+	if outputKey == "" {
+		outputKey = fmt.Sprintf("csv/%s_%s_to_%s.csv",
+			csvType,
+			startDate.Format("2006-01-02"),
+			endDate.Format("2006-01-02"))
+	}
+
+	// Create API service
+	service := api.NewService(st)
+
+	// Create cost attribution request
+	req := api.CostAttributionRequest{
+		StartDate: startDate,
+		EndDate:   endDate,
+		Currency:  currency,
+	}
+
+	// Create buffer to write CSV data
+	var buf bytes.Buffer
+
+	// Export based on CSV type
+	switch csvType {
+	case "products":
+		err = service.ExportProductsToCSV(ctx, req, &buf)
+	case "nodes":
+		err = service.ExportNodesToCSV(ctx, req, request.NodeType, &buf)
+	case "costs_by_type":
+		err = service.ExportCostsByTypeToCSV(ctx, req, &buf)
+	case "recommendations":
+		// Parse node ID if provided
+		var nodeID *uuid.UUID
+		if request.NodeID != "" {
+			parsed, err := uuid.Parse(request.NodeID)
+			if err != nil {
+				return ExportResponse{}, fmt.Errorf("invalid node_id: %w", err)
+			}
+			nodeID = &parsed
+		}
+		err = service.ExportRecommendationsToCSV(ctx, req, nodeID, &buf)
+	case "detailed_costs":
+		err = service.ExportDetailedCostsToCSV(ctx, req, request.NodeType, &buf)
+	case "raw_costs":
+		err = service.ExportRawCostsToCSV(ctx, req, request.NodeType, &buf)
+	default:
+		return ExportResponse{}, fmt.Errorf("unsupported CSV type: %s. Supported: products, nodes, costs_by_type, recommendations, detailed_costs, raw_costs", csvType)
+	}
+
+	if err != nil {
+		return ExportResponse{}, fmt.Errorf("failed to generate CSV: %w", err)
+	}
+
+	// Write to storage
+	contentType := "text/csv"
+	if err := blobStorage.Write(ctx, outputKey, buf.Bytes(), contentType); err != nil {
+		return ExportResponse{}, fmt.Errorf("failed to write to storage: %w", err)
+	}
+
+	return ExportResponse{
+		Success:   true,
+		OutputKey: outputKey,
+		OutputURL: blobStorage.GetURL(outputKey),
+	}, nil
 }
 
