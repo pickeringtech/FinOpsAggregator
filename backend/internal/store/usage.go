@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/Masterminds/squirrel"
@@ -269,6 +270,23 @@ func (r *UsageRepository) BulkUpsert(ctx context.Context, usages []models.NodeUs
 		return nil
 	}
 
+	// Sort usages by primary key (node_id, usage_date, metric) to prevent deadlocks.
+	// PostgreSQL's ON CONFLICT ... DO UPDATE acquires row-level locks, and inserting
+	// rows in a consistent order across all batches prevents deadlocks that occur
+	// when different transactions lock rows in different orders.
+	sort.Slice(usages, func(i, j int) bool {
+		// Compare node_id first
+		if usages[i].NodeID != usages[j].NodeID {
+			return usages[i].NodeID.String() < usages[j].NodeID.String()
+		}
+		// Then compare usage_date
+		if !usages[i].UsageDate.Equal(usages[j].UsageDate) {
+			return usages[i].UsageDate.Before(usages[j].UsageDate)
+		}
+		// Finally compare metric
+		return usages[i].Metric < usages[j].Metric
+	})
+
 	query := r.QueryBuilder().
 		Insert("node_usage_by_dimension").
 		Columns("node_id", "usage_date", "metric", "value", "unit")
@@ -277,8 +295,8 @@ func (r *UsageRepository) BulkUpsert(ctx context.Context, usages []models.NodeUs
 		query = query.Values(usage.NodeID, usage.UsageDate, usage.Metric, usage.Value, usage.Unit)
 	}
 
-	query = query.Suffix(`ON CONFLICT (node_id, usage_date, metric) 
-		DO UPDATE SET 
+	query = query.Suffix(`ON CONFLICT (node_id, usage_date, metric)
+		DO UPDATE SET
 			value = EXCLUDED.value,
 			unit = EXCLUDED.unit,
 			updated_at = now()`)

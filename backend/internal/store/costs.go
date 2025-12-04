@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/Masterminds/squirrel"
@@ -834,6 +835,24 @@ func (r *CostRepository) BulkUpsert(ctx context.Context, costs []models.NodeCost
 	if len(costs) == 0 {
 		return nil
 	}
+
+	// Sort costs by primary key (node_id, cost_date, dimension) to prevent deadlocks.
+	// PostgreSQL's ON CONFLICT ... DO UPDATE acquires row-level locks, and inserting
+	// rows in a consistent order across all batches prevents deadlocks that occur
+	// when different transactions lock rows in different orders.
+	sort.Slice(costs, func(i, j int) bool {
+		// Compare node_id first
+		cmpNodeID := costs[i].NodeID.String() < costs[j].NodeID.String()
+		if costs[i].NodeID != costs[j].NodeID {
+			return cmpNodeID
+		}
+		// Then compare cost_date
+		if !costs[i].CostDate.Equal(costs[j].CostDate) {
+			return costs[i].CostDate.Before(costs[j].CostDate)
+		}
+		// Finally compare dimension
+		return costs[i].Dimension < costs[j].Dimension
+	})
 
 	query := r.QueryBuilder().
 		Insert("node_costs_by_dimension").

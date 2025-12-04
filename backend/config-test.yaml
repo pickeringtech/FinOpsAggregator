@@ -1,0 +1,37 @@
+postgres:
+  dsn: postgresql://finops:finops@localhost:5432/finops?sslmode=disable
+
+compute:
+  base_currency: GBP
+  active_dimensions:
+    - instance_hours
+    - storage_gb_month
+    - egress_gb
+    - iops
+    - backups_gb_month
+    # Application-level / non-infrastructure product costs
+    - saas_subscriptions
+    - third_party_api_costs
+    - software_licenses
+    - support_contracts
+    - professional_services
+    - compliance_fees
+    - payment_processing_fees
+    - data_provider_costs
+
+charts:
+  out_dir: ./charts
+
+storage:
+  url: file://./charts
+  prefix: ""
+
+jobs:
+  concurrency: 4
+  queues:
+    default: 1
+    exports: 1
+
+logging:
+  level: debug
+

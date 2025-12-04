@@ -546,11 +546,11 @@ func (s *Seeder) SeedCostData(ctx context.Context) error {
 		return fmt.Errorf("no nodes found - run seed basic DAG first")
 	}
 
-	// Generate costs for the previous 12 months AND next 12 months (24 months total)
-	// Costs get less accurate as they're further into the future
+	// Generate costs for the previous 3 months AND next 3 months (6 months total)
+	// Reduced from 24 months to improve seeding performance while maintaining realistic data
 	now := time.Now()
-	startDate := now.AddDate(0, -12, 0) // 12 months ago
-	endDate := now.AddDate(0, 12, 0)    // 12 months in the future
+	startDate := now.AddDate(0, -3, 0) // 3 months ago
+	endDate := now.AddDate(0, 3, 0)    // 3 months in the future
 
 	var costs []models.NodeCostByDimension
 
@@ -671,10 +671,10 @@ func (s *Seeder) SeedUsageData(ctx context.Context) error {
 		return fmt.Errorf("no nodes found - run seed basic DAG first")
 	}
 
-	// Generate usage for the previous 12 months AND next 12 months to match cost data
+	// Generate usage for the previous 3 months AND next 3 months to match cost data
 	now := time.Now()
-	startDate := now.AddDate(0, -12, 0) // 12 months ago
-	endDate := now.AddDate(0, 12, 0)    // 12 months in the future
+	startDate := now.AddDate(0, -3, 0) // 3 months ago
+	endDate := now.AddDate(0, 3, 0)    // 3 months in the future
 
 	// We stream non-critical metrics directly to the database in batches, but
 	// aggregate allocation-critical metrics in-memory per (node, day, metric)
@@ -830,7 +830,10 @@ func (s *Seeder) generateCostAmount(nodeName, dimension string, serviceIdx, reco
 
 	// Add realistic variations
 	variation := s.calculateCostVariation(nodeName, dimension, serviceIdx, recordIdx, date)
-	return baseAmount.Mul(variation)
+	finalAmount := baseAmount.Mul(variation)
+
+	// Ensure final amount meets minimum cost requirement
+	return s.ensureMinimumCost(finalAmount)
 }
 
 // getBaseCostAmount returns base cost amounts for different node/dimension combinations
@@ -1024,14 +1027,14 @@ func (s *Seeder) getBaseCostAmount(nodeName, dimension string) decimal.Decimal {
 	// Check if this is a product with additional application-level costs
 	if appCosts, exists := productAppLevelCosts[nodeName]; exists {
 		if amount, hasDimension := appCosts[dimension]; hasDimension {
-			return decimal.NewFromFloat(amount)
+			return s.ensureMinimumCost(decimal.NewFromFloat(amount))
 		}
 	}
 
 	// Check if this is a product with defined costs
 	if costs, exists := productCosts[nodeName]; exists {
 		if amount, hasDimension := costs[dimension]; hasDimension {
-			return decimal.NewFromFloat(amount)
+			return s.ensureMinimumCost(decimal.NewFromFloat(amount))
 		}
 	}
 
@@ -1130,7 +1133,7 @@ func (s *Seeder) getBaseCostAmount(nodeName, dimension string) decimal.Decimal {
 	// Check remaining products
 	if costs, exists := remainingProductCosts[nodeName]; exists {
 		if amount, hasDimension := costs[dimension]; hasDimension {
-			return decimal.NewFromFloat(amount)
+			return s.ensureMinimumCost(decimal.NewFromFloat(amount))
 		}
 	}
 
@@ -1139,226 +1142,245 @@ func (s *Seeder) getBaseCostAmount(nodeName, dimension string) decimal.Decimal {
 	case "payments_database_cluster":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(85.00) // $85/hour for db.r5.12xlarge cluster (8 instances)
+			return s.ensureMinimumCost(decimal.NewFromFloat(85.00)) // $85/hour for db.r5.12xlarge cluster (8 instances)
 		case "storage_gb_month":
-			return decimal.NewFromFloat(1.25) // $1.25/GB/month for encrypted RDS storage
+			return s.ensureMinimumCost(decimal.NewFromFloat(1.25)) // $1.25/GB/month for encrypted RDS storage
 		case "egress_gb":
-			return decimal.NewFromFloat(0.90) // $0.90/GB for RDS egress
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.90)) // $0.90/GB for RDS egress
 		case "iops":
-			return decimal.NewFromFloat(0.75) // $0.75/IOPS for provisioned IOPS
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.75)) // $0.75/IOPS for provisioned IOPS
 		case "backups_gb_month":
-			return decimal.NewFromFloat(0.95) // $0.95/GB/month for automated backups
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.95)) // $0.95/GB/month for automated backups
 		case "cpu_hours":
-			return decimal.NewFromFloat(3.50) // $3.50/CPU hour for high-performance
+			return s.ensureMinimumCost(decimal.NewFromFloat(3.50)) // $3.50/CPU hour for high-performance
 		case "memory_gb_hours":
-			return decimal.NewFromFloat(0.80) // $0.80/GB/hour memory
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.80)) // $0.80/GB/hour memory
 		case "database_connections":
-			return decimal.NewFromFloat(0.02) // $0.02/connection for payment workloads
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.02)) // $0.02/connection for payment workloads
 		}
 	case "analytics_database_cluster":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(55.00) // $55/hour for db.r5.8xlarge cluster (5 instances)
+			return s.ensureMinimumCost(decimal.NewFromFloat(55.00)) // $55/hour for db.r5.8xlarge cluster (5 instances)
 		case "storage_gb_month":
-			return decimal.NewFromFloat(1.00) // $1.00/GB/month
+			return s.ensureMinimumCost(decimal.NewFromFloat(1.00)) // $1.00/GB/month
 		case "egress_gb":
-			return decimal.NewFromFloat(0.90) // $0.90/GB
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.90)) // $0.90/GB
 		case "iops":
-			return decimal.NewFromFloat(0.65) // $0.65/IOPS
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.65)) // $0.65/IOPS
 		}
 	case "message_queue_cluster":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(45.00) // $45/hour for Kafka cluster (9 instances)
+			return s.ensureMinimumCost(decimal.NewFromFloat(45.00)) // $45/hour for Kafka cluster (9 instances)
 		case "storage_gb_month":
-			return decimal.NewFromFloat(0.80) // $0.80/GB/month
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.80)) // $0.80/GB/month
 		case "egress_gb":
-			return decimal.NewFromFloat(0.90) // $0.90/GB
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.90)) // $0.90/GB
 		}
 	case "object_storage":
 		switch dimension {
 		case "storage_gb_month":
-			return decimal.NewFromFloat(0.23) // $0.23/GB/month for S3 (500TB)
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.23)) // $0.23/GB/month for S3 (500TB)
 		case "egress_gb":
-			return decimal.NewFromFloat(0.90) // $0.90/GB
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.90)) // $0.90/GB
 		case "requests_count":
-			return decimal.NewFromFloat(0.004) // $0.004/1000 requests
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.004)) // $0.004/1000 requests
 		}
 
 	// High-cost Dedicated Compute Resources
 	case "card_issuing_compute":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(30.72) // $30.72/hour for 20x c5.4xlarge instances
+			return s.ensureMinimumCost(decimal.NewFromFloat(30.72)) // $30.72/hour for 20x c5.4xlarge instances
 		case "storage_gb_month":
-			return decimal.NewFromFloat(2.00) // $2.00/GB/month for EBS
+			return s.ensureMinimumCost(decimal.NewFromFloat(2.00)) // $2.00/GB/month for EBS
 		case "egress_gb":
-			return decimal.NewFromFloat(0.90) // $0.90/GB for EC2 egress
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.90)) // $0.90/GB for EC2 egress
 		case "cpu_hours":
-			return decimal.NewFromFloat(1.92) // $1.92/CPU hour
+			return s.ensureMinimumCost(decimal.NewFromFloat(1.92)) // $1.92/CPU hour
 		case "memory_gb_hours":
-			return decimal.NewFromFloat(0.48) // $0.48/GB/hour memory
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.48)) // $0.48/GB/hour memory
 		}
 	case "payment_processing_compute":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(153.60) // $153.60/hour for 50x c5.9xlarge instances
+			return s.ensureMinimumCost(decimal.NewFromFloat(153.60)) // $153.60/hour for 50x c5.9xlarge instances
 		case "storage_gb_month":
-			return decimal.NewFromFloat(2.50) // $2.50/GB/month for high-IOPS EBS
+			return s.ensureMinimumCost(decimal.NewFromFloat(2.50)) // $2.50/GB/month for high-IOPS EBS
 		case "egress_gb":
-			return decimal.NewFromFloat(0.90) // $0.90/GB for EC2 egress
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.90)) // $0.90/GB for EC2 egress
 		case "cpu_hours":
-			return decimal.NewFromFloat(3.84) // $3.84/CPU hour for high-performance
+			return s.ensureMinimumCost(decimal.NewFromFloat(3.84)) // $3.84/CPU hour for high-performance
 		case "memory_gb_hours":
-			return decimal.NewFromFloat(0.96) // $0.96/GB/hour memory
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.96)) // $0.96/GB/hour memory
 		}
 	case "fraud_ml_compute":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(183.60) // $183.60/hour for 15x p3.8xlarge GPU instances
+			return s.ensureMinimumCost(decimal.NewFromFloat(183.60)) // $183.60/hour for 15x p3.8xlarge GPU instances
 		case "storage_gb_month":
-			return decimal.NewFromFloat(2.25) // $2.25/GB/month for NVMe SSD
+			return s.ensureMinimumCost(decimal.NewFromFloat(2.25)) // $2.25/GB/month for NVMe SSD
 		case "egress_gb":
-			return decimal.NewFromFloat(0.90) // $0.90/GB for EC2 egress
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.90)) // $0.90/GB for EC2 egress
 		case "cpu_hours":
-			return decimal.NewFromFloat(11.48) // $11.48/CPU hour for GPU instances
+			return s.ensureMinimumCost(decimal.NewFromFloat(11.48)) // $11.48/CPU hour for GPU instances
 		case "memory_gb_hours":
-			return decimal.NewFromFloat(2.30) // $2.30/GB/hour memory for GPU instances
+			return s.ensureMinimumCost(decimal.NewFromFloat(2.30)) // $2.30/GB/hour memory for GPU instances
 		}
 	case "data_warehouse_compute":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(195.00) // $195/hour for 30x ra3.4xlarge Redshift nodes
+			return s.ensureMinimumCost(decimal.NewFromFloat(195.00)) // $195/hour for 30x ra3.4xlarge Redshift nodes
 		case "storage_gb_month":
-			return decimal.NewFromFloat(3.00) // $3.00/GB/month for Redshift storage
+			return s.ensureMinimumCost(decimal.NewFromFloat(3.00)) // $3.00/GB/month for Redshift storage
 		case "egress_gb":
-			return decimal.NewFromFloat(0.90) // $0.90/GB
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.90)) // $0.90/GB
 		}
 	case "ml_platform_compute":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(244.80) // $244.80/hour for 10x ml.p3.16xlarge SageMaker instances
+			return s.ensureMinimumCost(decimal.NewFromFloat(244.80)) // $244.80/hour for 10x ml.p3.16xlarge SageMaker instances
 		case "storage_gb_month":
-			return decimal.NewFromFloat(2.50) // $2.50/GB/month
+			return s.ensureMinimumCost(decimal.NewFromFloat(2.50)) // $2.50/GB/month
 		case "egress_gb":
-			return decimal.NewFromFloat(0.90) // $0.90/GB
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.90)) // $0.90/GB
 		}
 	case "digital_banking_compute":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(47.50) // $47.50/hour for 25x m5.2xlarge instances
+			return s.ensureMinimumCost(decimal.NewFromFloat(47.50)) // $47.50/hour for 25x m5.2xlarge instances
 		case "storage_gb_month":
-			return decimal.NewFromFloat(2.00) // $2.00/GB/month
+			return s.ensureMinimumCost(decimal.NewFromFloat(2.00)) // $2.00/GB/month
 		case "egress_gb":
-			return decimal.NewFromFloat(0.90) // $0.90/GB
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.90)) // $0.90/GB
 		}
 
 	// Platform Services
 	case "api_gateway_platform":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(3.60) // $3.60/hour for high-volume API Gateway
+			return s.ensureMinimumCost(decimal.NewFromFloat(3.60)) // $3.60/hour for high-volume API Gateway
 		case "egress_gb":
-			return decimal.NewFromFloat(0.90) // $0.90/GB for API Gateway egress
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.90)) // $0.90/GB for API Gateway egress
 		case "load_balancer_hours":
-			return decimal.NewFromFloat(2.25) // $2.25/hour for ALB
+			return s.ensureMinimumCost(decimal.NewFromFloat(2.25)) // $2.25/hour for ALB
 		case "requests_count":
-			return decimal.NewFromFloat(0.0035) // $3.50 per million API requests
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.0035)) // $3.50 per million API requests
 		case "data_transfer":
-			return decimal.NewFromFloat(0.20) // $0.20/GB internal transfer
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.20)) // $0.20/GB internal transfer
 		}
 	case "kubernetes_platform":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(25.00) // $25/hour for large EKS cluster
+			return s.ensureMinimumCost(decimal.NewFromFloat(25.00)) // $25/hour for large EKS cluster
 		case "storage_gb_month":
-			return decimal.NewFromFloat(2.00) // $2.00/GB/month for EBS
+			return s.ensureMinimumCost(decimal.NewFromFloat(2.00)) // $2.00/GB/month for EBS
 		case "egress_gb":
-			return decimal.NewFromFloat(0.90) // $0.90/GB for EKS egress
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.90)) // $0.90/GB for EKS egress
 		case "cpu_hours":
-			return decimal.NewFromFloat(1.25) // $1.25/CPU hour for worker nodes
+			return s.ensureMinimumCost(decimal.NewFromFloat(1.25)) // $1.25/CPU hour for worker nodes
 		case "memory_gb_hours":
-			return decimal.NewFromFloat(0.31) // $0.31/GB/hour memory
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.31)) // $0.31/GB/hour memory
 		case "load_balancer_hours":
-			return decimal.NewFromFloat(2.25) // $2.25/hour for ALB
+			return s.ensureMinimumCost(decimal.NewFromFloat(2.25)) // $2.25/hour for ALB
 		}
 	case "cdn_platform":
 		switch dimension {
 		case "egress_gb":
-			return decimal.NewFromFloat(0.85) // $0.85/GB for CloudFront
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.85)) // $0.85/GB for CloudFront
 		case "requests_count":
-			return decimal.NewFromFloat(0.0075) // $7.50 per million requests
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.0075)) // $7.50 per million requests
 		case "data_transfer":
-			return decimal.NewFromFloat(0.20) // $0.20/GB
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.20)) // $0.20/GB
 		}
 	case "monitoring_platform":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(15.00) // $15/hour for Datadog infrastructure
+			return s.ensureMinimumCost(decimal.NewFromFloat(15.00)) // $15/hour for Datadog infrastructure
 		case "metrics_count":
-			return decimal.NewFromFloat(0.05) // $0.05/custom metric
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.05)) // $0.05/custom metric
 		case "logs_ingestion_gb":
-			return decimal.NewFromFloat(0.10) // $0.10/GB for log ingestion
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.10)) // $0.10/GB for log ingestion
 		}
 
 	// Additional Shared Infrastructure
 	case "redis_cache_cluster":
 		switch dimension {
 		case "instance_hours":
-			return decimal.NewFromFloat(20.40) // $20.40/hour for 12x cache.r5.4xlarge
+			return s.ensureMinimumCost(decimal.NewFromFloat(20.40)) // $20.40/hour for 12x cache.r5.4xlarge
 		case "egress_gb":
-			return decimal.NewFromFloat(0.90) // $0.90/GB for ElastiCache egress
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.90)) // $0.90/GB for ElastiCache egress
 		case "memory_gb_hours":
-			return decimal.NewFromFloat(1.02) // $1.02/GB/hour for cache memory
+			return s.ensureMinimumCost(decimal.NewFromFloat(1.02)) // $1.02/GB/hour for cache memory
 		}
 	case "compliance_logging":
 		switch dimension {
 		case "logs_ingestion_gb":
-			return decimal.NewFromFloat(5.00) // $5.00/GB for log ingestion (5TB/day)
+			return s.ensureMinimumCost(decimal.NewFromFloat(5.00)) // $5.00/GB for log ingestion (5TB/day)
 		case "storage_gb_month":
-			return decimal.NewFromFloat(0.30) // $0.30/GB/month for log storage
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.30)) // $0.30/GB/month for log storage
 		case "cloudwatch_metrics":
-			return decimal.NewFromFloat(3.00) // $3.00/metric/month
+			return s.ensureMinimumCost(decimal.NewFromFloat(3.00)) // $3.00/metric/month
 		case "monitoring_checks":
-			return decimal.NewFromFloat(0.01) // $0.01/check
+			return s.ensureMinimumCost(decimal.NewFromFloat(0.01)) // $0.01/check
 		}
 	}
 	return decimal.Zero
 }
 
+// ensureMinimumCost ensures all costs are at least $10 to avoid sub-dollar values
+// while maintaining relative proportions by applying a scaling factor
+func (s *Seeder) ensureMinimumCost(amount decimal.Decimal) decimal.Decimal {
+	minCost := decimal.NewFromFloat(10.0)
+	if amount.LessThan(minCost) && amount.GreaterThan(decimal.Zero) {
+		// Scale up small amounts to meet minimum while preserving relative differences
+		// For amounts < $1, scale by 20x; for amounts $1-$10, scale by 2-10x
+		if amount.LessThan(decimal.NewFromFloat(1.0)) {
+			return amount.Mul(decimal.NewFromFloat(20.0))
+		} else {
+			// Scale to minimum $10
+			return minCost
+		}
+	}
+	return amount
+}
+
 // getServiceCountForNode returns the number of service instances per node
+// Reduced from original counts to improve seeding performance
 func (s *Seeder) getServiceCountForNode(nodeName string) int {
 	switch nodeName {
 	case "rds_shared":
-		return 2 // 2 RDS instances
+		return 1 // Reduced from 2 RDS instances
 	case "ec2_p":
-		return 4 // 4 EC2 instances
+		return 2 // Reduced from 4 EC2 instances
 	case "s3_p":
-		return 3 // 3 S3 buckets/services
+		return 2 // Reduced from 3 S3 buckets/services
 	case "platform_pool":
-		return 5 // 5 platform services
+		return 2 // Reduced from 5 platform services
 	case "product_p":
-		return 3 // 3 product services
+		return 2 // Reduced from 3 product services
 	case "product_q":
-		return 2 // 2 product services
+		return 1 // Reduced from 2 product services
 	default:
 		return 1
 	}
 }
 
 // getRecordsPerDay returns how many records to generate per day for a dimension
+// Reduced from hourly (24) to 4-6 records per day to improve seeding performance
 func (s *Seeder) getRecordsPerDay(dimension string) int {
 	switch dimension {
 	case "instance_hours", "cpu_hours", "memory_gb_hours":
-		return 24 // Hourly records
+		return 4 // Every 6 hours instead of hourly
 	case "requests_count", "lambda_invocations", "api_calls":
-		return 24 // Hourly aggregation
+		return 6 // Every 4 hours instead of hourly
 	case "disk_io_operations", "database_connections":
-		return 12 // Every 2 hours
+		return 4 // Every 6 hours instead of every 2 hours
 	case "load_balancer_hours", "nat_gateway_hours", "vpn_hours":
-		return 24 // Hourly
+		return 4 // Every 6 hours instead of hourly
 	case "cloudwatch_metrics", "monitoring_checks":
-		return 4 // Every 6 hours
+		return 2 // Every 12 hours instead of every 6 hours
 	default:
 		return 1 // Daily records for storage, egress, etc.
 	}
@@ -1455,14 +1477,15 @@ func (s *Seeder) calculateCostVariation(nodeName, dimension string, serviceIdx, 
 }
 
 // getUsageRecordsPerDay returns how many usage records to generate per day for a metric
+// Reduced from hourly to improve seeding performance
 func (s *Seeder) getUsageRecordsPerDay(metric string) int {
 	switch metric {
 	case "cpu_hours", "memory_gb_hours", "connections", "api_requests":
-		return 24 // Hourly records
+		return 4 // Every 6 hours instead of hourly
 	case "requests", "lambda_executions", "cache_hits", "network_packets":
-		return 12 // Every 2 hours
+		return 4 // Every 6 hours instead of every 2 hours
 	case "disk_reads", "disk_writes", "storage_operations", "log_entries":
-		return 6 // Every 4 hours
+		return 2 // Every 12 hours instead of every 4 hours
 	default:
 		return 1 // Daily records
 	}
