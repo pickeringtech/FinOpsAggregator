@@ -662,8 +662,10 @@ func runCSVExport(cmd *cobra.Command, args []string) error {
 		err = service.ExportDetailedCostsToCSV(ctx, req, nodeType, writer)
 	case "raw_costs":
 		err = service.ExportRawCostsToCSV(ctx, req, nodeType, writer)
+	case "product_hierarchy":
+		err = service.ExportProductHierarchyToCSV(ctx, req, writer)
 	default:
-		return fmt.Errorf("unsupported export type: %s. Supported types: products, nodes, costs_by_type, recommendations, detailed_costs, raw_costs", exportType)
+		return fmt.Errorf("unsupported export type: %s. Supported types: products, nodes, costs_by_type, recommendations, detailed_costs, raw_costs, product_hierarchy", exportType)
 	}
 
 	if err != nil {

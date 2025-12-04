@@ -529,8 +529,10 @@ func (h *Handler) ExportCSV(c *gin.Context) {
 	case "raw_costs":
 		nodeType := c.Query("node_type")
 		err = h.service.ExportRawCostsToCSV(c.Request.Context(), *req, nodeType, &buf)
+	case "product_hierarchy":
+		err = h.service.ExportProductHierarchyToCSV(c.Request.Context(), *req, &buf)
 	default:
-		h.handleError(c, http.StatusBadRequest, "invalid_request", "unsupported export type. Supported: products, nodes, costs_by_type, recommendations, detailed_costs, raw_costs")
+		h.handleError(c, http.StatusBadRequest, "invalid_request", "unsupported export type. Supported: products, nodes, costs_by_type, recommendations, detailed_costs, raw_costs, product_hierarchy")
 		return
 	}
 

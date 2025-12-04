@@ -2267,3 +2267,109 @@ func (s *Service) ExportRawCostsToCSV(ctx context.Context, req CostAttributionRe
 
 	return nil
 }
+
+// ExportProductHierarchyToCSV exports product hierarchy with downstream relationships to CSV
+func (s *Service) ExportProductHierarchyToCSV(ctx context.Context, req CostAttributionRequest, writer io.Writer) error {
+	// Get product hierarchy records
+	records, err := s.store.Costs.GetProductHierarchyRecords(ctx, req.StartDate, req.EndDate, req.Currency)
+	if err != nil {
+		return fmt.Errorf("failed to get product hierarchy records: %w", err)
+	}
+
+	// Create CSV writer
+	csvWriter := csv.NewWriter(writer)
+	defer csvWriter.Flush()
+
+	// Write header
+	header := []string{
+		"Product ID",
+		"Product Name",
+		"Product Type",
+		"Date",
+		"Dimension",
+		"Direct Cost",
+		"Indirect Cost",
+		"Total Cost",
+		"Shared Service Cost",
+		"Currency",
+		"Downstream Node ID",
+		"Downstream Node Name",
+		"Downstream Node Type",
+		"Contributed Amount",
+		"Allocation Strategy",
+		"Product Description",
+		"Product Metadata JSON",
+	}
+	if err := csvWriter.Write(header); err != nil {
+		return fmt.Errorf("failed to write CSV header: %w", err)
+	}
+
+	// Write records
+	for _, record := range records {
+		// Extract description from metadata
+		description := ""
+		if desc, ok := record.Metadata["description"].(string); ok {
+			description = desc
+		}
+
+		// Convert metadata to JSON string
+		metadataJSON := "{}"
+		if len(record.Metadata) > 0 {
+			if jsonBytes, err := json.Marshal(record.Metadata); err == nil {
+				metadataJSON = string(jsonBytes)
+			}
+		}
+
+		// Handle nullable fields
+		downstreamNodeID := ""
+		if record.DownstreamNodeID != nil {
+			downstreamNodeID = record.DownstreamNodeID.String()
+		}
+
+		downstreamNodeName := ""
+		if record.DownstreamNodeName != nil {
+			downstreamNodeName = *record.DownstreamNodeName
+		}
+
+		downstreamNodeType := ""
+		if record.DownstreamNodeType != nil {
+			downstreamNodeType = *record.DownstreamNodeType
+		}
+
+		contributedAmount := ""
+		if record.ContributedAmount != nil {
+			contributedAmount = record.ContributedAmount.StringFixed(2)
+		}
+
+		allocationStrategy := ""
+		if record.AllocationStrategy != nil {
+			allocationStrategy = *record.AllocationStrategy
+		}
+
+		row := []string{
+			record.ProductID.String(),
+			record.ProductName,
+			record.ProductType,
+			record.Date.Format("2006-01-02"),
+			record.Dimension,
+			record.DirectCost.StringFixed(2),
+			record.IndirectCost.StringFixed(2),
+			record.TotalCost.StringFixed(2),
+			record.SharedServiceCost.StringFixed(2),
+			record.Currency,
+			downstreamNodeID,
+			downstreamNodeName,
+			downstreamNodeType,
+			contributedAmount,
+			allocationStrategy,
+			description,
+			metadataJSON,
+		}
+
+		if err := csvWriter.Write(row); err != nil {
+			return fmt.Errorf("failed to write CSV row: %w", err)
+		}
+	}
+
+	return nil
+}

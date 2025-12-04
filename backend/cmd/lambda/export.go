@@ -366,8 +366,10 @@ func exportCSV(ctx context.Context, request ExportRequest, blobStorage *storage.
 		err = service.ExportDetailedCostsToCSV(ctx, req, request.NodeType, &buf)
 	case "raw_costs":
 		err = service.ExportRawCostsToCSV(ctx, req, request.NodeType, &buf)
+	case "product_hierarchy":
+		err = service.ExportProductHierarchyToCSV(ctx, req, &buf)
 	default:
-		return ExportResponse{}, fmt.Errorf("unsupported CSV type: %s. Supported: products, nodes, costs_by_type, recommendations, detailed_costs, raw_costs", csvType)
+		return ExportResponse{}, fmt.Errorf("unsupported CSV type: %s. Supported: products, nodes, costs_by_type, recommendations, detailed_costs, raw_costs, product_hierarchy", csvType)
 	}
 
 	if err != nil {

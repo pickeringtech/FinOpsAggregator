@@ -41,6 +41,7 @@ The CSV export functionality allows you to export various types of financial and
   - `recommendations` - Cost optimization recommendations
   - `detailed_costs` - **NEW**: Individual cost records by date/dimension (detailed view)
   - `raw_costs` - **NEW**: Original ingested cost data with metadata (detailed view)
+  - `product_hierarchy` - **NEW**: Product hierarchy with downstream relationships (detailed view)
 - `start_date` (required): Start date in YYYY-MM-DD format
 - `end_date` (required): End date in YYYY-MM-DD format
 - `currency` (optional): Currency code (default: USD)
@@ -64,6 +65,9 @@ curl "http://localhost:8080/api/v1/export/csv?type=detailed_costs&start_date=202
 # Export raw ingested cost data (original data with metadata)
 curl "http://localhost:8080/api/v1/export/csv?type=raw_costs&start_date=2024-12-01&end_date=2026-12-31" -o raw_costs.csv
 
+# Export product hierarchy with downstream relationships (NEW!)
+curl "http://localhost:8080/api/v1/export/csv?type=product_hierarchy&start_date=2024-12-01&end_date=2026-12-31" -o product_hierarchy.csv
+
 # Export detailed costs for specific node type
 curl "http://localhost:8080/api/v1/export/csv?type=detailed_costs&node_type=product&start_date=2024-12-01&end_date=2026-12-31" -o product_detailed_costs.csv
 
@@ -76,7 +80,7 @@ curl "http://localhost:8080/api/v1/export/csv?type=recommendations&node_id=123e4
 **Command:** `finops export csv`
 
 **Flags:**
-- `--type` (default: products): Export type (products, nodes, costs_by_type, recommendations)
+- `--type` (default: products): Export type (products, nodes, costs_by_type, recommendations, detailed_costs, raw_costs, product_hierarchy)
 - `--start-date`: Start date (YYYY-MM-DD)
 - `--end-date`: End date (YYYY-MM-DD)
 - `--currency` (default: USD): Currency
@@ -94,6 +98,9 @@ finops export csv --type=nodes --node-type=compute --start-date=2024-01-01 --end
 
 # Export recommendations for specific node
 finops export csv --type=recommendations --node-id=123e4567-e89b-12d3-a456-426614174000 --out=recommendations.csv
+
+# Export product hierarchy with downstream relationships (NEW!)
+finops export csv --type=product_hierarchy --start-date=2024-01-01 --end-date=2024-01-31 --out=product_hierarchy.csv
 ```
 
 ### 3. Lambda Function
@@ -126,6 +133,16 @@ Columns: Cost Type, Total Amount, Currency, Start Date, End Date, Node Count, Av
 
 ### Recommendations Export
 Columns: Recommendation ID, Node ID, Node Name, Type, Description, Potential Savings, Currency, Priority, Created Date
+
+### Product Hierarchy Export (NEW!)
+Columns: Product ID, Product Name, Product Type, Date, Dimension, Direct Cost, Indirect Cost, Total Cost, Shared Service Cost, Currency, Downstream Node ID, Downstream Node Name, Downstream Node Type, Contributed Amount, Allocation Strategy, Product Description, Product Metadata JSON
+
+**Key Features:**
+- **Multiple dimensions**: Each product shows costs across different dimensions (instance_hours, storage_gb, etc.)
+- **Downstream node IDs**: UUIDs that can be joined with other systems
+- **Cost attribution**: Shows exactly how much each product contributes to downstream nodes
+- **Metadata preservation**: Full JSON metadata for integration flexibility
+- **Date-based records**: Individual records for each date, enabling time-series analysis
 
 ## Testing
 

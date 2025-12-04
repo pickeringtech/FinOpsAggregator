@@ -100,11 +100,18 @@ export_api "nodes" "node_type=product" "Product nodes summary" "product_nodes_su
 export_api "costs_by_type" "" "Costs by type summary" "costs_by_type_summary.csv"
 export_api "recommendations" "" "Recommendations" "recommendations.csv"
 
+# Product hierarchy sample (single day to keep file size manageable)
+print_info "Exporting: Product hierarchy sample (single day)"
+curl -s "${BACKEND_URL}/api/v1/export/csv?type=product_hierarchy&start_date=2025-10-03&end_date=2025-10-03&currency=${CURRENCY}" -o "${EXPORTS_DIR}/product_hierarchy_sample.csv"
+file_size=$(stat -f%z "${EXPORTS_DIR}/product_hierarchy_sample.csv" 2>/dev/null || stat -c%s "${EXPORTS_DIR}/product_hierarchy_sample.csv" 2>/dev/null || echo "unknown")
+line_count=$(wc -l < "${EXPORTS_DIR}/product_hierarchy_sample.csv" 2>/dev/null || echo "unknown")
+print_success "✓ product_hierarchy_sample.csv - $line_count lines, $file_size bytes"
+
 echo ""
 print_success "Quick summary export complete!"
 print_info "Files saved to: $EXPORTS_DIR/"
 echo ""
-ls -lh "$EXPORTS_DIR"/*.csv 2>/dev/null | grep -E "(products_summary|nodes_summary|product_nodes_summary|costs_by_type_summary|recommendations)" | while read -r line; do
+ls -lh "$EXPORTS_DIR"/*.csv 2>/dev/null | grep -E "(products_summary|nodes_summary|product_nodes_summary|costs_by_type_summary|recommendations|product_hierarchy_sample)" | while read -r line; do
     echo "  $line"
 done
 echo ""

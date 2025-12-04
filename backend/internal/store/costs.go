@@ -9,6 +9,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/pickeringtech/FinOpsAggregator/internal/models"
 	"github.com/shopspring/decimal"
 )
@@ -1339,6 +1340,214 @@ func (r *CostRepository) GetRawCostRecords(ctx context.Context, startDate, endDa
 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating raw cost records: %w", err)
+	}
+
+	return records, nil
+}
+
+// ProductHierarchyRecord represents a flattened product hierarchy record for CSV export
+type ProductHierarchyRecord struct {
+	ProductID              uuid.UUID       `json:"product_id"`
+	ProductName            string          `json:"product_name"`
+	ProductType            string          `json:"product_type"`
+	Date                   time.Time       `json:"date"`
+	Dimension              string          `json:"dimension"`
+	DirectCost             decimal.Decimal `json:"direct_cost"`
+	IndirectCost           decimal.Decimal `json:"indirect_cost"`
+	TotalCost              decimal.Decimal `json:"total_cost"`
+	SharedServiceCost      decimal.Decimal `json:"shared_service_cost"`
+	Currency               string          `json:"currency"`
+	DownstreamNodeID       *uuid.UUID      `json:"downstream_node_id,omitempty"`
+	DownstreamNodeName     *string         `json:"downstream_node_name,omitempty"`
+	DownstreamNodeType     *string         `json:"downstream_node_type,omitempty"`
+	ContributedAmount      *decimal.Decimal `json:"contributed_amount,omitempty"`
+	AllocationStrategy     *string         `json:"allocation_strategy,omitempty"`
+	Metadata               map[string]interface{} `json:"metadata"`
+}
+
+// GetProductHierarchyRecords retrieves flattened product hierarchy records with downstream relationships
+func (r *CostRepository) GetProductHierarchyRecords(ctx context.Context, startDate, endDate time.Time, currency string) ([]ProductHierarchyRecord, error) {
+	// Simplified query to get product hierarchy with downstream relationships
+	query := `
+		SELECT
+			p.id as product_id,
+			p.name as product_name,
+			p.type as product_type,
+			a.allocation_date,
+			a.dimension,
+			a.direct_amount,
+			a.indirect_amount,
+			a.total_amount,
+			COALESCE(ssc.shared_service_amount, 0) as shared_service_cost,
+			$3 as currency,
+			c.child_id as downstream_node_id,
+			cn.name as downstream_node_name,
+			cn.type as downstream_node_type,
+			c.contributed_amount,
+			COALESCE(e.default_strategy, 'unknown') as allocation_strategy,
+			p.metadata as product_metadata
+		FROM cost_nodes p
+		JOIN allocation_results_by_dimension a ON p.id = a.node_id
+		LEFT JOIN contribution_results_by_dimension c ON (
+			p.id = c.parent_id
+			AND a.allocation_date = c.contribution_date
+			AND a.dimension = c.dimension
+			AND a.run_id = c.run_id
+		)
+		LEFT JOIN cost_nodes cn ON c.child_id = cn.id
+		LEFT JOIN dependency_edges e ON e.parent_id = c.parent_id AND e.child_id = c.child_id
+		LEFT JOIN (
+			SELECT
+				c2.parent_id as product_id,
+				c2.contribution_date,
+				c2.dimension,
+				SUM(c2.contributed_amount) as shared_service_amount
+			FROM contribution_results_by_dimension c2
+			JOIN cost_nodes cn2 ON c2.child_id = cn2.id
+			WHERE cn2.type IN ('shared', 'platform')
+			  AND c2.contribution_date >= $1
+			  AND c2.contribution_date <= $2
+			GROUP BY c2.parent_id, c2.contribution_date, c2.dimension
+		) ssc ON (
+			p.id = ssc.product_id
+			AND a.allocation_date = ssc.contribution_date
+			AND a.dimension = ssc.dimension
+		)
+		WHERE p.type = 'product'
+		  AND a.allocation_date >= $1
+		  AND a.allocation_date <= $2
+		ORDER BY p.name, a.allocation_date, a.dimension, cn.name
+	`
+
+	rows, err := r.db.Query(ctx, query, startDate, endDate, currency)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get product hierarchy records: %w", err)
+	}
+	defer rows.Close()
+
+	var records []ProductHierarchyRecord
+	for rows.Next() {
+		var record ProductHierarchyRecord
+		var metadataJSON []byte
+		var downstreamNodeID, downstreamNodeName, downstreamNodeType, contributedAmount, allocationStrategy interface{}
+
+		err := rows.Scan(
+			&record.ProductID,
+			&record.ProductName,
+			&record.ProductType,
+			&record.Date,
+			&record.Dimension,
+			&record.DirectCost,
+			&record.IndirectCost,
+			&record.TotalCost,
+			&record.SharedServiceCost,
+			&record.Currency,
+			&downstreamNodeID,
+			&downstreamNodeName,
+			&downstreamNodeType,
+			&contributedAmount,
+			&allocationStrategy,
+			&metadataJSON,
+		)
+
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan product hierarchy record: %w", err)
+		}
+
+		// Handle nullable downstream node fields
+		if downstreamNodeID != nil {
+			// Handle different types for downstream node ID
+			switch v := downstreamNodeID.(type) {
+			case uuid.UUID:
+				record.DownstreamNodeID = &v
+			case string:
+				if parsed, err := uuid.Parse(v); err == nil {
+					record.DownstreamNodeID = &parsed
+				}
+			case []byte:
+				if len(v) == 16 {
+					if parsed, err := uuid.FromBytes(v); err == nil {
+						record.DownstreamNodeID = &parsed
+					}
+				}
+			case [16]uint8:
+				// Handle PostgreSQL UUID as [16]uint8
+				byteSlice := v[:]
+				if parsed, err := uuid.FromBytes(byteSlice); err == nil {
+					record.DownstreamNodeID = &parsed
+				}
+			}
+		}
+		if downstreamNodeName != nil {
+			if name, ok := downstreamNodeName.(string); ok {
+				record.DownstreamNodeName = &name
+			}
+		}
+		if downstreamNodeType != nil {
+			if nodeType, ok := downstreamNodeType.(string); ok {
+				record.DownstreamNodeType = &nodeType
+			}
+		}
+		if contributedAmount != nil {
+			// Handle different types for contributed amount
+			switch v := contributedAmount.(type) {
+			case decimal.Decimal:
+				record.ContributedAmount = &v
+			case pgtype.Numeric:
+				// Convert pgtype.Numeric to decimal.Decimal
+				if v.Valid {
+					// Convert to string first, then to decimal
+					str := v.Int.String()
+					if v.Exp < 0 {
+						// Handle decimal places
+						exp := int(-v.Exp)
+						if len(str) <= exp {
+							// Pad with zeros if needed
+							str = "0." + fmt.Sprintf("%0*s", exp, str)
+						} else {
+							// Insert decimal point
+							pos := len(str) - exp
+							str = str[:pos] + "." + str[pos:]
+						}
+					}
+					if parsed, err := decimal.NewFromString(str); err == nil {
+						record.ContributedAmount = &parsed
+					}
+				}
+			case string:
+				if parsed, err := decimal.NewFromString(v); err == nil {
+					record.ContributedAmount = &parsed
+				}
+			case float64:
+				parsed := decimal.NewFromFloat(v)
+				record.ContributedAmount = &parsed
+			case int64:
+				parsed := decimal.NewFromInt(v)
+				record.ContributedAmount = &parsed
+			}
+		}
+		if allocationStrategy != nil {
+			if strategy, ok := allocationStrategy.(string); ok {
+				record.AllocationStrategy = &strategy
+			}
+		}
+
+		// Parse metadata JSON
+		if len(metadataJSON) > 0 {
+			if err := json.Unmarshal(metadataJSON, &record.Metadata); err != nil {
+				// If metadata parsing fails, set to empty map
+				record.Metadata = make(map[string]interface{})
+			}
+		} else {
+			record.Metadata = make(map[string]interface{})
+		}
+
+		records = append(records, record)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating product hierarchy records: %w", err)
 	}
 
 	return records, nil

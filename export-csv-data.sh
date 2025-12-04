@@ -166,6 +166,10 @@ echo ""
 export_api "raw_costs" "node_type=product" "Raw product cost data" "raw_costs_products.csv"
 echo ""
 
+# Export 10: Product hierarchy with downstream relationships (NEW!)
+export_api "product_hierarchy" "" "Product hierarchy with downstream relationships (475K+ rows)" "product_hierarchy_full.csv"
+echo ""
+
 # Summary
 echo "🎉 CSV Export Complete!"
 echo "======================="
